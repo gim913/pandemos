@@ -1,5 +1,4 @@
 local Game = require 'Game'
-
 local S = require 'settings'
 
 local rng = nil
@@ -26,7 +25,6 @@ end
 function love.update(dt)
 	game:update(dt)
 end
-
 
 local function draw_info()
 	love.graphics.setBlendMode('alpha')
