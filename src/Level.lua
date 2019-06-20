@@ -30,7 +30,7 @@ end
 function Level:initializeGenerator()
 	local temp = { w = self.w, h = self.h }
 	self.grid = Grid:new({ w = self.w, h = self.h })
-	self.generator = LevelGen:new(self.grid, self.depth)
+	self.generator = LevelGen:new(self.grid, self.depth, self.rng)
 end
 
 function Level:update(_dt)
