@@ -1,7 +1,10 @@
+-- modules
 local class = require 'engine.oop'
+local fontManager = require 'engine.fm'
 local Level = require 'Level'
 local S = require 'settings'
 
+-- class
 local Game = class('Game')
 
 local function addLevel(levels, rng)
@@ -13,8 +16,7 @@ end
 function Game:ctor(rng)
 	self.rng = rng
 	self.seed = 0
-
-	self.fatFont = love.graphics.newFont(32)
+	self.fatFont = fontManager.get(32)
 
 	self.levels = {}
 	addLevel(self.levels, self.rng)
@@ -40,14 +42,14 @@ function Game:update(dt)
 end
 
 function Game:show()
-	local msg
 	if self.updateLevel then
-		msg = love.graphics.newText(self.fatFont, "generating level")
+		local level = self.levels[self.depthLevel]
+		level:show()
 	else
-		msg = love.graphics.newText(self.fatFont, "level generated")
+		local msg = love.graphics.newText(self.fatFont, "level generated")
+		love.graphics.setColor(0.0, 0.6, 0.0, 1.0)
+		love.graphics.draw(msg, (S.resolution.x - msg:getWidth()) / 2, (S.resolution.y - msg:getHeight()) / 2)
 	end
-	love.graphics.setColor(0.0, 0.6, 0.0, 1.0)
-	love.graphics.draw(msg, (S.resolution.x - msg:getWidth()) / 2, (S.resolution.y - msg:getHeight()) / 2)
 end
 
 return Game
