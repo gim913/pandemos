@@ -1,5 +1,9 @@
 ## *dev does the complete roguelike toutorial
 
+   * [Week 1](#week-1)
+      * [World architecture](#world-architecture)
+   * [Week 2](#week-2)
+
 ### Week 1
 
 I'll be using [love2d](https://love2d.org).
@@ -8,4 +12,25 @@ I'm using vscode with [love2d support extension](https://marketplace.visualstudi
 Nice part is love2d already does basic game loop.
 
 More problematic part is that to keep UI nice and responsive when doing some longer operations
-(i.e. level generation) some nice tricks will be needed.
+(i.e. level generation) some nice tricks will be needed (read: state-machines everywhere)
+
+I don't have exact idea what roguelike it will be, but there are two things I want:
+ * instead of ascending/descending, player will be going from bottom to top (like in shoot'em ups)
+ * mechanics *might* be similar to posession, where player needs to switch to new characters
+   to progress - not sure about this one yet
+
+some random ideas:
+ * (remotely activated) traps, mines
+ * granades
+
+#### World architecture
+
+Few globally accessible lists:
+ * entities - all entities (players, NPCs, possibly others), one entity per cell
+ * elements - some world objects, that player can interact with
+ * map object - that most likely will **only** include terrain/walls,
+   level generator will prepare that object, once it's done generating
+
+(not sure about items yet, they might be elements)
+
+Both elements and entities have position and they can occupy same cell.
