@@ -14,6 +14,8 @@ Nice part is love2d already does basic game loop.
 More problematic part is that to keep UI nice and responsive when doing some longer operations
 (i.e. level generation) some nice tricks will be needed (read: state-machines everywhere)
 
+I'm passing rng everywhere, reason is pretty obvious - determinism / repeatability.
+
 I don't have exact idea what roguelike it will be, but there are two things I want:
  * instead of ascending/descending, player will be going from bottom to top (like in shoot'em ups)
  * mechanics *might* be similar to posession, where player needs to switch to new characters
