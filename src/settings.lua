@@ -6,5 +6,6 @@ return {
 	, game = {
 		COLS = 128
 		, ROWS = 1024
+		, DEPTH = 1
 	}
 }

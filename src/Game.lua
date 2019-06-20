@@ -7,8 +7,8 @@ local S = require 'settings'
 -- class
 local Game = class('Game')
 
-local function addLevel(levels, rng)
-	local l = Level:new(rng)
+local function addLevel(levels, rng, depth)
+	local l = Level:new(rng, depth)
 	table.insert(levels, l)
 	return l
 end
@@ -19,7 +19,9 @@ function Game:ctor(rng)
 	self.fatFont = fontManager.get(32)
 
 	self.levels = {}
-	addLevel(self.levels, self.rng)
+	for depth = 1, S.game.DEPTH do
+		addLevel(self.levels, self.rng, depth)
+	end
 
 	self.depthLevel = 1
 	self.updateLevel = false
