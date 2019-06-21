@@ -1,3 +1,5 @@
+-- module
+
 local function utils_deepcopy(object)
     local lookup_table = {}
     local function _copy(object)

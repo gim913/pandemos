@@ -1,3 +1,5 @@
+-- module
+
 local LoadedFonts = {}
 
 local function fontManager_get(name)
