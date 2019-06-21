@@ -7,4 +7,9 @@ function Player:ctor(initPos)
 	self.base.ctor(self, initPos)
 end
 
+function Player:onAdd()
+	self.name = 'Player'
+	self:occupy()
+end
+
 return Player

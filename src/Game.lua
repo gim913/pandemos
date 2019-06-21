@@ -1,6 +1,7 @@
 -- imported modules
 local class = require 'engine.oop'
 local fontManager = require 'engine.fm'
+local entities = require 'engine.entities'
 local map = require 'engine.map'
 local Vec = require 'hump.vector'
 local Level = require 'Level'
@@ -34,6 +35,7 @@ function Game:ctor(rng)
 
 	local f = math.floor
 	local player = Player:new(Vec(f(map.width() / 2), map.height()-29))
+	entities.add(player)
 end
 
 function Game:startLevel()
