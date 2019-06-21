@@ -18,7 +18,12 @@ local function map_init(width, height)
 end
 
 local function map_get(x, y)
-	return mapdata.data[y*mapdata.width + x]
+	local t = mapdata.data[y * mapdata.width + x]
+	if t ~= nil then
+		return t
+	end
+
+	return (bit.bxor(x, y) % 3) * 16
 end
 
 local function map_width()

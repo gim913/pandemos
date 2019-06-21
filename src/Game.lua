@@ -1,9 +1,11 @@
 -- imported modules
 local class = require 'engine.oop'
-local fontManager = require 'engine.fm'
 local entities = require 'engine.entities'
+local fontManager = require 'engine.fm'
 local map = require 'engine.map'
 local Vec = require 'hump.vector'
+local batch = require 'batch'
+local Camera = require 'Camera'
 local Level = require 'Level'
 local Player = require 'Player'
 local S = require 'settings'
@@ -22,6 +24,8 @@ function Game:ctor(rng)
 	self.seed = 0
 	self.fatFont = fontManager.get(32)
 
+	self.at = love.graphics.newImage("player.png")
+
 	self.levels = {}
 	for depth = 1, S.game.DEPTH do
 		addLevel(self.levels, self.rng, depth)
@@ -30,6 +34,7 @@ function Game:ctor(rng)
 	self.depthLevel = 1
 	self.updateLevel = false
 
+	batch.prepare()
 	local level = self.levels[self.depthLevel]
 	map.init(level.w, level.h)
 
@@ -39,6 +44,9 @@ function Game:ctor(rng)
 
 	camera = Camera:new()
 	camera:follow(player)
+	camera:update()
+
+	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
 end
 
 function Game:startLevel()
@@ -57,14 +65,24 @@ function Game:update(dt)
 	end
 end
 
+local tileSize = 30
+
 function Game:show()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		local msg = love.graphics.newText(self.fatFont, "level generated")
-		love.graphics.setColor(0.0, 0.6, 0.0, 1.0)
-		love.graphics.draw(msg, (S.resolution.x - msg:getWidth()) / 2, (S.resolution.y - msg:getHeight()) / 2)
+		batch.draw()
+
+		love.graphics.setColor(0.25, 0.25, 0.25, 1.0)
+
+		local scaleFactor = tileSize / self.at:getWidth()
+		-- TODO: draw only entities in range
+		for _,ent in pairs(entities.all()) do
+			local rx = ent.pos.x - camera.pos.x + camera.rel.x
+			local ry = ent.pos.y - camera.pos.y + camera.rel.y
+			love.graphics.draw(self.at, rx * (tileSize + 1), ry * (tileSize + 1), 0, scaleFactor, scaleFactor)
+		end
 	end
 end
 
