@@ -42,7 +42,11 @@ local function map_known(idx)
 end
 
 local function map_isKnown(idx)
-	return true -- (mapdata.known[idx] == 1)
+	if S.game.debug.fog_of_war then
+		return mapdata.known[idx] == 1
+	else
+		return true
+	end
 end
 
 local map = {
