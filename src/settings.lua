@@ -7,7 +7,7 @@ return {
 		COLS = 128
 		, ROWS = 1024
 		, DEPTH = 1
-		, debug {
+		, debug = {
 			fog_of_war = false
 		}
 	}
