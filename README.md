@@ -1,5 +1,15 @@
 ## *dev does the complete roguelike toutorial
 
+### repo clone
+
+    git clone --recursive https://github.com/gim913/roguelike-complete-tutorial.git
+
+If you forgot to pass `--recursive`:
+
+    git submodule update --init
+
+### Table of contents
+
    * [Week 1](#week-1)
       * [World architecture](#world-architecture)
    * [Week 2](#week-2)
