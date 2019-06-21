@@ -36,6 +36,9 @@ function Game:ctor(rng)
 	local f = math.floor
 	local player = Player:new(Vec(f(map.width() / 2), map.height()-29))
 	entities.add(player)
+
+	camera = Camera:new()
+	camera:follow(player)
 end
 
 function Game:startLevel()
