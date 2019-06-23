@@ -17,6 +17,9 @@ local function handleInput(key)
 	if key == "escape" then
 		love.event.push("quit")
 	end
+	if game then
+		game:handleInput(key)
+	end
 end
 
 function love.keypressed(key)

@@ -13,6 +13,8 @@ local S = require 'settings'
 -- class
 local Game = class('Game')
 
+local player = nil
+
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
 	table.insert(levels, l)
@@ -39,7 +41,7 @@ function Game:ctor(rng)
 	map.init(level.w, level.h)
 
 	local f = math.floor
-	local player = Player:new(Vec(f(map.width() / 2), map.height()-29))
+	player = Player:new(Vec(f(map.width() / 2), map.height()-29))
 	entities.add(player)
 
 	camera = Camera:new()
@@ -47,6 +49,32 @@ function Game:ctor(rng)
 	camera:update()
 
 	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
+end
+
+function Game:handleInput(key)
+	local nextAct=action.Action.Blocked, nPos
+	if #(player.actions) == 0 then
+		if key == "up" or key == "kp8" then
+			nextAct,nPos = player:wantGo(Vec( 0,-1))
+		elseif key == "kp7" then
+			nextAct,nPos = player:wantGo(Vec(-1,-1))
+		elseif key == "kp9" then
+			nextAct,nPos = player:wantGo(Vec( 1,-1))
+		elseif key == "down" or key == "kp2" then
+			nextAct,nPos = player:wantGo(Vec( 0, 1))
+		elseif key == "kp1" then
+			nextAct,nPos = player:wantGo(Vec(-1, 1))
+		elseif key == "kp3" then
+			nextAct,nPos = player:wantGo(Vec( 1, 1))
+		elseif key == "left" or key == "kp4" then
+			nextAct,nPos = player:wantGo(Vec(-1, 0))
+		elseif key == "right" or key == "kp6" then
+			nextAct,nPos = player:wantGo(Vec( 1, 0))
+		elseif key == "." or key == "kp5" then
+			nextAct,nPos = player:wantGo(Vec( 0, 0))
+		end
+	end
+
 end
 
 function Game:startLevel()
