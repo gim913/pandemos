@@ -4,6 +4,7 @@ local class = require 'engine.oop'
 local entities = require 'engine.entities'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map'
+local utils = require 'engine.utils'
 local Vec = require 'hump.vector'
 local batch = require 'batch'
 local Camera = require 'Camera'
@@ -96,11 +97,47 @@ function Game:startLevel()
 	end
 end
 
+local Action_Step = 60
+local function processActions()
+	-- this is only justifiable place where .all() should be called
+	-- if entity has no 'actions', than probably it doesn't need to be
+	-- entity
+	for _,e in pairs(entities.all()) do
+		local progress = e.action.progress
+		if #e.actions ~= 0 then
+			local currentAction = e.actions[1]
+			if e.action.need == 0 then
+				--print ("SETTING TO: ", currentAction.time)
+				e.action.need = currentAction.time
+			end
+
+			progress = progress + Action_Step;
+			e.action.progress = progress
+			--print ('action progress:', progress, utils.repr(currentAction))
+
+			if progress >= e.action.need then
+				e.action.progress = e.action.progress - e.action.need
+				e.action.need = 0
+				e.actionState = currentAction.state
+				e.actionData = currentAction.val
+				--print ('action ended', currentAction.val.x, currentAction.val.y)
+				table.remove(e.actions, 1)
+				if (e == player) then
+					doActions = false
+				end
+			end
+		end
+	end
+end
+
 function Game:update(dt)
 	-- keep running level update, until level generation is done
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		self.updateLevel = level:update(dt)
+	elseif self.doActions then
+		processActions()
+
 	end
 end
 
