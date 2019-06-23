@@ -1,4 +1,5 @@
 -- imported modules
+local action = require 'engine.action'
 local class = require 'engine.oop'
 local entities = require 'engine.entities'
 local fontManager = require 'engine.fm'
@@ -35,6 +36,7 @@ function Game:ctor(rng)
 
 	self.depthLevel = 1
 	self.updateLevel = false
+	self.doActions = false
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
@@ -75,6 +77,15 @@ function Game:handleInput(key)
 		end
 	end
 
+	if nextAct ~= action.Action.Blocked then
+		print('action ', nextAct)
+		if nextAct == action.Action.Attack then
+			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
+		else
+			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
+		end
+		self.doActions = true
+	end
 end
 
 function Game:startLevel()
