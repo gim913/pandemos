@@ -46,15 +46,16 @@ function Game:ctor(rng)
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
 	map.init(level.w, level.h)
+	self.mapdata = map.getData()
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height()-29))
+	player = Player:new(Vec(f(map.width() / 2), map.height()-19))
 	entities.add(player)
 
 	camera = Camera:new()
 	camera:follow(player)
 	camera:update()
-	playerPosChanged()
+	--playerPosChanged()
 end
 
 function Game:handleInput(key)
@@ -159,7 +160,12 @@ function Game:update(dt)
 	-- keep running level update, until level generation is done
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
-		self.updateLevel = level:update(dt)
+		self.updateLevel = level:update(dt, self.mapdata)
+
+		-- temporary: update after updating the map
+		print('updating batch')
+		playerPosChanged()
+
 	elseif self.doActions then
 		processActions()
 

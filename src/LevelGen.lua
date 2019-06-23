@@ -12,7 +12,9 @@ function LevelGen:ctor(grid, depth, rng)
 end
 
 function LevelGen:update(dt)
-	self.grid:fill(function(i,j) return utils.randPercent(self.rng, 10) and 1 or 2 end)
+	self.grid:fill(function(x, y)
+		return math.floor(1 + love.math.noise(x / 10.0, y / 10.0) * 3)
+	end)
 	return true
 end
 

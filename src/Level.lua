@@ -33,12 +33,20 @@ function Level:initializeGenerator()
 	self.generator = LevelGen:new(self.grid, self.depth, self.rng)
 end
 
-function Level:update(_dt)
+function Level:update(_dt, mapdata)
 	if MODE_GENERATING_LEVEL == self.mode then
 		if self.generator:update(dt) then
 			self.mode = MODE_COPY_TO_GMAP
 		end
 	elseif MODE_COPY_TO_GMAP == self.mode then
+		-- todo: requires serious rework...
+		local idx = 0
+		for y = 0, self.h - 1 do
+			for x = 0, self.w - 1 do
+				mapdata.data[idx] = (self.grid:at(x, y) - 1) * 16
+				idx = idx + 1
+			end
+		end
 		self.mode = MODE_FINISHED
 	else
 		return false

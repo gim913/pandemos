@@ -23,7 +23,7 @@ local function map_get(x, y)
 		return t
 	end
 
-	return (bit.bxor(x, y) % 3) * 16
+	return (x + y) % 2
 end
 
 local function map_width()
@@ -35,7 +35,7 @@ local function map_height()
 end
 
 local function map_inside(pos)
-	return (pos.x>=0 and pos.x < mapdata.width and pos.y>=0 and pos.y < mapdata.height)
+	return (pos.x >=0 and pos.x < mapdata.width and pos.y >= 0 and pos.y < mapdata.height)
 end
 
 local function map_getData()
