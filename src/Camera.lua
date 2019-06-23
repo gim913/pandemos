@@ -37,6 +37,10 @@ function Camera:follow(entity)
 	end
 end
 
+function Camera:isFollowing(ent)
+	return (ent == self.followedEnt)
+end
+
 function Camera:update()
 	local VIS_RADIUS = S.game.VIS_RADIUS
 	local e = self.followedEnt

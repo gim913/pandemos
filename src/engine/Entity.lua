@@ -39,7 +39,7 @@ function Entity:unoccupy()
 	entities.unoccupy(idx, self.id)
 end
 
-function Entity:move(dx, dy)
+function Entity:move()
 	local nPos = self.actionData
 	self.actionData = nil
 

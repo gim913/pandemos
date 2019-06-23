@@ -24,7 +24,7 @@ function Player:wantGo(dir)
 		return action.Action.Blocked
 	end
 
-	print("OK new player position: ", nPos)
+	--print("OK new player position: ", nPos)
 	return action.Action.Move,nPos
 end
 

@@ -23,6 +23,10 @@ local function addLevel(levels, rng, depth)
 	return l
 end
 
+local function playerPosChanged()
+	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
+end
+
 function Game:ctor(rng)
 	self.rng = rng
 	self.seed = 0
@@ -50,8 +54,7 @@ function Game:ctor(rng)
 	camera = Camera:new()
 	camera:follow(player)
 	camera:update()
-
-	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
+	playerPosChanged()
 end
 
 function Game:handleInput(key)
@@ -79,7 +82,7 @@ function Game:handleInput(key)
 	end
 
 	if nextAct ~= action.Action.Blocked then
-		print('action ', nextAct)
+		--print('action ', nextAct)
 		if nextAct == action.Action.Attack then
 			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
 		else
@@ -103,7 +106,6 @@ local function processActions()
 	-- if entity has no 'actions', than probably it doesn't need to be
 	-- entity
 	for _,e in pairs(entities.all()) do
-		local progress = e.action.progress
 		if #e.actions ~= 0 then
 			local currentAction = e.actions[1]
 			if e.action.need == 0 then
@@ -111,13 +113,14 @@ local function processActions()
 				e.action.need = currentAction.time
 			end
 
-			progress = progress + Action_Step;
-			e.action.progress = progress
-			--print ('action progress:', progress, utils.repr(currentAction))
+			e.action.progress = e.action.progress + Action_Step
+			--print ('action progress:', e.action.progress, utils.repr(currentAction))
 
-			if progress >= e.action.need then
+			if e.action.progress >= e.action.need then
 				e.action.progress = e.action.progress - e.action.need
 				e.action.need = 0
+
+				-- finalize action
 				e.actionState = currentAction.state
 				e.actionData = currentAction.val
 				--print ('action ended', currentAction.val.x, currentAction.val.y)
@@ -130,6 +133,28 @@ local function processActions()
 	end
 end
 
+local updateTilesAfterMove = false
+-- returns true when there was any move
+-- will require some recalculations later
+local function processMoves()
+	local ret = false
+	for _,e in pairs(entities.all()) do
+		if e.actionState == action.Action.Move then
+			e:move()
+
+			-- reset action
+			e.actionState = action.Action.Idle
+
+			if camera:isFollowing(e) then
+				updateTilesAfterMove = true
+			end
+
+			ret = true
+		end
+	end
+	return ret
+end
+
 function Game:update(dt)
 	-- keep running level update, until level generation is done
 	if self.updateLevel then
@@ -138,6 +163,12 @@ function Game:update(dt)
 	elseif self.doActions then
 		processActions()
 
+		local movementDone = processMoves()
+		if updateTilesAfterMove then
+			camera:update()
+			playerPosChanged()
+			updateTilesAfterMove = false
+		end
 	end
 end
 
