@@ -8,7 +8,7 @@ local Action = {
 local Action_rev = nil
 
 function action_queue(tbl, time_needed, id, val)
-	local t = { time=time_needed, state=id, val=val }
+	local t = { time = time_needed, state = id, val = val }
 	tbl[#tbl + 1] = t
 end
 

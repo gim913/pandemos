@@ -6,6 +6,8 @@ local rng = nil
 local game = nil
 
 function love.load()
+	love.keyboard.setKeyRepeat(true)
+
 	love.window.setMode(S.resolution.x, S.resolution.y, { vsync=S.vsync })
 	rng = love.math.newRandomGenerator()
 

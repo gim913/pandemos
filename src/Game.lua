@@ -16,6 +16,7 @@ local S = require 'settings'
 local Game = class('Game')
 
 local player = nil
+local dummy = nil
 
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
@@ -53,6 +54,10 @@ function Game:ctor(rng)
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
+	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 15))
+	entities.add(dummy)
+	entities.addAttr(dummy, entities.Attr.Has_Move)
+
 	camera = Camera:new()
 	camera:follow(player)
 	camera:update()
@@ -83,6 +88,11 @@ function Game:handleInput(key)
 		end
 	end
 
+	-- todo: remove debug
+	if #(dummy.actions) == 0 then
+		action.queue(dummy.actions, 1500, action.Action.Move, dummy.pos + Vec(0, 1))
+	end
+
 	if nextAct ~= action.Action.Blocked then
 		--print('action ', nextAct)
 		if nextAct == action.Action.Attack then
@@ -111,12 +121,12 @@ local function processActions()
 		if #e.actions ~= 0 then
 			local currentAction = e.actions[1]
 			if e.action.need == 0 then
-				--print ("SETTING TO: ", currentAction.time)
+				--print ("SETTING TO: " .. currentAction.time)
 				e.action.need = currentAction.time
 			end
 
 			e.action.progress = e.action.progress + Action_Step
-			--print ('action progress:', e.action.progress, utils.repr(currentAction))
+			--print ('action progress: ' .. e.name .. " " .. e.action.progress .. " " .. utils.repr(currentAction))
 
 			if e.action.progress >= e.action.need then
 				e.action.progress = e.action.progress - e.action.need
@@ -125,14 +135,16 @@ local function processActions()
 				-- finalize action
 				e.actionState = currentAction.state
 				e.actionData = currentAction.val
-				--print ('action ended', currentAction.val.x, currentAction.val.y)
+				--print ('action ended ' .. currentAction.val.x .. "," .. currentAction.val.y)
 				table.remove(e.actions, 1)
 				if (e == player) then
-					doActions = false
+					return false
 				end
 			end
 		end
 	end
+
+	return true
 end
 
 local updateTilesAfterMove = false
@@ -168,7 +180,7 @@ function Game:update(dt)
 		playerPosChanged()
 
 	elseif self.doActions then
-		processActions()
+		self.doActions = processActions()
 
 		local movementDone = processMoves()
 		if updateTilesAfterMove then
