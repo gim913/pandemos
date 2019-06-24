@@ -9,6 +9,7 @@ Entity = class('Entity')
 
 function Entity:ctor(initPos)
 	self.pos = initPos
+	self.attrs = {}
 	-- self.id = nil
 
 	self:resetActions()

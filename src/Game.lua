@@ -49,8 +49,9 @@ function Game:ctor(rng)
 	self.mapdata = map.getData()
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height()-19))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 19))
 	entities.add(player)
+	entities.addAttr(player, entities.Attr.Has_Move)
 
 	camera = Camera:new()
 	camera:follow(player)
@@ -139,7 +140,7 @@ local updateTilesAfterMove = false
 -- will require some recalculations later
 local function processMoves()
 	local ret = false
-	for _,e in pairs(entities.all()) do
+	for _,e in pairs(entities.with(entities.Attr.Has_Move)) do
 		if e.actionState == action.Action.Move then
 			e:move()
 
