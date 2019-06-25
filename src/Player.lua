@@ -5,7 +5,7 @@ local Entity = require 'engine.Entity'
 local map = require 'engine.map'
 
 -- class
-Player = class('Player', Entity)
+local Player = class('Player', Entity)
 
 Player.Base_Speed=1200
 

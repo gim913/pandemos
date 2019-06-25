@@ -39,7 +39,7 @@ local function utils_repr(t)
 	return r
 end
 
-function utils_randPercent(rng, value)
+local function utils_randPercent(rng, value)
 	return rng:random(1, 100) - 1 < value
 end
 

@@ -5,7 +5,7 @@ local entities = require 'engine.entities'
 local map = require 'engine.map'
 
 -- class
-Entity = class('Entity')
+local Entity = class('Entity')
 
 function Entity:ctor(initPos)
 	self.pos = initPos

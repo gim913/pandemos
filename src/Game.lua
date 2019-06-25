@@ -2,6 +2,7 @@
 local action = require 'engine.action'
 local class = require 'engine.oop'
 local entities = require 'engine.entities'
+local Entity = require 'engine.Entity'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
@@ -50,12 +51,12 @@ function Game:ctor(rng)
 	self.mapdata = map.getData()
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 19))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
 	-- todo: remove dummy
-	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 15))
+	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 25))
 	entities.add(dummy)
 	entities.addAttr(dummy, entities.Attr.Has_Move)
 
