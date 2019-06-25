@@ -54,6 +54,7 @@ function Game:ctor(rng)
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
+	-- todo: remove dummy
 	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 15))
 	entities.add(dummy)
 	entities.addAttr(dummy, entities.Attr.Has_Move)
@@ -85,12 +86,24 @@ function Game:handleInput(key)
 			nextAct,nPos = player:wantGo(Vec( 1, 0))
 		elseif key == "." or key == "kp5" then
 			nextAct,nPos = player:wantGo(Vec( 0, 0))
+
+		-- todo: remove this
+		elseif key == "tab" then
+			if camera:isFollowing(player) then
+				camera:follow(dummy)
+			else
+				camera:follow(player)
+			end
+			camera:update()
+			playerPosChanged()
 		end
 	end
 
 	-- todo: remove debug
 	if #(dummy.actions) == 0 then
-		action.queue(dummy.actions, 1500, action.Action.Move, dummy.pos + Vec(0, 1))
+		if dummy.pos.y ~= map.height() - 1 then
+			action.queue(dummy.actions, 1500, action.Action.Move, dummy.pos + Vec(0, 1))
+		end
 	end
 
 	if nextAct ~= action.Action.Blocked then

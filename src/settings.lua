@@ -1,5 +1,5 @@
 return {
-	resolution = { x = 1152, y=864 }
+	resolution = { x = 840, y=800 }
 	, vsync = false
 
 	-- not meant to be modified
