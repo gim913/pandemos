@@ -7,6 +7,7 @@ local S = require 'settings'
 
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local Entity = require 'engine.Entity'
 local fontManager = require 'engine.fm'
