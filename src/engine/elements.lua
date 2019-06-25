@@ -42,9 +42,22 @@ local function elements_create(location)
 	return r
 end
 
+local function elements_getTileId(location)
+	if elements_location[location] then
+		-- always return first element...
+		return elements_location[location][1].tileId
+	end
+	return nil
+end
+
+local function elements_process()
+	-- nothing to do
+end
 
 local elements = {
 	create = elements_create
+	, process = elements_process
+	, getTileId = elements_getTileId
 }
 
 return elements

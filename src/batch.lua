@@ -1,5 +1,6 @@
 -- imported modules
 local map = require 'engine.map'
+local elements = require 'engine.elements'
 
 -- module
 
@@ -42,9 +43,17 @@ local function batch_update(ent, cx, cy)
 	--print("==========" .. xa .. " / " .. ya)
 
 	for y=0, tilesCount.y - 1 do
+		-- relative
+		local relativeIdx = (ya + y) * map.width() + xa
 		for x=0, tilesCount.x - 1 do
 			batchData:setColor(1.0, 1.0, 1.0)
 			batchData:add(tileQuads[map.get(xa + x, ya + y)], x * (tileSize + 1), y * (tileSize + 1), 0, scale, scale)
+
+			local e = elements.getTileId(relativeIdx)
+			if e ~= nil then
+				batchData:add(tileQuads[e], x * (tileSize + 1), y * (tileSize + 1), 0, scale, scale)
+			end
+			relativeIdx = relativeIdx + 1
 		end
 	end
 end

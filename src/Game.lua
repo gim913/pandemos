@@ -61,6 +61,11 @@ function Game:ctor(rng)
 	entities.add(dummy)
 	entities.addAttr(dummy, entities.Attr.Has_Move)
 
+	local elemPos = Vec(f(map.width() / 2 - 5), map.height() - 27)
+	local idx = elemPos.y * map.width() + elemPos.x
+	local go = elements.create(idx)
+	go:setTileId(3 * 16)
+
 	camera = Camera:new()
 	camera:follow(player)
 	camera:update()
@@ -198,6 +203,9 @@ function Game:update(dt)
 		self.doActions = processActions()
 
 		local movementDone = processMoves()
+
+		elements.process()
+
 		if updateTilesAfterMove then
 			camera:update()
 			playerPosChanged()
