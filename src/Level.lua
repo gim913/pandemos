@@ -1,9 +1,10 @@
 -- imported modules
-local class = require 'engine.oop'
-local fontManager = require 'engine.fm'
 local Grid = require 'Grid'
 local LevelGen = require 'LevelGen'
 local S = require 'settings'
+
+local class = require 'engine.oop'
+local fontManager = require 'engine.fm'
 
 -- class
 local Level = class('Level')

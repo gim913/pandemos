@@ -1,4 +1,10 @@
 -- imported modules
+local batch = require 'batch'
+local Camera = require 'Camera'
+local Level = require 'Level'
+local Player = require 'Player'
+local S = require 'settings'
+
 local action = require 'engine.action'
 local class = require 'engine.oop'
 local entities = require 'engine.entities'
@@ -7,11 +13,6 @@ local fontManager = require 'engine.fm'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
 local Vec = require 'hump.vector'
-local batch = require 'batch'
-local Camera = require 'Camera'
-local Level = require 'Level'
-local Player = require 'Player'
-local S = require 'settings'
 
 -- class
 local Game = class('Game')

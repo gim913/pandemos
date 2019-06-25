@@ -1,8 +1,9 @@
 -- imported modules
+local S = require 'settings'
+
 local class = require 'engine.oop'
 local map = require 'engine.map'
 local Vec = require 'hump.vector'
-local S = require 'settings'
 
 -- class
 local Camera = class('Camera')
