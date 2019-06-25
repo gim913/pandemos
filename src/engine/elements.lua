@@ -1,5 +1,6 @@
-local utils = require 'engine.utils'
+local action = require 'engine.action'
 local class = require 'engine.oop'
+local utils = require 'engine.utils'
 
 local Gobject = class('Gobject')
 
@@ -42,6 +43,13 @@ local function elements_create(location)
 	return r
 end
 
+local function elements_property(location)
+	if elements_location[location] then
+		return action.Action.Blocked
+	end
+	return nil
+end
+
 local function elements_getTileId(location)
 	if elements_location[location] then
 		-- always return first element...
@@ -56,8 +64,9 @@ end
 
 local elements = {
 	create = elements_create
-	, process = elements_process
+	, property = elements_property
 	, getTileId = elements_getTileId
+	, process = elements_process
 }
 
 return elements

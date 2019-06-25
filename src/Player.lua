@@ -1,6 +1,7 @@
 -- imported modules
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local elements = require 'engine.elements'
 local Entity = require 'engine.Entity'
 local map = require 'engine.map'
 
@@ -21,6 +22,13 @@ end
 function Player:wantGo(dir)
 	local nPos = self.pos + dir
 	if nPos.x < 0 or nPos.x == map.width() or nPos.y < 0 or nPos.y == map.height() then
+		return action.Action.Blocked
+	end
+
+	local location = nPos.y * map.width() + nPos.x
+
+	local prop = elements.property(location)
+	if prop == action.Action.Blocked then
 		return action.Action.Blocked
 	end
 
