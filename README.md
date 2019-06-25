@@ -46,3 +46,13 @@ Few globally accessible lists:
 (not sure about items yet, they might be elements)
 
 Both elements and entities have position and they can occupy same cell.
+
+### Week 2
+
+Week 2, part 2 deals with render, map and Entity - I got most of that done.
+I mentioned map will contain only tile info, blocking elements will
+be separately inside elements so time to do this.
+
+Part 3 deals with generating a dungeon. In my case this will be houses generation.
+I'm not sure yet if I should do some fancy procedural generator or rather just use some
+templates as mentioned in map prefabs.
