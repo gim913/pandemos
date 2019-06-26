@@ -49,6 +49,7 @@ local function batch_update(ent, cx, cy)
 			batchData:setColor(1.0, 1.0, 1.0)
 			batchData:add(tileQuads[map.get(xa + x, ya + y)], x * (tileSize + 1), y * (tileSize + 1), 0, scale, scale)
 
+			-- mind that these is accessing ONLY elements that are visible
 			local e = elements.getTileId(relativeIdx)
 			if e ~= nil then
 				batchData:add(tileQuads[e], x * (tileSize + 1), y * (tileSize + 1), 0, scale, scale)
