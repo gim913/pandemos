@@ -5,14 +5,21 @@ local S = require 'settings'
 
 local class = require 'engine.oop'
 local fontManager = require 'engine.fm'
+local map = require 'engine.map' -- todo: rething, I was hoping I'll be able to avoid importing it here
 
 -- class
 local Level = class('Level')
 
 local MODE_GENERATING_LEVEL = 1
 local MODE_COPY_TO_GMAP = 2
+local MODE_FIXUP = 3
 local MODE_FINISHED = 10
 
+local Tiles = {
+	Water = 16 * 0 + 0
+	, Earth = 16 * 1 + 0
+	, Grass = 16 * 2 + 0
+}
 function Level:ctor(rng, depth)
 	self.rng = rng
 	self.depth = depth
@@ -39,8 +46,8 @@ function Level:update(_dt, mapdata)
 		if self.generator:update(dt) then
 			self.mode = MODE_COPY_TO_GMAP
 		end
+
 	elseif MODE_COPY_TO_GMAP == self.mode then
-		-- todo: requires serious rework...
 		local idx = 0
 		for y = 0, self.h - 1 do
 			for x = 0, self.w - 1 do
@@ -48,6 +55,10 @@ function Level:update(_dt, mapdata)
 				idx = idx + 1
 			end
 		end
+		self.mode = MODE_FIXUP
+	elseif MODE_FIXUP == self.mode then
+		map.fixup(Tiles.Water, Tiles.Earth)
+		map.fixup(Tiles.Earth, Tiles.Grass)
 		self.mode = MODE_FINISHED
 	else
 		return false
