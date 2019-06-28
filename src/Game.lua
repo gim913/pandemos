@@ -77,7 +77,7 @@ local tileSize = 30
 local tileBorder = 1
 
 function Game:handleWheel(x, y)
-	S.game.VIS_RADIUS = math.max(12, math.min(34, S.game.VIS_RADIUS + y))
+	S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
 	tileSize = batch.recalc(S.game.VIS_RADIUS)
 	camera:follow(player)
