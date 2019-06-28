@@ -73,6 +73,20 @@ function Game:ctor(rng)
 	--playerPosChanged()
 end
 
+local tileSize = 30
+local tileBorder = 1
+
+function Game:handleWheel(x, y)
+	S.game.VIS_RADIUS = math.max(12, math.min(34, S.game.VIS_RADIUS + y))
+
+	tileSize = batch.recalc(S.game.VIS_RADIUS)
+	camera:follow(player)
+	camera:update()
+	playerPosChanged()
+
+	print(S.game.VIS_RADIUS)
+end
+
 function Game:handleInput(key)
 	local nextAct=action.Action.Blocked, nPos
 	if #(player.actions) == 0 then
@@ -207,6 +221,10 @@ function Game:update(dt)
 
 		elements.process()
 
+		-- if movementDone then
+		-- 	elements.refresh()
+		-- end
+
 		if updateTilesAfterMove then
 			camera:update()
 			playerPosChanged()
@@ -215,13 +233,15 @@ function Game:update(dt)
 	end
 end
 
-local tileSize = 30
-
 function Game:show()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
+		local font = love.graphics.getFont()
+		local msg = love.graphics.newText(font, "radius: "..S.game.VIS_RADIUS)
+		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 20)
+
 		batch.draw()
 
 		love.graphics.setColor(0.25, 0.25, 0.25, 1.0)
@@ -231,7 +251,7 @@ function Game:show()
 		for _,ent in pairs(entities.all()) do
 			local rx = ent.pos.x - camera.pos.x + camera.rel.x
 			local ry = ent.pos.y - camera.pos.y + camera.rel.y
-			love.graphics.draw(self.at, rx * (tileSize + 1), ry * (tileSize + 1), 0, scaleFactor, scaleFactor)
+			love.graphics.draw(self.at, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
 		end
 	end
 end

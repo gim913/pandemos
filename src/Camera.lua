@@ -26,7 +26,7 @@ function Camera:follow(entity)
 	elseif e.pos.x >= (map.width() - 1) - (VIS_RADIUS - Camera.Free_Offset) then
 		self.rel.x = e.pos.x + (2 * VIS_RADIUS + 1) - map.width()
 	else
-		self.rel.x = 12
+		self.rel.x = VIS_RADIUS
 	end
 
 	if e.pos.y <= (VIS_RADIUS - Camera.Free_Offset) then
@@ -34,7 +34,7 @@ function Camera:follow(entity)
 	elseif e.pos.y >= (map.height() - 1)-(VIS_RADIUS - Camera.Free_Offset) then
 		self.rel.y = e.pos.y + (2 * VIS_RADIUS + 1) - map.height()
 	else
-		self.rel.y = 12
+		self.rel.y = VIS_RADIUS
 	end
 end
 

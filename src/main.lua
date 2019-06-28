@@ -15,6 +15,12 @@ function love.load()
 	game:startLevel()
 end
 
+function love.wheelmoved(x, y)
+	if game then
+		game:handleWheel(x, y)
+	end
+end
+
 local function handleInput(key)
 	if key == "escape" then
 		love.event.push("quit")
