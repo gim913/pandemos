@@ -240,7 +240,10 @@ function Game:show()
 	else
 		local font = love.graphics.getFont()
 		local msg = love.graphics.newText(font, "radius: "..S.game.VIS_RADIUS)
-		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 20)
+		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 30)
+
+		msg = love.graphics.newText(font, "player: "..player.pos.x .. "," .. player.pos.y)
+		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 50)
 
 		batch.draw()
 

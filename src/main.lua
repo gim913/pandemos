@@ -10,6 +10,7 @@ function love.load()
 
 	love.window.setMode(S.resolution.x, S.resolution.y, { vsync=S.vsync })
 	rng = love.math.newRandomGenerator()
+	--rng = love.math.newRandomGenerator(love.timer.getTime())
 
 	game = Game:new(rng)
 	game:startLevel()
