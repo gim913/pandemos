@@ -6,7 +6,8 @@ local S = require 'settings'
 local mapdata = {
 	width = 0
 	, height = 0
-	, data = {}
+	, type = {} -- grass, earth, water
+	, tiles = {}
 	, known = {}
 }
 
@@ -14,16 +15,21 @@ local function map_init(width, height)
 	mapdata.width = width
 	mapdata.height = height
 	mapdata.data = {}
+	mapdata.tiles = {}
 	mapdata.known = {}
 end
 
-local function map_get(x, y)
-	local t = mapdata.data[y * mapdata.width + x]
+local function map_getTileId(x, y)
+	local t = mapdata.tiles[y * mapdata.width + x]
 	if t ~= nil then
 		return t
 	end
 
 	return (x + y) % 2
+end
+
+local function map_setTileId(idx, tileId)
+	mapdata.tiles[idx] = tileId
 end
 
 local function map_width()
@@ -38,10 +44,6 @@ local function map_inside(pos)
 	return (pos.x >=0 and pos.x < mapdata.width and pos.y >= 0 and pos.y < mapdata.height)
 end
 
-local function map_getData()
-	return mapdata
-end
-
 local function map_known(idx)
 	mapdata.known[idx] = 1
 end
@@ -54,12 +56,12 @@ local function map_isKnown(idx)
 	end
 end
 
-local function map_getBounded(f, x, y)
+local function map_getTileIdBounded(f, x, y)
 	if x < 0 or x >= mapdata.width or y < 0 or y >= mapdata.height then
 		return 0
 	end
 	local i = y * mapdata.width + x
-	if f(mapdata.data[i]) then
+	if f(mapdata.tiles[i]) then
 		return 1
 	end
 	return 0
@@ -68,18 +70,18 @@ end
 -- calculate 8-bit code for a cell, based on neighbours
 local function getCode(f, x,y)
 	return
-		map_getBounded(f,x-1,y-1) +
-		map_getBounded(f,x  ,y-1)*2 +
-		map_getBounded(f,x+1,y-1)*4 +
-		map_getBounded(f,x-1,y  )*8 +
-		map_getBounded(f,x+1,y  )*16 +
-		map_getBounded(f,x-1,y+1)*32 +
-		map_getBounded(f,x  ,y+1)*64 +
-		map_getBounded(f,x+1,y+1)*128
+		map_getTileIdBounded(f,x-1,y-1) +
+		map_getTileIdBounded(f,x  ,y-1)*2 +
+		map_getTileIdBounded(f,x+1,y-1)*4 +
+		map_getTileIdBounded(f,x-1,y  )*8 +
+		map_getTileIdBounded(f,x+1,y  )*16 +
+		map_getTileIdBounded(f,x-1,y+1)*32 +
+		map_getTileIdBounded(f,x  ,y+1)*64 +
+		map_getTileIdBounded(f,x+1,y+1)*128
 end
 
 
-local function map_fixup(y1, y2)
+local function map_fixupTiles(y1, y2)
 	-- magic code to tile mapping
 	local mapping = {
 		[0x0] = 0,
@@ -153,38 +155,37 @@ local function map_fixup(y1, y2)
 	-- end
 	-- outp:close()
 
-	local newMapData={}
+	local mapTiles ={}
 	for y = 0, mapdata.height - 1 do
 		for x = 0, mapdata.width - 1 do
 			local i = y * mapdata.width + x
-			if (mapdata.data[i] == y1) then
+			if (mapdata.tiles[i] == y1) then
 				local v = getCode(function(code) return code == y2 end, x, y)
 				if mapping[v] ~= nil then
-					newMapData[i] = y1 + mapping[v]
+					mapTiles[i] = y1 + mapping[v]
 				else
-					newMapData[i] = y1 --+ mapping[v]
+					mapTiles[i] = y1
 				end
 			else
-				newMapData[i] = mapdata.data[i]
+				mapTiles[i] = mapdata.tiles[i]
 			end
 		end
 	end
 
-	mapdata.data = newMapData
+	mapdata.tiles = mapTiles
 end
 
 local map = {
 	init = map_init
-	, get = map_get
+	, getTileId = map_getTileId
+	, setTileId = map_setTileId
+	, fixupTiles = map_fixupTiles
 	, width = map_width
 	, height = map_height
 	, inside = map_inside
-	, getData  = map_getData
 
 	, known = map_known
 	, isKnown = map_isKnown
-
-	, fixup = map_fixup
 }
 
 return map

@@ -50,7 +50,6 @@ function Game:ctor(rng)
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
 	map.init(level.w, level.h)
-	self.mapdata = map.getData()
 
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
@@ -210,7 +209,7 @@ function Game:update(dt)
 	-- keep running level update, until level generation is done
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
-		self.updateLevel = level:update(dt, self.mapdata)
+		self.updateLevel = level:update(dt)
 
 		-- temporary: update after updating the map
 		print('updating batch')

@@ -62,7 +62,7 @@ local function batch_update(ent, cx, cy)
 		local relativeIdx = (ya + y) * map.width() + xa
 		for x=0, tilesCount.x - 1 do
 			batchData:setColor(1.0, 1.0, 1.0)
-			batchData:add(tileQuads[map.get(xa + x, ya + y)], x * (tileSize + tileBorder), y * (tileSize + tileBorder), 0, scale, scale)
+			batchData:add(tileQuads[map.getTileId(xa + x, ya + y)], x * (tileSize + tileBorder), y * (tileSize + tileBorder), 0, scale, scale)
 
 			-- mind that these is accessing ONLY elements that are visible
 			local e = elements.getTileId(relativeIdx)
