@@ -4,6 +4,7 @@ local LevelGen = require 'LevelGen'
 local S = require 'settings'
 
 local class = require 'engine.oop'
+local elements = require 'engine.elements'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map' -- todo: rething, I was hoping I'll be able to avoid importing it here
 
@@ -22,6 +23,10 @@ local Tiles = {
 	Water = 16 * 0 + 0
 	, Earth = 16 * 1 + 0
 	, Grass = 16 * 2 + 0
+	, House_Wall = 16 * 2 + 1
+	, House_Temporary = 16 * 3 + 1
+	, House_Door = 16 * 4 + 0
+	, House_Window = 16 * 4 + 1
 }
 function Level:ctor(rng, depth)
 	self.rng = rng
@@ -44,21 +49,102 @@ function Level:initializeGenerator()
 	self.generator = LevelGen:new(self.grid, self.depth, self.rng)
 end
 
+local House_Mapping = {
+	[0x10] = Tiles.House_Temporary -- bed
+	, [0x17] = Tiles.House_Wall
+	, [0x27] = Tiles.House_Temporary
+	, [0x2C] = Tiles.House_Window -- garage door
+	, [0x37] = Tiles.House_Door
+}
 local House_W = 32
 local House_H = 32
-local function addHouse(filename, grid, sx, sy)
+local function loadHouse(filename, grid)
 	local file = io.open('src/' .. filename, 'rb')
 	local data = file:read(House_H * House_W)
 	local house = ffi.cast('uint8_t*', data)
 
-	print('adding house at ' .. sx .. "," .. sy)
 	local i = 0
-	for y = 1, House_H do
-		for x = 1, House_W do
+	for y = 0, House_H - 1 do
+		for x = 0, House_W - 1 do
 			if house[i] ~= 0 then
-				grid:set(sx + x - 1, sy + y - 1, house[i] + 1)
+				grid:set(x, y, House_Mapping[house[i]])
 			end
 			i = i + 1
+		end
+	end
+end
+
+local mapping = {
+	-- neighbour twos
+	[64 + 8] = 1,
+	[8 + 2] = 2,
+	[2 + 16] = 3,
+	[16 + 64] = 4,
+
+	-- ones
+	[64] = 5,
+	[2] = 5,
+	[8] = 6,
+	[16] = 6,
+
+	-- simple twos
+	[64 + 2] = 5,
+	[8 + 16] = 6,
+
+	--
+	[64 + 2 + 16] = 8,
+	[64 + 2 +  8] = 9,
+	[8 + 16 + 2] = 10,
+	[8 + 16 +  64] = 11,
+
+	-- four
+	[64 + 8 + 16 + 2] = 7
+}
+
+local function grid_getBounded(grid, f, x, y)
+	if x < 0 or x >= grid.w or y < 0 or y >= grid.h then
+		return 0
+	end
+	if f(grid:at(x, y)) then
+		return 1
+	end
+	return 0
+end
+
+local function getCode4(grid, f, x, y)
+	return
+		grid_getBounded(grid, f,x  ,y-1)*2 +
+		grid_getBounded(grid, f,x-1,y  )*8 +
+		grid_getBounded(grid, f,x+1,y  )*16 +
+		grid_getBounded(grid, f,x  ,y+1)*64
+end
+
+function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
+	for y = 0, grid.h - 1 do
+		local idx = (sy + y) * self.w + sx
+		for x = 0, grid.w - 1 do
+			if (grid:at(x, y) == Tiles.House_Wall) then
+				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
+				local gobj = elements.create(idx)
+				print((sx + x) .. "," .. (sy + y) .. " : ")
+				gobj:setTileId(Tiles.House_Wall - 1 + mapping[v])
+				gobj:setOpaque(true)
+
+			elseif (grid:at(x, y) == Tiles.House_Window) then
+				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
+				local gobj = elements.create(idx)
+				print((sx + x) .. "," .. (sy + y) .. " : ")
+				gobj:setTileId(Tiles.House_Window - 1 + mapping[v])
+				--gobj:setSmash() - later
+			elseif (grid:at(x, y) == Tiles.House_Temporary) then
+				local gobj = elements.create(idx)
+				gobj:setTileId(Tiles.House_Temporary)
+			elseif (grid:at(x, y) == Tiles.House_Door) then
+				local gobj = elements.create(idx)
+				gobj:setTileId(Tiles.House_Door)
+			end
+
+			idx = idx + 1
 		end
 	end
 end
@@ -84,21 +170,11 @@ function Level:update(_dt)
 		self.mode = MODE_HOUSES
 
 	elseif MODE_HOUSES == self.mode then
-		self.grid:fill(0)
+		local houseGrid = Grid:new({ w = House_W, h = House_H })
+		loadHouse('houses/house001.bin', houseGrid)
 		local houseX = map.width() / 2 - 16
-		local houseY = map.height() - 29 - 10 - 32
-		addHouse('houses/house001.bin', self.grid, houseX, houseY)
-
-		local idx = 0
-		for y = 0, self.h - 1 do
-			for x = 0, self.w - 1 do
-				local v = self.grid:at(x, y)
-				if v ~= 0 then
-					map.setTileId(idx, v)
-				end
-				idx = idx + 1
-			end
-		end
+		local houseY = map.height() - 29 - 10 - 40
+		houseGrid = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
 		self.mode = MODE_FINISHED
 	else
 		return false
