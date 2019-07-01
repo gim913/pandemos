@@ -7,12 +7,15 @@ local class = require 'engine.oop'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map' -- todo: rething, I was hoping I'll be able to avoid importing it here
 
+local ffi = require 'ffi'
+
 -- class
 local Level = class('Level')
 
 local MODE_GENERATING_LEVEL = 1
 local MODE_COPY_TO_GMAP = 2
 local MODE_FIXUP = 3
+local MODE_HOUSES = 4
 local MODE_FINISHED = 10
 
 local Tiles = {
@@ -41,6 +44,25 @@ function Level:initializeGenerator()
 	self.generator = LevelGen:new(self.grid, self.depth, self.rng)
 end
 
+local House_W = 32
+local House_H = 32
+local function addHouse(filename, grid, sx, sy)
+	local file = io.open('src/' .. filename, 'rb')
+	local data = file:read(House_H * House_W)
+	local house = ffi.cast('uint8_t*', data)
+
+	print('adding house at ' .. sx .. "," .. sy)
+	local i = 0
+	for y = 1, House_H do
+		for x = 1, House_W do
+			if house[i] ~= 0 then
+				grid:set(sx + x - 1, sy + y - 1, house[i] + 1)
+			end
+			i = i + 1
+		end
+	end
+end
+
 function Level:update(_dt)
 	if MODE_GENERATING_LEVEL == self.mode then
 		if self.generator:update(dt) then
@@ -59,6 +81,24 @@ function Level:update(_dt)
 	elseif MODE_FIXUP == self.mode then
 		map.fixupTiles(Tiles.Water, Tiles.Earth)
 		map.fixupTiles(Tiles.Earth, Tiles.Grass)
+		self.mode = MODE_HOUSES
+
+	elseif MODE_HOUSES == self.mode then
+		self.grid:fill(0)
+		local houseX = map.width() / 2 - 16
+		local houseY = map.height() - 29 - 10 - 32
+		addHouse('houses/house001.bin', self.grid, houseX, houseY)
+
+		local idx = 0
+		for y = 0, self.h - 1 do
+			for x = 0, self.w - 1 do
+				local v = self.grid:at(x, y)
+				if v ~= 0 then
+					map.setTileId(idx, v)
+				end
+				idx = idx + 1
+			end
+		end
 		self.mode = MODE_FINISHED
 	else
 		return false
