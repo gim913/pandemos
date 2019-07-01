@@ -31,12 +31,12 @@ local function playerPosChanged()
 	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
 end
 
+local Entity_Tile_Size = 32
+
 function Game:ctor(rng)
 	self.rng = rng
 	self.seed = 0
 	self.fatFont = fontManager.get(32)
-
-	self.at = love.graphics.newImage("player.png")
 
 	self.levels = {}
 	for depth = 1, S.game.DEPTH do
@@ -54,11 +54,13 @@ function Game:ctor(rng)
 
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
+	player.img = love.graphics.newImage("player.png")
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
 	-- todo: remove dummy
 	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 25))
+	dummy.img = love.graphics.newImage("evilturtle.png")
 	entities.add(dummy)
 	entities.addAttr(dummy, entities.Attr.Has_Move)
 
@@ -247,14 +249,14 @@ function Game:show()
 
 		batch.draw()
 
-		love.graphics.setColor(0.25, 0.25, 0.25, 1.0)
+		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 
-		local scaleFactor = tileSize / self.at:getWidth()
+		local scaleFactor = tileSize / Entity_Tile_Size
 		-- TODO: draw only entities in range
 		for _,ent in pairs(entities.all()) do
 			local rx = ent.pos.x - camera.pos.x + camera.rel.x
 			local ry = ent.pos.y - camera.pos.y + camera.rel.y
-			love.graphics.draw(self.at, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
+			love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
 		end
 	end
 end

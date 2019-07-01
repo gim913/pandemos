@@ -56,3 +56,9 @@ be separately inside elements so time to do this.
 Part 3 deals with generating a dungeon. In my case this will be houses generation.
 I'm not sure yet if I should do some fancy procedural generator or rather just use some
 templates as mentioned in map prefabs.
+
+I spent some time doing tiles beautification. It doesn't work perfectly, but it's pretty neat.
+I got river and a bridge.
+
+Now it would probably make sense not to let player allow walking on the river,
+but I'll have to redo how data kept by map is kept (separate property 'passable' from tileId)
