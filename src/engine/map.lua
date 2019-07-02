@@ -6,7 +6,6 @@ local S = require 'settings'
 local mapdata = {
 	width = 0
 	, height = 0
-	, type = {} -- grass, earth, water
 	, tiles = {}
 	, known = {}
 }
@@ -14,8 +13,8 @@ local mapdata = {
 local function map_init(width, height)
 	mapdata.width = width
 	mapdata.height = height
-	mapdata.data = {}
 	mapdata.tiles = {}
+	mapdata.noPass = {}
 	mapdata.known = {}
 end
 
@@ -32,29 +31,6 @@ local function map_setTileId(idx, tileId)
 	mapdata.tiles[idx] = tileId
 end
 
-local function map_width()
-	return mapdata.width
-end
-
-local function map_height()
-	return mapdata.height
-end
-
-local function map_inside(pos)
-	return (pos.x >=0 and pos.x < mapdata.width and pos.y >= 0 and pos.y < mapdata.height)
-end
-
-local function map_known(idx)
-	mapdata.known[idx] = 1
-end
-
-local function map_isKnown(idx)
-	if S.game.debug and S.game.debug.fog_of_war then
-		return mapdata.known[idx] == 1
-	else
-		return true
-	end
-end
 
 local function map_getTileIdBounded(f, x, y)
 	if x < 0 or x >= mapdata.width or y < 0 or y >= mapdata.height then
@@ -175,6 +151,39 @@ local function map_fixupTiles(y1, y2)
 	mapdata.tiles = mapTiles
 end
 
+local function map_width()
+	return mapdata.width
+end
+
+local function map_height()
+	return mapdata.height
+end
+
+local function map_inside(pos)
+	return (pos.x >=0 and pos.x < mapdata.width and pos.y >= 0 and pos.y < mapdata.height)
+end
+
+local function map_known(idx)
+	mapdata.known[idx] = 1
+end
+
+local function map_isKnown(idx)
+	if S.game.debug and S.game.debug.fog_of_war then
+		return mapdata.known[idx] == 1
+	else
+		return true
+	end
+end
+
+local function map_setPassable(idx, value)
+	-- store reverse for easier comparison later
+	mapdata.noPass[idx] = not value
+end
+
+local function map_notPassable(idx)
+	return mapdata.noPass[idx]
+end
+
 local map = {
 	init = map_init
 	, getTileId = map_getTileId
@@ -186,6 +195,8 @@ local map = {
 
 	, known = map_known
 	, isKnown = map_isKnown
+	, setPassable = map_setPassable
+	, notPassable = map_notPassable
 }
 
 return map

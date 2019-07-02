@@ -24,6 +24,7 @@ local Tiles = {
 	, Earth = 16 * 1 + 0
 	, Grass = 16 * 2 + 0
 	, House_Wall = 16 * 2 + 1
+	, Bridge = 16 * 3 + 0
 	, House_Temporary = 16 * 3 + 1
 	, House_Door = 16 * 4 + 0
 	, House_Window = 16 * 4 + 1
@@ -129,7 +130,6 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 				print((sx + x) .. "," .. (sy + y) .. " : ")
 				gobj:setTileId(Tiles.House_Wall - 1 + mapping[v])
 				gobj:setOpaque(true)
-
 			elseif (grid:at(x, y) == Tiles.House_Window) then
 				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
 				local gobj = elements.create(idx)
@@ -149,6 +149,10 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 	end
 end
 
+local function isPassable(tileId)
+	return Tiles.Water ~= tileId
+end
+
 function Level:update(_dt)
 	if MODE_GENERATING_LEVEL == self.mode then
 		if self.generator:update(dt) then
@@ -159,7 +163,9 @@ function Level:update(_dt)
 		local idx = 0
 		for y = 0, self.h - 1 do
 			for x = 0, self.w - 1 do
-				map.setTileId(idx, (self.grid:at(x, y) - 1) * 16)
+				local tileId = (self.grid:at(x, y) - 1) * 16
+				map.setTileId(idx, tileId)
+				map.setPassable(idx, isPassable(tileId))
 				idx = idx + 1
 			end
 		end

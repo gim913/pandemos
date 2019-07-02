@@ -1,6 +1,7 @@
 -- imported modules
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local map = require 'engine.map'
 
@@ -38,6 +39,26 @@ end
 function Entity:unoccupy()
 	local idx = self.pos.y * map.width() + self.pos.x
 	entities.unoccupy(idx, self.id)
+end
+
+function Entity:wantGo(dir)
+	local nPos = self.pos + dir
+	if nPos.x < 0 or nPos.x == map.width() or nPos.y < 0 or nPos.y == map.height() then
+		return action.Action.Blocked
+	end
+
+	local location = nPos.y * map.width() + nPos.x
+	if map.notPassable(location) then
+		return action.Action.Blocked
+	end
+
+	local prop = elements.property(location)
+	if prop == action.Action.Blocked then
+		return action.Action.Blocked
+	end
+
+	--print("OK new player position: ", nPos)
+	return action.Action.Move,nPos
 end
 
 function Entity:move()

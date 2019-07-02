@@ -12,6 +12,9 @@ function LevelGen:ctor(grid, depth, rng)
 	self.rng = rng
 end
 
+-- 1 - river
+-- 2,3 - earth, grass
+-- 4 - bridge
 local f = math.floor
 function LevelGen:update(dt)
 	-- fill with grass and ground
