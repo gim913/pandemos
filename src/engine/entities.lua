@@ -42,7 +42,8 @@ local entities = {
 	, all = entities_all
 	, with = entities_with
 	, Attr = {
-		Has_Move = 4
+		Has_Fov = 2
+		, Has_Move = 4
 	}
 }
 

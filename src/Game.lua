@@ -19,13 +19,22 @@ local Vec = require 'hump.vector'
 local Game = class('Game')
 
 local player = nil
-local Max_Dummies = 20
+local Max_Dummies = 100
 local dummies = {}
 
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
 	table.insert(levels, l)
 	return l
+end
+
+local function processPlayerFov()
+	local time1 = love.timer.getTime()
+	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+		e:recalcVisMap()
+	end
+	local time2 = love.timer.getTime()
+	print(string.format('fov took %.5f ms', (time2 - time1) * 1000))
 end
 
 local function playerPosChanged()
@@ -57,6 +66,7 @@ function Game:ctor(rng)
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
 	player.img = love.graphics.newImage("player.png")
 	entities.add(player)
+	entities.addAttr(player, entities.Attr.Has_Fov)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
 	-- todo: get rid of dummies later
@@ -68,6 +78,7 @@ function Game:ctor(rng)
 		local dummy = Entity:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
 		dummy.img = evilTurtleImg
 		entities.add(dummy)
+		entities.addAttr(dummy, entities.Attr.Has_Fov)
 		entities.addAttr(dummy, entities.Attr.Has_Move)
 
 		table.insert(dummies, dummy)
@@ -218,9 +229,15 @@ function Game:update(dt)
 		local level = self.levels[self.depthLevel]
 		self.updateLevel = level:update(dt)
 
-		-- temporary: update after updating the map
-		print('updating batch')
-		playerPosChanged()
+		-- update after updating the map
+		if not self.updateLevel then
+			-- recalc player fov, after map is generated
+			processPlayerFov()
+
+			-- update batch
+			print('updating batch')
+			playerPosChanged()
+		end
 
 	elseif self.doActions then
 		self.doActions = processActions()
@@ -235,6 +252,10 @@ function Game:update(dt)
 
 		if updateTilesAfterMove then
 			camera:update()
+
+			-- TODO: XXX: TODO: IMPORTANT: probably wrong location
+			processPlayerFov()
+
 			playerPosChanged()
 			updateTilesAfterMove = false
 		end
