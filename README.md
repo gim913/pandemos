@@ -66,3 +66,7 @@ but I'll have to redo how data kept by map is kept (separate property 'passable'
 ### Week 3
 
 I'm a bit behind the schedule when it comes to world generation.
+
+things done:
+ * allow to enter the house by adding element:setPassable()
+ * spawn some dummies

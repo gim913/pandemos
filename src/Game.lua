@@ -19,7 +19,8 @@ local Vec = require 'hump.vector'
 local Game = class('Game')
 
 local player = nil
-local dummy = nil
+local Max_Dummies = 20
+local dummies = {}
 
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
@@ -32,6 +33,7 @@ local function playerPosChanged()
 end
 
 local Entity_Tile_Size = 32
+local evilTurtleImg
 
 function Game:ctor(rng)
 	self.rng = rng
@@ -52,16 +54,24 @@ function Game:ctor(rng)
 	map.init(level.w, level.h)
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
 	player.img = love.graphics.newImage("player.png")
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
-	-- todo: remove dummy
-	dummy = Entity:new(Vec(f(map.width() / 2 - 10), map.height() - 25))
-	dummy.img = love.graphics.newImage("evilturtle.png")
-	entities.add(dummy)
-	entities.addAttr(dummy, entities.Attr.Has_Move)
+	-- todo: get rid of dummies later
+
+	evilTurtleImg = love.graphics.newImage("evilturtle.png")
+	for i = 1, Max_Dummies do
+		local rx = self.rng:random(-15, 15)
+		local ry = self.rng:random(0, 30)
+		local dummy = Entity:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
+		dummy.img = evilTurtleImg
+		entities.add(dummy)
+		entities.addAttr(dummy, entities.Attr.Has_Move)
+
+		table.insert(dummies, dummy)
+	end
 
 	local elemPos = Vec(f(map.width() / 2 - 5), map.height() - 27)
 	local idx = elemPos.y * map.width() + elemPos.x
@@ -71,6 +81,8 @@ function Game:ctor(rng)
 	camera = Camera:new()
 	camera:follow(player)
 	camera:update()
+
+	cameraIdx = 0
 	--playerPosChanged()
 end
 
@@ -112,20 +124,15 @@ function Game:handleInput(key)
 
 		-- todo: remove this
 		elseif key == "tab" then
-			if camera:isFollowing(player) then
-				camera:follow(dummy)
-			else
+			if cameraIdx == Max_Dummies then
 				camera:follow(player)
+				cameraIdx = 0
+			else
+				cameraIdx = cameraIdx + 1
+				camera:follow(dummies[cameraIdx])
 			end
 			camera:update()
 			playerPosChanged()
-		end
-	end
-
-	-- todo: remove debug
-	if #(dummy.actions) == 0 then
-		if dummy.pos.y ~= map.height() - 1 then
-			action.queue(dummy.actions, 1500, action.Action.Move, dummy.pos + Vec(0, 1))
 		end
 	end
 
@@ -239,12 +246,9 @@ function Game:show()
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		local font = love.graphics.getFont()
-		local msg = love.graphics.newText(font, "radius: "..S.game.VIS_RADIUS)
-		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 30)
-
-		msg = love.graphics.newText(font, "player: "..player.pos.x .. "," .. player.pos.y)
-		love.graphics.draw(msg, S.resolution.x - msg:getWidth() - 10, 50)
+		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 100 - 10, 30)
+		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 100 - 10, 50)
+		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 100 - 10, 70)
 
 		batch.draw()
 
