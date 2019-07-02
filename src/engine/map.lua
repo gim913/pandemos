@@ -184,6 +184,10 @@ local function map_notPassable(idx)
 	return mapdata.noPass[idx]
 end
 
+local function map_notPassLight(idx)
+	return false
+end
+
 local map = {
 	init = map_init
 	, getTileId = map_getTileId
@@ -197,6 +201,7 @@ local map = {
 	, isKnown = map_isKnown
 	, setPassable = map_setPassable
 	, notPassable = map_notPassable
+	, notPassLight = map_notPassLight
 }
 
 return map

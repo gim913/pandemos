@@ -70,11 +70,20 @@ local function elements_process()
 	-- nothing to do
 end
 
+local function elements_notPassLight(idx)
+	if elements_location[idx] and elements_location[idx][1].opaque then
+		return true
+	end
+	return false
+end
+
 local elements = {
 	create = elements_create
 	, property = elements_property
 	, getTileId = elements_getTileId
 	, process = elements_process
+
+	, notPassLight = elements_notPassLight
 }
 
 return elements
