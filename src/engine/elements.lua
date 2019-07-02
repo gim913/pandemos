@@ -21,6 +21,10 @@ function Gobject:setOpaque(b)
 	self.opaque = b
 end
 
+function Gobject:setPassable(b)
+	self.passable = b
+end
+
 -- -- -- -- --
 
 local elements_data = {}
@@ -45,6 +49,10 @@ end
 
 local function elements_property(location)
 	if elements_location[location] then
+		-- not sure what to do with this, check only first element
+		if elements_location[location][1].passable then
+			return nil
+		end
 		return action.Action.Blocked
 	end
 	return nil

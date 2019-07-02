@@ -62,3 +62,7 @@ I got river and a bridge.
 
 Now it would probably make sense not to let player allow walking on the river,
 but I'll have to redo how data kept by map is kept (separate property 'passable' from tileId)
+
+### Week 3
+
+I'm a bit behind the schedule when it comes to world generation.

@@ -142,6 +142,7 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 			elseif (grid:at(x, y) == Tiles.House_Door) then
 				local gobj = elements.create(idx)
 				gobj:setTileId(Tiles.House_Door)
+				gobj:setPassable(true)
 			end
 
 			idx = idx + 1
