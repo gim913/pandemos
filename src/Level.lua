@@ -127,13 +127,11 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 			if (grid:at(x, y) == Tiles.House_Wall) then
 				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
 				local gobj = elements.create(idx)
-				print((sx + x) .. "," .. (sy + y) .. " : ")
 				gobj:setTileId(Tiles.House_Wall - 1 + mapping[v])
 				gobj:setOpaque(true)
 			elseif (grid:at(x, y) == Tiles.House_Window) then
 				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
 				local gobj = elements.create(idx)
-				print((sx + x) .. "," .. (sy + y) .. " : ")
 				gobj:setTileId(Tiles.House_Window - 1 + mapping[v])
 				--gobj:setSmash() - later
 			elseif (grid:at(x, y) == Tiles.House_Temporary) then

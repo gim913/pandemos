@@ -1,3 +1,6 @@
+-- imported modules
+local action = require 'engine.action'
+
 -- module
 
 local entities_data = {}
@@ -34,6 +37,15 @@ local function entities_with(attr)
 	return entities_with_attrs[attr]
 end
 
+local function entities_check(idx, actor)
+	if entities_location[idx] then
+		local entId = entities_location[idx]
+		local ent = entities_data[entId]
+
+		return action.Action.Blocked
+	end
+end
+
 local entities = {
 	add = entities_add
 	, addAttr = entities_addAttr
@@ -41,6 +53,8 @@ local entities = {
 	, unoccupy = entities_unoccupy
 	, all = entities_all
 	, with = entities_with
+	, check = entities_check
+
 	, Attr = {
 		Has_Fov = 2
 		, Has_Move = 4

@@ -19,7 +19,7 @@ local Vec = require 'hump.vector'
 local Game = class('Game')
 
 local player = nil
-local Max_Dummies = 3
+local Max_Dummies = 5
 local dummies = {}
 
 local function addLevel(levels, rng, depth)
@@ -66,7 +66,7 @@ function Game:ctor(rng)
 	map.init(level.w, level.h)
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 49))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
 	player.img = love.graphics.newImage("player.png")
 	player.losRadius = 15
 	player.seeDist = 15
@@ -86,6 +86,7 @@ function Game:ctor(rng)
 		entities.add(dummy)
 		entities.addAttr(dummy, entities.Attr.Has_Fov)
 		entities.addAttr(dummy, entities.Attr.Has_Move)
+		dummy:occupy()
 
 		table.insert(dummies, dummy)
 	end
@@ -113,8 +114,6 @@ function Game:handleWheel(x, y)
 	camera:follow(player)
 	camera:update()
 	playerPosChanged()
-
-	print(S.game.VIS_RADIUS)
 end
 
 function Game:handleInput(key)
@@ -122,16 +121,8 @@ function Game:handleInput(key)
 	if #(player.actions) == 0 then
 		if key == "up" or key == "kp8" then
 			nextAct,nPos = player:wantGo(Vec( 0,-1))
-		elseif key == "kp7" then
-			nextAct,nPos = player:wantGo(Vec(-1,-1))
-		elseif key == "kp9" then
-			nextAct,nPos = player:wantGo(Vec( 1,-1))
 		elseif key == "down" or key == "kp2" then
 			nextAct,nPos = player:wantGo(Vec( 0, 1))
-		elseif key == "kp1" then
-			nextAct,nPos = player:wantGo(Vec(-1, 1))
-		elseif key == "kp3" then
-			nextAct,nPos = player:wantGo(Vec( 1, 1))
 		elseif key == "left" or key == "kp4" then
 			nextAct,nPos = player:wantGo(Vec(-1, 0))
 		elseif key == "right" or key == "kp6" then
@@ -172,6 +163,7 @@ function Game:startLevel()
 	end
 end
 
+local g_gameTime = 0
 local Action_Step = 60
 local function processActions()
 	-- this is only justifiable place where .all() should be called
@@ -190,6 +182,11 @@ local function processActions()
 
 			if e.action.progress >= e.action.need then
 				e.action.progress = e.action.progress - e.action.need
+				-- debug
+				if (e == player) then
+					g_gameTime = g_gameTime + e.action.need
+				end
+				-- end debug
 				e.action.need = 0
 
 				-- finalize action
@@ -198,6 +195,7 @@ local function processActions()
 				--print ('action ended ' .. currentAction.val.x .. "," .. currentAction.val.y)
 				table.remove(e.actions, 1)
 				if (e == player) then
+					g_gameTime = g_gameTime + e.action.need
 					return false
 				end
 			end
@@ -273,9 +271,10 @@ function Game:show()
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 100 - 10, 30)
-		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 100 - 10, 50)
-		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 100 - 10, 70)
+		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
+		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
+		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
+		love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 90)
 
 		batch.draw()
 

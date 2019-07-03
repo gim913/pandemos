@@ -50,6 +50,7 @@ end
 
 function Entity:occupy()
 	local idx = self.pos.y * map.width() + self.pos.x
+	print('entity ' .. self.name .. ' is occupying ' .. idx)
 	entities.occupy(idx, self.id)
 end
 
@@ -83,6 +84,12 @@ function Entity:move()
 	self.actionData = nil
 
 	local dir = nPos - self.pos
+	local idx = nPos.y * map.width() + nPos.x
+	local entProperty = entities.check(idx, self)
+	if entProperty then
+		print('entities.check() returned ' .. entProperty)
+		return false
+	end
 
 	self:unoccupy()
 	self.pos = nPos
