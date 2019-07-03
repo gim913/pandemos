@@ -7,18 +7,36 @@ local entities_data = {}
 local entities_location = {}
 local entities_with_attrs = {}
 
-local function entities_add(ent)
-	table.insert(entities_data, ent)
-	ent:setId(#entities_data)
-	ent:onAdd()
-end
-
 local function entities_addAttr(ent, attr)
 	if not entities_with_attrs[attr] then
 		entities_with_attrs[attr] = {}
 	end
 	entities_with_attrs[attr][ent.id] = ent
 	ent.attrs[attr] = true
+end
+
+local function entities_clearAttrs(ent)
+	for k,_ in pairs(entities_with_attrs) do
+		entities_with_attrs[k][ent.id] = nil
+	end
+end
+
+local function entities_add(ent)
+	table.insert(entities_data, ent)
+	ent:setId(#entities_data)
+	ent:onAdd()
+end
+
+local function entities_del(ent)
+	for k, e in pairs(entities_location) do
+		if e == ent then
+			entities_location[k] = nil
+			break
+		end
+	end
+	entities_data[ent.id] = nil
+	entities_clearAttrs(ent)
+	--ent:onDel()
 end
 
 local function entities_occupy(idx, entId)
@@ -52,11 +70,12 @@ local function entities_check(idx, actor)
 end
 
 local function entities_attack(who, whom)
-	print(who.name .. ' hits ' .. whom.name)
+	whom:takeHit(who:getDamage())
 end
 
 local entities = {
 	add = entities_add
+	, del = entities_del
 	, addAttr = entities_addAttr
 	, occupy = entities_occupy
 	, unoccupy = entities_unoccupy

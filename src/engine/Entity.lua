@@ -30,6 +30,8 @@ function Entity:ctor(initPos)
 	self.losRadius = 10
 	-- self.id = nil
 
+	self.life = 100
+
 	self:resetActions()
 end
 
@@ -61,6 +63,24 @@ end
 
 function Entity:reactionTowards(other)
 	return -1
+end
+
+function Entity:getDamage()
+	return 10
+end
+
+function Entity:takeHit(dmg)
+	print(self.name .. ' is taking '..dmg..' damage')
+	self.life = self.life - dmg
+
+	if self.life <= 0 then
+		self:die()
+	end
+end
+
+function Entity:die()
+	self:unoccupy()
+	entities.del(self)
 end
 
 function Entity:wantGo(dir)
