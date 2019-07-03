@@ -59,7 +59,12 @@ function Entity:unoccupy()
 	entities.unoccupy(idx, self.id)
 end
 
+function Entity:reactionTowards(other)
+	return -1
+end
+
 function Entity:wantGo(dir)
+	-- check map
 	local nPos = self.pos + dir
 	if nPos.x < 0 or nPos.x == map.width() or nPos.y < 0 or nPos.y == map.height() then
 		return action.Action.Blocked
@@ -70,6 +75,17 @@ function Entity:wantGo(dir)
 		return action.Action.Blocked
 	end
 
+	-- check entities
+	local entProp = entities.check(location, self)
+	if entProp == action.Action.Blocked then
+		print('entProp blocked')
+		return action.Action.Blocked
+	elseif entProp == action.Action.Attack then
+		print('entProp attack')
+		return action.Action.Attack, nPos
+	end
+
+	-- check elements
 	local prop = elements.property(location)
 	if prop == action.Action.Blocked then
 		return action.Action.Blocked
@@ -86,8 +102,11 @@ function Entity:move()
 	local dir = nPos - self.pos
 	local idx = nPos.y * map.width() + nPos.x
 	local entProperty = entities.check(idx, self)
-	if entProperty then
-		print('entities.check() returned ' .. entProperty)
+	if action.Action.Attack == entProperty then
+		-- if we're here, it means npc moved onto the field before us, there are few options:
+		--  * do nothing (current)
+		--  * shift enemy further and move the player
+		--  * attack - probably not fair, cause move speed might be != attack speed
 		return false
 	end
 
@@ -97,6 +116,22 @@ function Entity:move()
 
 	self.doRecalc = true
 	return true
+end
+
+function Entity:attack()
+	local nPos = self.actionData
+	self.actionData = nil
+
+	local idx = nPos.y * map.width() + nPos.x
+	local entProp, ent = entities.check(idx, self)
+	if entProp == action.Action.Attack then
+		entities.attack(self, ent)
+		self.doRecalc = true
+		return 0,0
+	end
+
+	self.doRecalc = true
+	return 0,0
 end
 
 function Entity:recalcVisMap()

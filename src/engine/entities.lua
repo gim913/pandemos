@@ -42,8 +42,17 @@ local function entities_check(idx, actor)
 		local entId = entities_location[idx]
 		local ent = entities_data[entId]
 
+		-- hmm probably should be other way around actor:reactionTowards(ent)...
+		if ent:reactionTowards(actor) < 0 then
+			return action.Action.Attack,ent
+		end
+
 		return action.Action.Blocked
 	end
+end
+
+local function entities_attack(who, whom)
+	print(who.name .. ' hits ' .. whom.name)
 end
 
 local entities = {
@@ -54,10 +63,12 @@ local entities = {
 	, all = entities_all
 	, with = entities_with
 	, check = entities_check
+	, attack = entities_attack
 
 	, Attr = {
-		Has_Fov = 2
-		, Has_Move = 4
+		Has_Fov = 1
+		, Has_Move = 2
+		, Has_Attack = 3
 	}
 }
 

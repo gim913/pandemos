@@ -74,6 +74,7 @@ function Game:ctor(rng)
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Fov)
 	entities.addAttr(player, entities.Attr.Has_Move)
+	entities.addAttr(player, entities.Attr.Has_Attack)
 
 	-- TODO: get rid of dummies later
 
@@ -227,6 +228,24 @@ local function processMoves()
 	return ret
 end
 
+local function processAttacks()
+	local ret = false
+	for _,e in pairs(entities.with(entities.Attr.Has_Attack)) do
+		if e.actionState == action.Action.Attack then
+			print('processing attack')
+			e:attack(0, 0)
+			e.actionState = action.Action.Idle
+
+			if camera:isFollowing(e) then
+				updateTilesAfterMove = true
+			end
+
+			ret = true
+		end
+	end
+	return ret
+end
+
 function Game:update(dt)
 	-- keep running level update, until level generation is done
 	if self.updateLevel then
@@ -247,6 +266,7 @@ function Game:update(dt)
 		self.doActions = processActions()
 
 		local movementDone = processMoves()
+		processAttacks()
 
 		elements.process()
 
