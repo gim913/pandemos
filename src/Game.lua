@@ -19,7 +19,7 @@ local Vec = require 'hump.vector'
 local Game = class('Game')
 
 local player = nil
-local Max_Dummies = 100
+local Max_Dummies = 3
 local dummies = {}
 
 local function addLevel(levels, rng, depth)
@@ -33,8 +33,11 @@ local function processPlayerFov()
 	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
 		e:recalcVisMap()
 	end
+	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+		e:recalcSeeMap()
+	end
 	local time2 = love.timer.getTime()
-	print(string.format('fov took %.5f ms', (time2 - time1) * 1000))
+	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
 end
 
 local function playerPosChanged()
@@ -63,13 +66,16 @@ function Game:ctor(rng)
 	map.init(level.w, level.h)
 
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 49))
 	player.img = love.graphics.newImage("player.png")
+	player.losRadius = 15
+	player.seeDist = 15
+
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Fov)
 	entities.addAttr(player, entities.Attr.Has_Move)
 
-	-- todo: get rid of dummies later
+	-- TODO: get rid of dummies later
 
 	evilTurtleImg = love.graphics.newImage("evilturtle.png")
 	for i = 1, Max_Dummies do
@@ -133,7 +139,7 @@ function Game:handleInput(key)
 		elseif key == "." or key == "kp5" then
 			nextAct,nPos = player:wantGo(Vec( 0, 0))
 
-		-- todo: remove this
+		-- TODO: remove this before releasing ^^
 		elseif key == "tab" then
 			if cameraIdx == Max_Dummies then
 				camera:follow(player)
@@ -276,11 +282,13 @@ function Game:show()
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 
 		local scaleFactor = tileSize / Entity_Tile_Size
-		-- TODO: draw only entities in range
 		for _,ent in pairs(entities.all()) do
 			local rx = ent.pos.x - camera.pos.x + camera.rel.x
 			local ry = ent.pos.y - camera.pos.y + camera.rel.y
-			love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
+
+			if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
+				love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
+			end
 		end
 	end
 end

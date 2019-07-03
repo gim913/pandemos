@@ -9,13 +9,25 @@ local map = require 'engine.map'
 -- class
 local Entity = class('Entity')
 
+-- max LoS radius, modify if required
+-- every entity must have los below this value
+local Max_Los_Radius = 24
+
+local Max_Los_Radius_2 = Max_Los_Radius * Max_Los_Radius
+local sqrt = math.sqrt
+
 function Entity:ctor(initPos)
 	self.pos = initPos
 	self.attrs = {}
 
 	self.doRecalc = true
-	self.seeDist = 5
 	self.vismap = {}
+	self.seemap = {}
+
+	-- those two probably should not differ, so it might make sense
+	-- to turn them into single var later
+	self.seeDist = 10
+	self.losRadius = 10
 	-- self.id = nil
 
 	self:resetActions()
@@ -76,6 +88,7 @@ function Entity:move()
 	self.pos = nPos
 	self:occupy()
 
+	self.doRecalc = true
 	return true
 end
 
@@ -84,7 +97,9 @@ function Entity:recalcVisMap()
 		return
 	end
 
-	local r = 10 --Vis_Radius - 1
+	--print('calc' .. self.name)
+
+	local r = self.losRadius
 	local r2 = r*r
 
 	local idx = self.pos.y * map.width() + self.pos.x
@@ -98,11 +113,48 @@ function Entity:recalcVisMap()
 	los.calcVismapSquare(self.pos, self.vismap, 1, -1, r2)
 
 	-- TODO: this is wrong
-	for k,v in pairs(self.vismap) do
-		if v > 0 then
-			map.known(k)
+	-- for k,v in pairs(self.vismap) do
+	-- 	if v > 0 then
+	-- 		map.known(k)
+	-- 	end
+	-- end
+end
+
+-- NOTE: seemap only contains ents in seeDist range, not all ents
+function Entity:checkEntVis(oth, dist)
+	if dist <= self.seeDist then
+		if not self.seemap[oth] then
+			local idx = oth.pos.y * map.width() + oth.pos.x
+			--print('log: vis '.. tostring(self.pos) .. " " .. tostring(oth.pos) .. " " .. idx .. " : " .. self.vismap[idx])
+			if self.vismap[idx] and self.vismap[idx] > 0 then
+				self.seemap[oth] = 1
+			end
+		end
+	else
+		if self.seemap[oth] then
+			self.seemap[oth] = nil
 		end
 	end
+end
+
+function Entity:recalcSeeMap()
+	if not self.doRecalc then
+		return
+	end
+
+	-- TODO: should there be some Attr?
+	for _,e in pairs(entities.all()) do
+		if e ~= self then
+			local d2 = (e.pos - self.pos):len2()
+			if d2 < Max_Los_Radius_2 then
+				local d = sqrt(d2)
+				self:checkEntVis(e, d)
+				e:checkEntVis(self, d)
+			end
+		end
+	end
+
+	self.doRecalc = false
 end
 
 return Entity

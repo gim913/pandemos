@@ -6,7 +6,7 @@ local S = require 'settings'
 local class = require 'engine.oop'
 local elements = require 'engine.elements'
 local fontManager = require 'engine.fm'
-local map = require 'engine.map' -- todo: rething, I was hoping I'll be able to avoid importing it here
+local map = require 'engine.map'
 
 local ffi = require 'ffi'
 

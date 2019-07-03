@@ -5,6 +5,8 @@ local Vec = require 'hump.vector'
 
 -- module
 
+local Max_Distance = 30
+
 local function checkVisibility(shadowObjects, pt, initialPos)
 	local Seg = pt - initialPos
 
@@ -31,7 +33,7 @@ local function checkVisibility(shadowObjects, pt, initialPos)
 	return 1
 end
 
--- todo: add parameter for max-d
+-- TODO: add parameter for max-d
 local function calcVismapSquare(pos, vismap, incX, incY, r2)
 	local s = pos:clone()
 
@@ -40,7 +42,7 @@ local function calcVismapSquare(pos, vismap, incX, incY, r2)
 
 	local shadowObjects = {}
 	local f = math.floor
-	for d=1, 15 do
+	for d = 1, Max_Distance do
 		local cur = Vec(s.x, s.y + incY*d)
 		for i=0, f(d / 2) do
 			if map.inside(cur) and (cur - s):len2() < r2 then
@@ -61,7 +63,7 @@ local function calcVismapSquare(pos, vismap, incX, incY, r2)
 	-- end
 
 	shadowObjects={}
-	for d=1, 15 do
+	for d = 1, Max_Distance do
 		local cur = Vec(s.x + incX * f(d / 2), s.y + incY * (d - f(d / 2)))
 
 		for i=f(d / 2), d do
