@@ -13,6 +13,8 @@ If you forgot to pass `--recursive`:
    * [Week 1](#week-1)
       * [World architecture](#world-architecture)
    * [Week 2](#week-2)
+   * [Week 3](#week-3)
+   * [Week 4](#week-4)
 
 ### Week 1
 
@@ -31,9 +33,7 @@ I don't have exact idea what roguelike it will be, but there are two things I wa
  * mechanics *might* be similar to posession, where player needs to switch to new characters
    to progress - not sure about this one yet
 
-some random ideas:
- * (remotely activated) traps, mines
- * granades
+some random ideas moved to todo.md
 
 #### World architecture
 
@@ -73,3 +73,6 @@ things done:
  * FOV + LOS
  * bumping onto enemies, giving some dummy damage, die()
  * fog of war
+
+
+### Week 4
