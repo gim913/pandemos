@@ -15,8 +15,8 @@ local Level = class('Level')
 
 local MODE_GENERATING_LEVEL = 1
 local MODE_COPY_TO_GMAP = 2
-local MODE_FIXUP = 3
-local MODE_HOUSES = 4
+local MODE_HOUSES = 3
+local MODE_FIXUP = 4
 local MODE_FINISHED = 10
 
 local Tiles = {
@@ -26,8 +26,13 @@ local Tiles = {
 	, House_Wall = 16 * 2 + 1
 	, Bridge = 16 * 3 + 0
 	, House_Temporary = 16 * 3 + 1
-	, House_Door = 16 * 4 + 0
+	, House_Floor = 16 * 3 + 3
 	, House_Window = 16 * 4 + 1
+	, House_Door = 16 * 5 + 0
+	, House_Door_V1 = 16 * 5 + 0
+	, House_Door_V2 = 16 * 5 + 1
+	, House_Door_H1 = 16 * 5 + 2
+	, House_Door_H2 = 16 * 5 + 3
 }
 function Level:ctor(rng, depth)
 	self.rng = rng
@@ -121,6 +126,22 @@ local function getCode4(grid, f, x, y)
 end
 
 function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
+	local minX = grid.w - 1
+	local maxX = 0
+	local minY = grid.h - 1
+	local maxY = 0
+
+	for y = 0, grid.h - 1 do
+		for x = 0, grid.w - 1 do
+			if grid:at(x, y) ~= 0 then
+				minX = math.min(minX, x)
+				maxX = math.max(maxX, x)
+				minY = math.min(minY, y)
+				maxY = math.max(maxY, y)
+			end
+		end
+	end
+
 	for y = 0, grid.h - 1 do
 		local idx = (sy + y) * self.w + sx
 		for x = 0, grid.w - 1 do
@@ -139,13 +160,20 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 				gobj:setTileId(Tiles.House_Temporary)
 			elseif (grid:at(x, y) == Tiles.House_Door) then
 				local gobj = elements.create(idx)
-				gobj:setTileId(Tiles.House_Door)
+				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window) end, x, y)
+				if 64 + 2 == v then
+					gobj:setTileId(Tiles.House_Door_V2)
+				else
+					gobj:setTileId(Tiles.House_Door_H2)
+				end
 				gobj:setPassable(true)
 			end
 
 			idx = idx + 1
 		end
 	end
+
+	return minX, maxX, minY, maxY
 end
 
 local function isPassable(tileId)
@@ -168,19 +196,43 @@ function Level:update(_dt)
 				idx = idx + 1
 			end
 		end
-		self.mode = MODE_FIXUP
-	elseif MODE_FIXUP == self.mode then
-		map.fixupTiles(Tiles.Water, Tiles.Earth)
-		map.fixupTiles(Tiles.Earth, Tiles.Grass)
 		self.mode = MODE_HOUSES
 
 	elseif MODE_HOUSES == self.mode then
 		local houseGrid = Grid:new({ w = House_W, h = House_H })
 		loadHouse('houses/house001.bin', houseGrid)
-		local houseX = map.width() / 2 - 16
+		local houseX = map.width() / 2 - 12
 		local houseY = map.height() - 29 - 10 - 40
-		houseGrid = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
+		minX, maxX, minY, maxY = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
+
+		-- make floor under whole house
+		for y = houseY + minY, houseY + maxY do
+			for x = houseX + minX, houseX + maxX do
+				local idx = y * map.width() + x
+				map.setTileId(idx, Tiles.House_Floor)
+			end
+		end
+
+		local houseGrid = Grid:new({ w = House_W, h = House_H })
+		loadHouse('houses/house004.bin', houseGrid)
+		local houseX = map.width() / 2 + 12
+		local houseY = map.height() - 29 - 10 - 40
+		minX, maxX, minY, maxY = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
+		self.mode = MODE_FIXUP
+
+		-- make floor under whole house
+		for y = houseY + minY, houseY + maxY do
+			for x = houseX + minX, houseX + maxX do
+				local idx = y * map.width() + x
+				map.setTileId(idx, Tiles.House_Floor)
+			end
+		end
+
+	elseif MODE_FIXUP == self.mode then
+		map.fixupTiles(Tiles.Water, Tiles.Earth)
+		map.fixupTiles(Tiles.Earth, Tiles.Grass)
 		self.mode = MODE_FINISHED
+
 	else
 		return false
 	end
