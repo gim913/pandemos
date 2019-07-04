@@ -28,7 +28,7 @@ local function addLevel(levels, rng, depth)
 	return l
 end
 
-local function processPlayerFov()
+local function processEntitiesFov()
 	local time1 = love.timer.getTime()
 	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
 		e:recalcVisMap()
@@ -38,6 +38,13 @@ local function processPlayerFov()
 	end
 	local time2 = love.timer.getTime()
 	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
+
+	-- updated fog-of-war
+	for k,v in pairs(player.vismap) do
+		if v > 0 then
+			map.known(k)
+		end
+	end
 end
 
 local function updateTiles()
@@ -265,7 +272,7 @@ function Game:update(dt)
 		-- update after updating the map
 		if not self.updateLevel then
 			-- recalc player fov, after map is generated
-			processPlayerFov()
+			processEntitiesFov()
 
 			-- update batch
 			print('updating batch')
@@ -288,7 +295,7 @@ function Game:update(dt)
 			camera:update()
 
 			-- TODO: XXX: TODO: IMPORTANT: probably wrong location
-			processPlayerFov()
+			processEntitiesFov()
 
 			updateTiles()
 			updateTilesAfterMove = false

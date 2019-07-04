@@ -173,13 +173,6 @@ function Entity:recalcVisMap()
 	los.calcVismapSquare(self.pos, self.vismap, -1, -1, r2)
 	los.calcVismapSquare(self.pos, self.vismap, 1,  1, r2)
 	los.calcVismapSquare(self.pos, self.vismap, 1, -1, r2)
-
-	-- TODO: this is wrong
-	-- for k,v in pairs(self.vismap) do
-	-- 	if v > 0 then
-	-- 		map.known(k)
-	-- 	end
-	-- end
 end
 
 -- NOTE: seemap only contains ents in seeDist range, not all ents

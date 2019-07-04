@@ -71,6 +71,8 @@ local function batch_update(ent, cx, cy)
 				local vismap = ent.vismap
 				if vismap[idx] and vismap[idx] > 0 then
 					batchData:setColor(1.0, 1.0, 1.0)
+				elseif map.isKnown(idx) then
+					batchData:setColor(0.5, 0.5, 0.5)
 				else
 					batchData:setColor(0.1, 0.1, 0.1)
 				end
