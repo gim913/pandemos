@@ -72,3 +72,4 @@ things done:
  * spawn some dummies
  * FOV + LOS
  * bumping onto enemies, giving some dummy damage, die()
+ * fog of war
