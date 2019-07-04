@@ -70,3 +70,5 @@ I'm a bit behind the schedule when it comes to world generation.
 things done:
  * allow to enter the house by adding element:setPassable()
  * spawn some dummies
+ * FOV + LOS
+ * bumping onto enemies, giving some dummy damage, die()
