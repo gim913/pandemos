@@ -1,8 +1,12 @@
 -- imported modules
-local map = require 'engine.map'
 local elements = require 'engine.elements'
+local map = require 'engine.map'
+local utils = require 'engine.utils'
 
 -- module
+
+local debug = {}
+local batch_debug = utils.createGetterSetter(debug)
 
 local tileSize = 30
 local tilesCount = { x = 25, y = 25 }
@@ -52,6 +56,8 @@ local function batch_update(ent, cx, cy)
 	local ya = cy
 	--print("==========" .. xa .. " / " .. ya)
 
+	batchData:setColor(1.0, 1.0, 1.0)
+
 	for y=0, tilesCount.y - 1 do
 		-- this might happen when zooming out
 		if ya + y > map.height() then
@@ -61,11 +67,13 @@ local function batch_update(ent, cx, cy)
 		-- relative
 		local idx = (ya + y) * map.width() + xa
 		for x=0, tilesCount.x - 1 do
-			local vismap = ent.vismap
-			if vismap[idx] and vismap[idx] > 0 then
-				batchData:setColor(1.0, 1.0, 1.0)
-			else
-				batchData:setColor(0.1, 0.1, 0.1)
+			if not debug.disableVismap then
+				local vismap = ent.vismap
+				if vismap[idx] and vismap[idx] > 0 then
+					batchData:setColor(1.0, 1.0, 1.0)
+				else
+					batchData:setColor(0.1, 0.1, 0.1)
+				end
 			end
 
 			batchData:add(tileQuads[map.getTileId(xa + x, ya + y)], x * (tileSize + tileBorder), y * (tileSize + tileBorder), 0, scale, scale)
@@ -89,6 +97,7 @@ local batch = {
 	, update = batch_update
 	, draw = batch_draw
 	, recalc = batch_recalc
+	, debug = batch_debug
 }
 
 return batch

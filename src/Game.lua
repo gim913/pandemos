@@ -40,7 +40,7 @@ local function processPlayerFov()
 	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
 end
 
-local function playerPosChanged()
+local function updateTiles()
 	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
 end
 
@@ -102,7 +102,7 @@ function Game:ctor(rng)
 	camera:update()
 
 	cameraIdx = 0
-	--playerPosChanged()
+	--updateTiles()
 end
 
 local tileSize = 30
@@ -114,11 +114,21 @@ function Game:handleWheel(x, y)
 	tileSize = batch.recalc(S.game.VIS_RADIUS)
 	camera:follow(player)
 	camera:update()
-	playerPosChanged()
+	updateTiles()
 end
 
 function Game:handleInput(key)
 	local nextAct=action.Action.Blocked, nPos
+
+	if love.keyboard.isDown('lctrl') then
+		if key == "1" then
+			-- toggle flag
+			current = batch.debug('disableVismap') or false
+			batch.debug({ disableVismap = not current })
+			updateTiles()
+		end
+	end
+
 	if #(player.actions) == 0 then
 		if key == "up" or key == "kp8" then
 			nextAct,nPos = player:wantGo(Vec( 0,-1))
@@ -141,7 +151,7 @@ function Game:handleInput(key)
 				camera:follow(dummies[cameraIdx])
 			end
 			camera:update()
-			playerPosChanged()
+			updateTiles()
 		end
 	end
 
@@ -259,7 +269,7 @@ function Game:update(dt)
 
 			-- update batch
 			print('updating batch')
-			playerPosChanged()
+			updateTiles()
 		end
 
 	elseif self.doActions then
@@ -280,7 +290,7 @@ function Game:update(dt)
 			-- TODO: XXX: TODO: IMPORTANT: probably wrong location
 			processPlayerFov()
 
-			playerPosChanged()
+			updateTiles()
 			updateTilesAfterMove = false
 		end
 	end
