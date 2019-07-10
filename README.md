@@ -76,3 +76,17 @@ things done:
 
 
 ### Week 4
+
+Last week went pretty good. There are small issues with entities display, that I need to check.
+Plan for this week:
+ * add in-game debug console - srsly, I need to see what's happening, logging things on a console is less than optimal
+ * add a-star - plan the path towards goal
+ * add mouse support (want to let the player entity to use a-star)
+ * enemy movement
+  * use a-star (go towards player or nearby location)
+  * queue actions - wild idea action queue items replacement - i.e. in the middle of move, but if hit by player, could replace action with strike-back (and proper action points progress) - not sure if good idea
+ * add "scenes" / scene-manager - to handle initial menu -> game transition + keyboard, display etc.
+ * some basic in-game UI:
+  * inventory
+  * modal/non-modal dialogs - not sure if needed
+  * "voice" messages
