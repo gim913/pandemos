@@ -19,7 +19,12 @@ local function map_init(width, height)
 end
 
 local function map_getTileId(x, y)
-	local t = mapdata.tiles[y * mapdata.width + x]
+	local t
+	if y ~= nil then
+		t = mapdata.tiles[y * mapdata.width + x]
+	else
+		t = mapdata.tiles[x]
+	end
 	if t ~= nil then
 		return t
 	end

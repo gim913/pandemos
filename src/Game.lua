@@ -4,6 +4,7 @@ local Camera = require 'Camera'
 local Level = require 'Level'
 local Player = require 'Player'
 local S = require 'settings'
+local Tiles = require 'Tiles'
 
 local action = require 'engine.action'
 local class = require 'engine.oop'
@@ -18,9 +19,18 @@ local Vec = require 'hump.vector'
 -- class
 local Game = class('Game')
 
+local f = math.floor
+
 local player = nil
 local Max_Dummies = 5
 local dummies = {}
+
+local minimapData = nil
+local minimapImg = nil
+local function updateMinimap()
+	minimapImg = love.graphics.newImage(minimapData)
+	minimapImg:setFilter("nearest", "nearest")
+end
 
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
@@ -40,11 +50,30 @@ local function processEntitiesFov()
 	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
 
 	-- updated fog-of-war
+
 	for k,v in pairs(player.vismap) do
 		if v > 0 then
 			map.known(k)
+			local tileId = map.getTileId(k)
+			local r,g,b = 25,25,25
+			if tileId >= Tiles.Water and tileId < Tiles.Earth then
+				r,g,b = 0x4c, 0x9a, 0xec
+			elseif tileId >= Tiles.Earth and tileId < Tiles.Grass then
+				r,g,b = 0x3c, 0x18, 0x00
+			elseif tileId >= Tiles.Grass and tileId < Tiles.Bridge then
+				r,g,b = 0x08, 0x7c, 0x00
+			elseif tileId == Tiles.Bridge then
+				r,g,b = 0x78, 0x3c, 0x00
+			else
+				r,g,b = 64, 64, 64
+			end
+
+			local x = f(k % map.width())
+			local y = f(k / map.width())
+			minimapData:setPixel(x, y, r / 255.0, g / 255.0, b / 255.0, 1.0)
 		end
 	end
+	updateMinimap()
 end
 
 local function updateTiles()
@@ -71,6 +100,12 @@ function Game:ctor(rng)
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
 	map.init(level.w, level.h)
+
+	minimapData = love.image.newImageData(level.w, level.h)
+	minimapData:mapPixel(function(x, y, r, g, b, a)
+		return 0.1, 0.1, 0.1, 1.0
+	end)
+	updateMinimap()
 
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
@@ -326,6 +361,10 @@ function Game:show()
 				love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
 			end
 		end
+
+		local scale = S.resolution.y / minimapImg:getHeight()
+		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+		love.graphics.draw(minimapImg, 900 + 10, 0, 0, 1, scale)
 	end
 end
 

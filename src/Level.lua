@@ -2,6 +2,7 @@
 local Grid = require 'Grid'
 local LevelGen = require 'LevelGen'
 local S = require 'settings'
+local Tiles = require 'Tiles'
 
 local class = require 'engine.oop'
 local elements = require 'engine.elements'
@@ -19,21 +20,6 @@ local MODE_HOUSES = 3
 local MODE_FIXUP = 4
 local MODE_FINISHED = 10
 
-local Tiles = {
-	Water = 16 * 0 + 0
-	, Earth = 16 * 1 + 0
-	, Grass = 16 * 2 + 0
-	, House_Wall = 16 * 2 + 1
-	, Bridge = 16 * 3 + 0
-	, House_Temporary = 16 * 3 + 1
-	, House_Floor = 16 * 3 + 3
-	, House_Window = 16 * 4 + 1
-	, House_Door = 16 * 5 + 0
-	, House_Door_V1 = 16 * 5 + 0
-	, House_Door_V2 = 16 * 5 + 1
-	, House_Door_H1 = 16 * 5 + 2
-	, House_Door_H2 = 16 * 5 + 3
-}
 function Level:ctor(rng, depth)
 	self.rng = rng
 	self.depth = depth
