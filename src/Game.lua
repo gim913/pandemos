@@ -14,6 +14,8 @@ local Entity = require 'engine.Entity'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
+
+local gamestate = require 'hump.gamestate'
 local Vec = require 'hump.vector'
 
 -- class
@@ -150,7 +152,7 @@ end
 local tileSize = 30
 local tileBorder = 1
 
-function Game:handleWheel(x, y)
+function Game:wheelmoved(x, y)
 	S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
 	tileSize = batch.recalc(S.game.VIS_RADIUS)
@@ -159,8 +161,12 @@ function Game:handleWheel(x, y)
 	updateTiles()
 end
 
-function Game:handleInput(key)
+function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
+
+	if 'escape' == key then
+		gamestate.pop()
+	end
 
 	if love.keyboard.isDown('lctrl') then
 		if key == "1" then
@@ -338,7 +344,7 @@ function Game:update(dt)
 	end
 end
 
-function Game:show()
+function Game:draw()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		level:show()
