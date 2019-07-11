@@ -18,7 +18,7 @@ function love.load()
 	gamestate.registerEvents()
 	gamestate.switch(mainMenu)
 
-	-- devel: skip menu
+	-- -- TODO: XXX: TODO: devel: skip menu
 	mainMenu:keypressed('return')
 end
 

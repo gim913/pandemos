@@ -63,7 +63,7 @@ function console.draw(x, y, width, height)
 				console_last_data.width ~= width or
 				console_last_data.height ~= height then
 			console_need_refresh = true
-			print('need refresh')
+			--print('need refresh')
 		end
 	end
 

@@ -162,14 +162,42 @@ function Game:wheelmoved(x, y)
 	updateTiles()
 end
 
+local ConsoleMode = {
+	Small = 0
+	, Full = 1
+	, Unfold = 2
+	, Fold = 3
+}
+
+love.physics.setMeter(S.resolution.y)
+local simWorld = love.physics.newWorld(0, 0, true)
+local conObj = love.physics.newBody(simWorld, 0, 100, 'dynamic')
+
+local conShape = love.physics.newCircleShape(20)
+local conFixture = love.physics.newFixture(conObj, conShape, 1)
+conFixture:setRestitution(0.0)
+
+local consoleMode = ConsoleMode.Small
+local consoleHeight = 100
+
 function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
-		-- devel: quit
+		-- -- TODO: XXX: TODO: devel: quit
 		love.event.push("quit")
 
 		gamestate.pop()
+	end
+
+	if '`' == key or '~' == key then
+		if ConsoleMode.Small == consoleMode then
+			consoleMode = ConsoleMode.Unfold
+			conObj:setLinearVelocity(0, 2000)
+		elseif ConsoleMode.Full == consoleMode then
+			consoleMode = ConsoleMode.Fold
+			conObj:setLinearVelocity(0, -2000)
+		end
 	end
 
 	if love.keyboard.isDown('lctrl') then
@@ -346,6 +374,34 @@ function Game:update(dt)
 			updateTilesAfterMove = false
 		end
 	end
+
+	if consoleMode >= ConsoleMode.Unfold then
+		simWorld:update(dt)
+		_, py = conObj:getPosition()
+		_, ay = conObj:getLinearVelocity()
+
+		if ConsoleMode.Unfold == consoleMode then
+			if ay > 100 then
+				conObj:applyForce(0, -4)
+			end
+
+			consoleHeight =  math.floor(py)
+			if consoleHeight > 900 then
+				consoleHeight = 900
+				consoleMode = ConsoleMode.Full
+			end
+		elseif ConsoleMode.Fold == consoleMode then
+			if ay < -100 then
+				conObj:applyForce(0, 4)
+			end
+
+			consoleHeight = math.floor(py)
+			if consoleHeight < 100 then
+				consoleHeight = 100
+				consoleMode = ConsoleMode.Small
+			end
+		end
+	end
 end
 
 function Game:draw()
@@ -376,7 +432,7 @@ function Game:draw()
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 		love.graphics.draw(minimapImg, 900 + 10, 0, 0, 1, scale)
 
-		console.draw(0, 800, 800, 100)
+		console.draw(0, 900 - consoleHeight, 800, consoleHeight)
 	end
 end
 
