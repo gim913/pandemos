@@ -17,6 +17,9 @@ function love.load()
 
 	gamestate.registerEvents()
 	gamestate.switch(mainMenu)
+
+	-- devel: skip menu
+	mainMenu:keypressed('return')
 end
 
 local function draw_info()

@@ -8,6 +8,7 @@ local Tiles = require 'Tiles'
 
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local Entity = require 'engine.Entity'
@@ -165,6 +166,9 @@ function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
+		-- devel: quit
+		love.event.push("quit")
+
 		gamestate.pop()
 	end
 
@@ -371,6 +375,8 @@ function Game:draw()
 		local scale = S.resolution.y / minimapImg:getHeight()
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 		love.graphics.draw(minimapImg, 900 + 10, 0, 0, 1, scale)
+
+		console.draw(0, 800, 800, 100)
 	end
 end
 
