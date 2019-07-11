@@ -46,8 +46,9 @@ end
 function Fire:updateImg()
 	self.data1:mapPixel(function(x,y, r,g,b,a)
 		local act = self.grid:at(x, y)
-		local val = act / 255.0
-		return Color.hsvToRgb(act / 255.0 / 5.5, 1.0 - math.sin(val), math.sqrt(val), 255.0)
+		local base = act / 255.0
+		local sat = math.sqrt(1.0 - base)
+		return Color.hsvToRgb(act / 255.0 / 5.5, sat, math.sqrt(base) * 0.4, 255.0)
 	end)
 	self.fireImg1 = love.graphics.newImage(self.data1)
 	self.fireImg1:setFilter("nearest", "nearest")
@@ -59,6 +60,7 @@ function Fire:initFadeOut()
 	end
 end
 
+-- idea from http://fabiensanglard.net/doom_fire_psx/index.html
 function Fire:update(quitting)
 	for x = 0, Fire.Width - 1 do
 		for y = self.prev, math.min(Fire.Height - 1, self.prev + Fire.Progress) do
