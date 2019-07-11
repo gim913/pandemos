@@ -1,8 +1,6 @@
 -- imported modules
 local S = require 'settings'
 
-local utils = require 'engine.utils'
-
 -- module
 local console = {
 	buffer = {}
@@ -19,8 +17,10 @@ local console_last_data = {}
 local console_quad
 
 function console.log(a)
+	if 100 == #console.buffer then
+		table.remove(console.buffer, 1)
+	end
 	table.insert(console.buffer, a)
-	print(utils.repr(a))
 	console_need_refresh = true
 end
 
@@ -34,15 +34,24 @@ local function console_refresh(coords)
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 
 	console_transform:translate(coords.x, coords.y)
-	for _, line in pairs(console.buffer) do
+
+	local start = 1
+	if #console.buffer >= coords.height / 18 then
+		start = #console.buffer - math.floor(coords.height / 18) + 1
+	end
+
+	for lineNo = start, #console.buffer do
+		local line = console.buffer[lineNo]
+
 		-- local _, wrappedText = console_font:getWrap(line, coords.width)
 		-- for _, linePart in pairs(wrappedText) do
 		-- 	love.graphics.print(linePart, console_transform)
 		-- 	console_transform:translate(0, 20)
 		-- end
 
+		-- do not wrap
 		love.graphics.print(line, console_transform)
-		console_transform:translate(0, 20)
+		console_transform:translate(0, 18)
 	end
 	love.graphics.setCanvas()
 end

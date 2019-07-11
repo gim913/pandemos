@@ -76,7 +76,7 @@ local function entities_attack(who, whom)
 
 	console.log({
 		{ Color.hsvToRgb(0.33, 0.8, 1.0, 1.0) },
-		who.name,
+		who.name .. "_" .. tostring(who.pos),
 		gray,
 		' hits ',
 		{ Color.hsvToRgb(0.00, 0.8, 1.0, 1.0) },
