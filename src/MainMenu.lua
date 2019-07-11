@@ -1,6 +1,8 @@
 -- imported modules
 local class = require 'engine.oop'
+local Color = require 'engine.color'
 local Game = require 'Game'
+local Grid = require 'Grid'
 local S = require 'settings'
 
 local gamestate = require 'hump.gamestate'
@@ -8,8 +10,6 @@ local gamestate = require 'hump.gamestate'
 -- class
 local MainMenu = class('MainMenu')
 
-local fireData = nil
-local fireImg = nil
 
 local rng = nil
 local bigFont = love.graphics.newFont(48)
@@ -19,48 +19,78 @@ local texts = {
 	, love.graphics.newText(bigFont, "quit")
 }
 
-local Fire_Width = 200
-local Fire_Height = 100
-local Refresh_Speed = 0.15
-local Progress = 20
-local function updateFireImg()
-	fireImg = love.graphics.newImage(fireData)
-	fireImg:setFilter("nearest", "nearest")
+local Fire = class("Fire")
+Fire.Width = 200
+Fire.Height = 100
+Fire.Progress = 20
+Fire.Rng = love.math.newRandomGenerator(love.timer.getTime())
+
+function Fire:ctor()
+	self.fireImg1 = nil
+	self.data1 = love.image.newImageData(Fire.Width, Fire.Height)
+	self.grid = Grid:new({ w = Fire.Width, h = Fire.Height })
+
+	self.grid:fill(0)
+	for x = 0, Fire.Width - 1 do
+		self.grid:set(x, Fire.Height - 1, 255)
+	end
+
+	self.prev = 1
+	for i = 1, 200 do
+		while self:update() do
+		end
+	end
+	self:updateImg()
 end
 
-local fireReady = true
-local prev = 1
-local function updateFire(quitting)
-	for x = 0, Fire_Width - 1 do
-		for y = prev, math.min(Fire_Height - 1, prev + Progress) do
-			local r,g,b,a = fireData:getPixel(x, y)
-			local rand = rng:random(0, 3)
-			local v = r
+function Fire:updateImg()
+	self.data1:mapPixel(function(x,y, r,g,b,a)
+		local act = self.grid:at(x, y)
+		local val = act / 255.0
+		return Color.hsvToRgb(act / 255.0 / 5.5, 1.0 - math.sin(val), math.sqrt(val), 255.0)
+	end)
+	self.fireImg1 = love.graphics.newImage(self.data1)
+	self.fireImg1:setFilter("nearest", "nearest")
+end
+
+function Fire:initFadeOut()
+	for x = 0, Fire.Width - 1 do
+		self.grid:set(x, Fire.Height - 1, 0)
+	end
+end
+
+function Fire:update(quitting)
+	for x = 0, Fire.Width - 1 do
+		for y = self.prev, math.min(Fire.Height - 1, self.prev + Fire.Progress) do
+			local intensity = self.grid:at(x, y)
+			local rand = Fire.Rng:random(0, 3)
+			local v = intensity
 			if quitting then
 				v = math.max(0.1, v * 0.8)
 			else
 				if rand == 1 then
-					v = math.max(0.1, math.sin(v * 0.9))
+					v = math.max(0.1, v * 0.9)
 				end
 			end
-			local tempX = x - rng:random(-1, 1)
-			--(rand - 1)
+			-- local tempX = x
+			-- local adjustY = 0
+			local tempX = x - Fire.Rng:random(-1, 1)
 			local adjustY = 0
 			if tempX < 0 then
-				tempX = tempX + Fire_Width - 1
+				tempX = tempX + Fire.Width - 1
 				adjustY = 1
-			elseif tempX >= Fire_Width then
+			elseif tempX >= Fire.Width then
 				adjustY = -1
-				tempX = tempX - (Fire_Width - 1)
+				tempX = tempX - (Fire.Width - 1)
 			end
 			if y - adjustY - 1 > 0 then
-				fireData:setPixel(tempX, y - adjustY - 1, v, v, v, 1.0)
+				self.grid:set(tempX, y - adjustY - 1, v)
 			end
 		end
 	end
-	prev = prev + Progress
-	if Fire_Height - 1 < prev then
-		prev = 1
+	self.prev = self.prev + Fire.Progress
+	if Fire.Height - 1 < self.prev then
+		self.prev = 1
 		return false
 	end
 
@@ -71,20 +101,8 @@ function MainMenu:ctor()
 	rng = love.math.newRandomGenerator()
 	--rng = love.math.newRandomGenerator(love.timer.getTime())
 
-	fireData = love.image.newImageData(Fire_Width, Fire_Height)
-	fireData:mapPixel(function(x, y, r, g, b, a)
-		if Fire_Height - 1 <= y then
-			return 1.0, 1.0, 1.0, 1.0
-		else
-			return 0.25, 0.25, 0.25, 1.0
-		end
-	end)
-
-	for i = 1, 200 do
-		while updateFire() do
-		end
-	end
-	updateFireImg()
+	fire = Fire:new()
+	self.fireReady = true
 end
 
 function MainMenu:enter()
@@ -93,6 +111,8 @@ function MainMenu:enter()
 end
 
 local quitCounter = 0
+local Desired_Fire_Fps = 12
+local Fire_Refresh_Speed = 1.0 / Desired_Fire_Fps
 function MainMenu:keypressed(key)
 	if 'down' == key then
 		self.selected = math.min(3, self.selected + 1)
@@ -104,43 +124,37 @@ function MainMenu:keypressed(key)
 			self.game:startLevel()
 			gamestate.push(self.game)
 		else
-			for x = 0, Fire_Width - 1 do
-				fireData:setPixel(x, Fire_Height - 1, 0.0, 0.0, 0.0, 1.0)
-			end
+			fire:initFadeOut()
+
 			quitCounter = 20
-			Refresh_Speed = 0.04
+			Fire_Refresh_Speed = 1.0 / 60
 		end
 	end
 end
 
-
 function MainMenu:update(dt)
 	self.totalTime = self.totalTime + dt
 
-	if not fireReady and not updateFire(quitCounter > 0) then
-		fireReady = true
+	if not self.fireReady and not fire:update(quitCounter > 0) then
+		self.fireReady = true
 	end
 
-	if fireReady and self.totalTime >= Refresh_Speed then
-		updateFireImg()
-		self.totalTime = self.totalTime - Refresh_Speed
+	if self.fireReady and self.totalTime >= Fire_Refresh_Speed then
+		fire:updateImg()
+		self.totalTime = self.totalTime - Fire_Refresh_Speed
 		if quitCounter > 0 then
 			quitCounter = quitCounter - 1
 			if 0 == quitCounter then
 				love.event.push("quit")
 			end
 		end
-		fireReady = false
+		self.fireReady = false
 	end
 end
 
 function MainMenu:draw()
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-	love.graphics.draw(fireImg, 0, 0, 0, S.resolution.x / Fire_Width, S.resolution.y / Fire_Height)
-
-	love.graphics.setBlendMode('alpha')
-	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-	love.graphics.print("FPS: "..love.timer.getFPS(), S.resolution.x - 100, 10)
+	love.graphics.draw(fire.fireImg1, 0, 0, 0, S.resolution.x / Fire.Width, S.resolution.y / Fire.Height)
 
 	local w2 = S.resolution.x / 2
 	local h2 = (S.resolution.y - 70 * 3) / 2
