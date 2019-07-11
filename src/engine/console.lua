@@ -29,11 +29,11 @@ local function console_refresh(coords)
 
 	love.graphics.setCanvas(console_canvas)
 
-	love.graphics.clear(0.1, 0.1, 0.1, 1.0)
+	love.graphics.clear(0.1, 0.1, 0.1, 0.9)
 	love.graphics.setFont(console_font)
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 
-	console_transform:translate(coords.x, coords.y)
+	console_transform:translate(coords.x, math.floor(coords.y))
 
 	local start = 1
 	if #console.buffer >= coords.height / 18 then
