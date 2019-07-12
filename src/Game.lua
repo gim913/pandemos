@@ -293,7 +293,6 @@ local function processActions()
 	-- if entity has no 'actions', than probably it doesn't need to be
 	-- entity
 	for _,e in pairs(entities.all()) do
-		print(e.name .. " " .. #e.actions)
 		if #e.actions ~= 0 then
 			local currentAction = e.actions[1]
 			if e.action.need == 0 then
