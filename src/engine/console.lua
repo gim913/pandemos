@@ -33,11 +33,14 @@ local function console_refresh(coords)
 	love.graphics.setFont(console_font)
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 
-	console_transform:translate(coords.x, math.floor(coords.y))
+	local roundedPosY  = math.ceil(coords.y / 18) * 18
+	console_transform:translate(coords.x, roundedPosY)
 
 	local start = 1
-	if #console.buffer >= coords.height / 18 then
-		start = #console.buffer - math.floor(coords.height / 18) + 1
+	local spaceSkipped = roundedPosY - math.floor(coords.y)
+	local spaceLeft = coords.height - spaceSkipped
+	if #console.buffer > spaceLeft / 18 then
+		start = #console.buffer - math.floor(spaceLeft / 18) + 1
 	end
 
 	for lineNo = start, #console.buffer do
