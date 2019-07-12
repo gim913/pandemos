@@ -154,12 +154,16 @@ local tileSize = 30
 local tileBorder = 1
 
 function Game:wheelmoved(x, y)
-	S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
+	if love.keyboard.isDown('lctrl') then
+		console.changeFontSize(y)
+	else
+		S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
-	tileSize = batch.recalc(S.game.VIS_RADIUS)
-	camera:follow(player)
-	camera:update()
-	updateTiles()
+		tileSize = batch.recalc(S.game.VIS_RADIUS)
+		camera:follow(player)
+		camera:update()
+		updateTiles()
+	end
 end
 
 local ConsoleMode = {

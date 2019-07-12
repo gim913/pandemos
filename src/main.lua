@@ -22,9 +22,12 @@ function love.load()
 	mainMenu:keypressed('return')
 end
 
+local defaultFont = love.graphics.getFont()
+
 local function draw_info()
 	love.graphics.setBlendMode('alpha')
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+	love.graphics.setFont(defaultFont)
 	love.graphics.print("FPS: "..love.timer.getFPS(), S.resolution.x - 100, 10)
 end
 
