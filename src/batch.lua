@@ -22,7 +22,7 @@ end
 
 local function batch_recalc(visRadius)
 	local tc = 2 * visRadius + 1
-	tileSize = (900 / tc) - tileBorder --math.floor(800 / tc)
+	tileSize = (((30 + tileBorder) * 25) / tc) - tileBorder
 	tilesCount.x = tc
 	tilesCount.y = tc
 

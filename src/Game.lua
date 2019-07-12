@@ -1,6 +1,7 @@
 -- imported modules
 local batch = require 'batch'
 local Camera = require 'Camera'
+local Infected = require 'EInfected'
 local Level = require 'Level'
 local Player = require 'Player'
 local S = require 'settings'
@@ -11,10 +12,11 @@ local class = require 'engine.oop'
 local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
-local Entity = require 'engine.Entity'
 local fontManager = require 'engine.fm'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
+
+local Entity = require 'engine.Entity'
 
 local gamestate = require 'hump.gamestate'
 local Vec = require 'hump.vector'
@@ -80,11 +82,31 @@ local function processEntitiesFov()
 end
 
 local function updateTiles()
-	batch.update(camera.followedEnt, camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y)
+	local sx, sy = camera:lu()
+	batch.update(camera.followedEnt, sx, sy)
 end
 
-local Entity_Tile_Size = 32
+local Entity_Tile_Size = 64
 local evilTurtleImg
+
+local function prepareLetters(letters)
+	local font = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
+	love.graphics.setFont(font)
+
+	local images = {}
+	for i = 1, #letters do
+		local c = letters:sub(i, i)
+		canvas = love.graphics.newCanvas(64, 64)
+		love.graphics.setCanvas(canvas)
+		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+		love.graphics.printf(c, 0, 0, 64, 'center')
+		love.graphics.setCanvas()
+
+		images[c] = canvas
+	end
+
+	return images
+end
 
 function Game:ctor(rng)
 	self.rng = rng
@@ -110,9 +132,10 @@ function Game:ctor(rng)
 	end)
 	updateMinimap()
 
+	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
-	player.img = love.graphics.newImage("player.png")
+	player.img = self.letters['@'] --love.graphics.newImage("player.png")
 	player.losRadius = 15
 	player.seeDist = 15
 
@@ -122,16 +145,15 @@ function Game:ctor(rng)
 	entities.addAttr(player, entities.Attr.Has_Attack)
 
 	-- TODO: get rid of dummies later
-
-	evilTurtleImg = love.graphics.newImage("evilturtle.png")
 	for i = 1, Max_Dummies do
 		local rx = self.rng:random(-15, 15)
 		local ry = self.rng:random(0, 30)
-		local dummy = Entity:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
-		dummy.img = evilTurtleImg
+		local dummy = Infected:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
+		dummy.img = self.letters['I']
 		entities.add(dummy)
 		entities.addAttr(dummy, entities.Attr.Has_Fov)
 		entities.addAttr(dummy, entities.Attr.Has_Move)
+		entities.addAttr(dummy, entities.Attr.Has_Ai)
 		dummy:occupy()
 
 		table.insert(dummies, dummy)
@@ -155,7 +177,11 @@ local tileBorder = 1
 
 function Game:wheelmoved(x, y)
 	if love.keyboard.isDown('lctrl') then
-		console.changeFontSize(y)
+		if love.keyboard.isDown('lshift') then
+			console.nextFont()
+		else
+			console.changeFontSize(y)
+		end
 	else
 		S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
@@ -204,6 +230,7 @@ function Game:keypressed(key)
 		end
 	end
 
+	-- -- TODO: XXX: TODO: devel: quit
 	if love.keyboard.isDown('lctrl') then
 		if key == "1" then
 			-- toggle flag
@@ -252,6 +279,7 @@ end
 
 function Game:startLevel()
 	local level = self.levels[self.depthLevel]
+	love.window.setTitle("Deaded - (game in progress)")
 	if not level.visited then
 		level:initializeGenerator()
 		self.updateLevel = true
@@ -265,6 +293,7 @@ local function processActions()
 	-- if entity has no 'actions', than probably it doesn't need to be
 	-- entity
 	for _,e in pairs(entities.all()) do
+		print(e.name .. " " .. #e.actions)
 		if #e.actions ~= 0 then
 			local currentAction = e.actions[1]
 			if e.action.need == 0 then
@@ -340,23 +369,49 @@ local function processAttacks()
 	return ret
 end
 
-function Game:update(dt)
-	-- keep running level update, until level generation is done
-	if self.updateLevel then
-		local level = self.levels[self.depthLevel]
-		self.updateLevel = level:update(dt)
-
-		-- update after updating the map
-		if not self.updateLevel then
-			-- recalc player fov, after map is generated
-			processEntitiesFov()
-
-			-- update batch
-			print('updating batch')
-			updateTiles()
+local function processAi()
+	local ret = false
+	for _,e in pairs(entities.with(entities.Attr.Has_Ai)) do
+		if e.actionState == action.Action.Idle then
+			if e:analyze(player) then
+				ret = true
+			end
 		end
+	end
 
-	elseif self.doActions then
+	return ret
+end
+
+local mouseCellX = nil
+local mouseCellY = nil
+
+function Game:doUpdateLevel(dt)
+	local level = self.levels[self.depthLevel]
+	self.updateLevel = level:update(dt)
+
+	-- update after updating the map
+	if not self.updateLevel then
+		-- recalc player fov, after map is generated
+		processEntitiesFov()
+
+		-- update batch
+		print('updating batch')
+		updateTiles()
+	end
+end
+
+local totalTime = 0
+function Game:doUpdate(dt)
+
+	totalTime = totalTime + dt
+	if totalTime > 0.5 then
+		totalTime = totalTime - 0.5
+		if processAi() then
+			self.doActions = true
+		end
+	end
+
+	if self.doActions then
 		self.doActions = processActions()
 
 		local movementDone = processMoves()
@@ -377,6 +432,25 @@ function Game:update(dt)
 			updateTiles()
 			updateTilesAfterMove = false
 		end
+	end
+
+	local mouseX, mouseY = love.mouse.getPosition()
+
+	local ts = (tileSize + tileBorder)
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	if mouseX >= 0 and mouseX < (ts * vis) and mouseY >= 0 and mouseY < (ts * vis) then
+		local newMouseCellX = math.floor(mouseX / ts)
+		local newMouseCellY = math.floor(mouseY / ts)
+
+		if newMouseCellX ~= mouseCellX or newMouseCellY ~= mouseCellY then
+			mouseCellX = newMouseCellX
+			mouseCellY = newMouseCellY
+			--local cx, cy = camera:lu()
+			--console.log((cx + mouseCellX) .. "," .. (cy + mouseCellY))
+		end
+	else
+		mouseCellX = nil
+		mouseCellY = nil
 	end
 
 	if consoleMode >= ConsoleMode.Unfold then
@@ -408,6 +482,15 @@ function Game:update(dt)
 	end
 end
 
+function Game:update(dt)
+	-- keep running level update, until level generation is done
+	if self.updateLevel then
+		self:doUpdateLevel(dt)
+	else
+		self:doUpdate(dt)
+	end
+end
+
 function Game:draw()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
@@ -420,16 +503,25 @@ function Game:draw()
 
 		batch.draw()
 
-		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-
 		local scaleFactor = tileSize / Entity_Tile_Size
 		for _,ent in pairs(entities.all()) do
 			local rx = ent.pos.x - camera.pos.x + camera.rel.x
 			local ry = ent.pos.y - camera.pos.y + camera.rel.y
 
+			if ent == player then
+				love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+			else
+				love.graphics.setColor(0.9, 0.0, 0.0, 1.0)
+			end
+
 			if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
 				love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
 			end
+		end
+
+		if mouseCellX then
+			love.graphics.setColor(0.9, 0.9, 0.9, 0.5)
+			love.graphics.rectangle('fill', mouseCellX * (tileSize + tileBorder), mouseCellY * (tileSize + tileBorder), tileSize + 1, tileSize + 1)
 		end
 
 		local scale = S.resolution.y / minimapImg:getHeight()

@@ -11,21 +11,43 @@ local console_canvas = love.graphics.newCanvas(S.resolution.x, S.resolution.y)
 --local console_font = love.graphics.newFont('fonts/inconsolata.otf', 18, 'light')
 local console_fontSize = 16
 local console_lineHeight = 18
-local console_font = love.graphics.newFont('fonts/scp.otf', console_fontSize, 'normal')
 local console_transform = love.math.newTransform()
 
 local console_needRefresh = true
 local console_prevData = {}
 local console_quad
+local console_fontId = 1
+local console_fonts = {
+	-- 'fonts/anon.ttf',
+	-- 'fonts/arimo.ttf',
+	-- 'fonts/FSEX300.ttf',
+	-- 'fonts/inconsolata.otf',
+	-- 'fonts/mf.ttf',
+	-- 'fonts/mfb.ttf',
+	'fonts/scp.otf',
+	-- 'fonts/tinos.ttf',
+}
+local console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
 
 function console.changeFontSize(deltaY)
 	local newSize = math.max(12, math.min(48, console_fontSize + deltaY))
 	if newSize ~= console_fontSize then
 		console_fontSize = newSize
 		console_lineHeight = newSize + 2
-		console_font = love.graphics.newFont('fonts/scp.otf', console_fontSize, 'normal')
+		console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
 		console_needRefresh = true
 	end
+end
+
+function console.nextFont()
+	console_fontId = console_fontId + 1
+	if console_fontId > #console_fonts then
+		console_fontId = 1
+	end
+
+	console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
+	console_needRefresh = true
+	print(console_fonts[console_fontId] .. " " .. console_fontSize)
 end
 
 function console.log(a)

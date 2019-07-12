@@ -1,6 +1,7 @@
 -- imported modules
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local los = require 'engine.los'
@@ -152,6 +153,9 @@ function Entity:attack()
 
 	self.doRecalc = true
 	return 0,0
+end
+
+function Entity:analyze()
 end
 
 function Entity:recalcVisMap()

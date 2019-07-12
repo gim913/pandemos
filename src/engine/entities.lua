@@ -107,6 +107,7 @@ local entities = {
 		Has_Fov = 1
 		, Has_Move = 2
 		, Has_Attack = 3
+		, Has_Ai = 4
 	}
 }
 

@@ -16,6 +16,10 @@ function Camera:ctor()
 	self.followedEnt = {}
 end
 
+function Camera:lu()
+	return camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y
+end
+
 function Camera:follow(entity)
 	self.followedEnt = entity
 

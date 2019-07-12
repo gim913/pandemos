@@ -1,8 +1,9 @@
 local Action = {
 	Invalid = 0
-	, Blocked = 1
-	, Move = 2
-	, Attack = 3
+	, Idle = 1
+	, Blocked = 2
+	, Move = 3
+	, Attack = 4
 }
 
 local Action_rev = nil

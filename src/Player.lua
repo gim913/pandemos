@@ -7,7 +7,6 @@ local elements = require 'engine.elements'
 local Entity = require 'engine.Entity'
 local map = require 'engine.map'
 
-
 -- class
 local Player = class('Player', Entity)
 
