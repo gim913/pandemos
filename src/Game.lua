@@ -26,6 +26,8 @@ local Game = class('Game')
 
 local f = math.floor
 
+console.initialize(800, 100, 900)
+
 local player = nil
 local Max_Dummies = 5
 local dummies = {}
@@ -87,7 +89,6 @@ local function updateTiles()
 end
 
 local Entity_Tile_Size = 64
-local evilTurtleImg
 
 local function prepareLetters(letters)
 	local font = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
@@ -192,24 +193,6 @@ function Game:wheelmoved(x, y)
 	end
 end
 
-local ConsoleMode = {
-	Small = 0
-	, Full = 1
-	, Unfold = 2
-	, Fold = 3
-}
-
-love.physics.setMeter(S.resolution.y)
-local simWorld = love.physics.newWorld(0, 0, true)
-local conObj = love.physics.newBody(simWorld, 0, 100, 'dynamic')
-
-local conShape = love.physics.newCircleShape(20)
-local conFixture = love.physics.newFixture(conObj, conShape, 1)
-conFixture:setRestitution(0.0)
-
-local consoleMode = ConsoleMode.Small
-local consoleHeight = 100
-
 function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
@@ -221,13 +204,7 @@ function Game:keypressed(key)
 	end
 
 	if '`' == key or '~' == key then
-		if ConsoleMode.Small == consoleMode then
-			consoleMode = ConsoleMode.Unfold
-			conObj:setLinearVelocity(0, 2000)
-		elseif ConsoleMode.Full == consoleMode then
-			consoleMode = ConsoleMode.Fold
-			conObj:setLinearVelocity(0, -2000)
-		end
+		console.toggle()
 	end
 
 	-- -- TODO: XXX: TODO: devel: quit
@@ -401,7 +378,6 @@ end
 
 local totalTime = 0
 function Game:doUpdate(dt)
-
 	totalTime = totalTime + dt
 	if totalTime > 0.5 then
 		totalTime = totalTime - 0.5
@@ -452,33 +428,7 @@ function Game:doUpdate(dt)
 		mouseCellY = nil
 	end
 
-	if consoleMode >= ConsoleMode.Unfold then
-		simWorld:update(dt)
-		_, py = conObj:getPosition()
-		_, ay = conObj:getLinearVelocity()
-
-		if ConsoleMode.Unfold == consoleMode then
-			if ay > 100 then
-				conObj:applyForce(0, -4)
-			end
-
-			consoleHeight =  math.floor(py)
-			if consoleHeight > 900 then
-				consoleHeight = 900
-				consoleMode = ConsoleMode.Full
-			end
-		elseif ConsoleMode.Fold == consoleMode then
-			if ay < -100 then
-				conObj:applyForce(0, 4)
-			end
-
-			consoleHeight = math.floor(py)
-			if consoleHeight < 100 then
-				consoleHeight = 100
-				consoleMode = ConsoleMode.Small
-			end
-		end
-	end
+	console.update(dt)
 end
 
 function Game:update(dt)
@@ -527,7 +477,7 @@ function Game:draw()
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 		love.graphics.draw(minimapImg, 900 + 10, 0, 0, 1, scale)
 
-		console.draw(0, 900 - consoleHeight, 800, consoleHeight)
+		console.draw(0, 900 - console.height())
 	end
 end
 

@@ -1,12 +1,19 @@
--- imported modules
-local S = require 'settings'
-
 -- module
 local console = {
 	buffer = {}
 }
 
-local console_canvas = love.graphics.newCanvas(S.resolution.x, S.resolution.y)
+-- semi-constants
+local console_Width = 900
+local console_Min_Height = 100
+local console_Max_Height = 900
+local console_canvas = nil
+
+local function createCanvas()
+	console_canvas = love.graphics.newCanvas(console_Width, console_Max_Height)
+end
+createCanvas()
+
 --local console_font = love.graphics.newFont('fonts/arimo.ttf', 16, 'light')
 --local console_font = love.graphics.newFont('fonts/inconsolata.otf', 18, 'light')
 local console_fontSize = 16
@@ -29,6 +36,107 @@ local console_fonts = {
 }
 local console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
 
+-- region console folding/unfolding
+
+local ConsoleState = {
+	Small = 0
+	, Full = 1
+	, Unfold = 2
+	, Fold = 3
+}
+local console_state = ConsoleState.Small
+local console_height = console_Min_Height
+
+local simWorld = love.physics.newWorld(0, 0, true)
+local conShape = love.physics.newCircleShape(1)
+local conBody = nil
+local conFixture = nil
+
+local function createConBody()
+	conBody = love.physics.newBody(simWorld, 0, console_height / console_Max_Height, 'dynamic')
+	conFixture = love.physics.newFixture(conBody, conShape, 1)
+	conFixture:setRestitution(0.0)
+end
+
+function console.initialize(width, minHeight, maxHeight)
+	if console_Width ~= width or console_Min_Height ~= minHeight or console_Max_Height ~= maxHeight then
+		console_Width = width
+		console_Min_Height = minHeight
+		console_Max_Height = maxHeight
+
+		console_height = console_Min_Height
+		createCanvas()
+		createConBody()
+	end
+end
+
+local debugStartTime = nil
+function console.toggle()
+	if ConsoleState.Small == console_state then
+		console_state = ConsoleState.Unfold
+		-- 3m / sec
+		conBody:setLinearVelocity(0, 3)
+
+		debugStartTime = love.timer.getTime()
+	elseif ConsoleState.Full == console_state then
+		console_state = ConsoleState.Fold
+		-- 3m / sec
+		conBody:setLinearVelocity(0, -3)
+
+		debugStartTime = love.timer.getTime()
+	end
+end
+
+local function debugTime()
+	return math.floor((love.timer.getTime() - debugStartTime) * 1000)
+end
+
+function console.update(dt)
+	if console_state >= ConsoleState.Unfold then
+		simWorld:update(dt)
+		_, py = conBody:getPosition()
+		_, ay = conBody:getLinearVelocity()
+
+		if ConsoleState.Unfold == console_state then
+			if ay > 0.2 then
+				conBody:applyForce(0, -0.017)
+			else
+				conBody:setLinearVelocity(0, 0.19)
+			end
+
+			console_height =  math.floor(py * console_Max_Height)
+			if console_height > console_Max_Height then
+				console_height = console_Max_Height
+				console_state = ConsoleState.Full
+
+				print(debugTime() .. " " .. ay)
+			end
+		elseif ConsoleState.Fold == console_state then
+			if ay < -0.2 then
+				conBody:applyForce(0, 0.017)
+			else
+				conBody:setLinearVelocity(0, -0.19)
+			end
+
+			console_height =  math.floor(py * console_Max_Height)
+			if console_height < console_Min_Height then
+				console_height = console_Min_Height
+				console_state = ConsoleState.Small
+
+				print(debugTime() .. " " .. ay)
+			end
+		end
+	end
+end
+
+function console.height()
+	return console_height
+end
+
+-- endregion
+
+-- region console helper methods
+
 function console.changeFontSize(deltaY)
 	local newSize = math.max(12, math.min(48, console_fontSize + deltaY))
 	if newSize ~= console_fontSize then
@@ -49,6 +157,10 @@ function console.nextFont()
 	console_needRefresh = true
 	print(console_fonts[console_fontId] .. " " .. console_fontSize)
 end
+
+-- endregion
+
+-- region main console methods
 
 function console.log(a)
 	if 100 == #console.buffer then
@@ -93,7 +205,7 @@ local function console_refresh(coords)
 	love.graphics.setCanvas()
 end
 
-function console.draw(x, y, width, height)
+function console.draw(x, y)
 	if not console_needRefresh then
 		if console_prevData.x ~= x or
 				console_prevData.y ~= y or
@@ -105,13 +217,15 @@ function console.draw(x, y, width, height)
 	end
 
 	if console_needRefresh then
-		console_prevData = { x = x, y = y, width = width, height = height }
-		console_quad = love.graphics.newQuad(x, y, width, height, S.resolution.x, S.resolution.y)
+		console_prevData = { x = x, y = y, width = console_Width, height = console_height }
+		console_quad = love.graphics.newQuad(x, y, console_Width, console_height, console_Width, console_Max_Height)
 		console_refresh(console_prevData)
 		console_needRefresh = false
 	end
 
 	love.graphics.draw(console_canvas, console_quad, x, y)
 end
+
+-- endregion
 
 return console
