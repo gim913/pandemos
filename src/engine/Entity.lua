@@ -1,11 +1,14 @@
 -- imported modules
 local action = require 'engine.action'
+local astar = require 'engine.astar'
 local class = require 'engine.oop'
 local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local los = require 'engine.los'
 local map = require 'engine.map'
+
+local Vec = require 'hump.vector'
 
 -- class
 local Entity = class('Entity')
@@ -84,15 +87,33 @@ function Entity:die()
 	entities.del(self)
 end
 
-function Entity:_checkDir(position, dir)
-	local nPos = position + dir
+function Entity:_checkMap(nPos, location)
 	-- check map
 	if nPos.x < 0 or nPos.x == map.width() or nPos.y < 0 or nPos.y == map.height() then
 		return action.Action.Blocked
 	end
-
-	local location = nPos.y * map.width() + nPos.x
 	if map.notPassable(location) then
+		return action.Action.Blocked
+	end
+
+	return nil
+end
+
+function Entity:_checkElements(nPos, location)
+	-- check elements
+	local prop = elements.property(location)
+	if prop == action.Action.Blocked then
+		return action.Action.Blocked
+	end
+
+	--print("OK new player position: ", nPos)
+	return action.Action.Move, nPos
+end
+
+function Entity:wantGo(dir)
+	local nPos = self.pos + dir
+	local location = nPos.y * map.width() + nPos.x
+	if action.Action.Blocked == self:_checkMap(nPos, location) then
 		return action.Action.Blocked
 	end
 
@@ -108,18 +129,7 @@ function Entity:_checkDir(position, dir)
 		end
 	end
 
-	-- check elements
-	local prop = elements.property(location)
-	if prop == action.Action.Blocked then
-		return action.Action.Blocked
-	end
-
-	--print("OK new player position: ", nPos)
-	return action.Action.Move, nPos
-end
-
-function Entity:wantGo(dir)
-	return self:_checkDir(self.pos, dir)
+	return self:_checkElements(nPos, location)
 end
 
 function Entity:move()
@@ -221,6 +231,74 @@ function Entity:recalcSeeMap()
 	end
 
 	self.doRecalc = false
+end
+
+function Entity:checkDirLight(position, dir)
+	local nPos = position + dir
+	local location = nPos.y * map.width() + nPos.x
+	if action.Action.Blocked == self:_checkMap(nPos, location) then
+		return action.Action.Blocked
+	end
+
+	return self:_checkElements(nPos, location)
+end
+
+-- planning limited to 12 cells in both directions
+local Plan_Limit = 9
+function Entity:findPath(destination)
+	local time1 = love.timer.getTime()
+	local result = astar(self.pos, destination, {
+		toId = function(pos)
+			return pos.y * map.width() + pos.x
+		end,
+		heuristic = function(a, b)
+			return 5 * math.abs(a.x - b.x) + math.abs(a.y - b.y)
+		end,
+		neighbors = function(source, node)
+			local n = {}
+			if node.x > source.x - Plan_Limit then
+				local r, nPos = self:checkDirLight(node, Vec(-1, 0))
+				if action.Action.Move == r then
+					table.insert(n, nPos)
+				end
+			end
+
+			if node.x < source.x + Plan_Limit then
+				local r, nPos = self:checkDirLight(node, Vec(1, 0))
+				if action.Action.Move == r then
+					table.insert(n, nPos)
+				end
+			end
+
+			if node.y > source.y - Plan_Limit then
+				local r, nPos = self:checkDirLight(node, Vec(0, -1))
+				if action.Action.Move == r then
+					table.insert(n, nPos)
+				end
+			end
+
+			if node.y < source.y + Plan_Limit then
+				local r, nPos = self:checkDirLight(node, Vec(0, 1))
+				if action.Action.Move == r then
+					table.insert(n, nPos)
+				end
+			end
+
+			--print('neighbors ' .. tostring(node) .. ' ' .. #n)
+			return n
+		end,
+		cost = function(a, b)
+			return 1
+		end
+	})
+
+	local time2 = love.timer.getTime()
+	if result then
+		print(string.format('astar success took %.5f ms', (time2 - time1) * 1000))
+	else
+		print(string.format('astar failed took %.5f ms', (time2 - time1) * 1000))
+	end
+	return result
 end
 
 return Entity

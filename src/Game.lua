@@ -256,7 +256,7 @@ end
 
 function Game:startLevel()
 	local level = self.levels[self.depthLevel]
-	love.window.setTitle("Deaded - (game in progress)")
+	love.window.setTitle("Pandemos - (game in progress)")
 	if not level.visited then
 		level:initializeGenerator()
 		self.updateLevel = true
@@ -420,8 +420,6 @@ function Game:doUpdate(dt)
 		if newMouseCellX ~= mouseCellX or newMouseCellY ~= mouseCellY then
 			mouseCellX = newMouseCellX
 			mouseCellY = newMouseCellY
-			--local cx, cy = camera:lu()
-			--console.log((cx + mouseCellX) .. "," .. (cy + mouseCellY))
 		end
 	else
 		mouseCellX = nil
@@ -445,10 +443,14 @@ function Game:draw()
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
+		local cx, cy = camera:lu()
 		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
 		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
-		love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 90)
+		if mouseCellX then
+			love.graphics.print("mouse: " .. (cx + mouseCellX) .. "," .. (cy + mouseCellY), S.resolution.x - 200 - 10, 90)
+		end
+		love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 110)
 
 		batch.draw()
 
@@ -472,6 +474,28 @@ function Game:draw()
 					love.graphics.rectangle('fill', (mouseCellX + 1) * ts, mouseCellY * ts, 2 * tileSize + 1, 16)
 					love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
 					love.graphics.print(ent.name, (mouseCellX + 1) * ts, mouseCellY * ts)
+				end
+
+
+				-- if ent.astar_visited then
+				-- 	for k, v in pairs(ent.astar_visited) do
+				-- 		local sx = v.x - camLuX
+				-- 		local sy = v.y - camLuY
+
+				-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
+				-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+				-- 	end
+				-- end
+				if ent.astar_path then
+					for i, node in pairs(ent.astar_path) do
+						local sx = node.x - camLuX
+						local sy = node.y - camLuY
+
+						love.graphics.setColor(0.9, 0.9, 0.9, 0.5)
+						love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+						love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
+						love.graphics.print(tostring(i), sx * ts, sy * ts)
+					end
 				end
 			end
 		end

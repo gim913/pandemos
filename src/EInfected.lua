@@ -11,6 +11,9 @@ local Infected = class('Infected', Entity)
 
 function Infected:analyze(player)
 	if self.seemap[player] then
+		local path = self:findPath(player.pos)
+		self.astar_path = path
+
 		local dir = (player.pos - self.pos):normalizeInplace()
 
 		-- todo, might result in dual
@@ -26,7 +29,12 @@ function Infected:analyze(player)
 		nextAct, nPos = self:wantGo(Vec(dx, dy))
 		if nextAct ~= action.Action.Blocked then
 			if nextAct == action.Action.Attack then
+				print(self.name .. 'queued action move(0,0)')
+				action.queue(self.actions, 1000, action.Action.Move, self.pos)
+				self.actionState = action.Action.Processing
+				return true
 			else
+				print(self.name .. 'queued action move')
 				action.queue(self.actions, 1000, action.Action.Move, nPos)
 				self.actionState = action.Action.Processing
 				return true
