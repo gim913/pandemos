@@ -97,13 +97,15 @@ function Entity:wantGo(dir)
 	end
 
 	-- check entities
-	local entProp = entities.check(location, self)
-	if entProp == action.Action.Blocked then
-		print('entProp blocked')
-		return action.Action.Blocked
-	elseif entProp == action.Action.Attack then
-		print('entProp attack')
-		return action.Action.Attack, nPos
+	if dir.x ~= 0 or dir.y ~= 0 then
+		local entProp = entities.check(location, self)
+		if entProp == action.Action.Blocked then
+			print('wantGo(' .. tostring(dir) .. ') ' .. self.name .. ' entProp blocked')
+			return action.Action.Blocked
+		elseif entProp == action.Action.Attack then
+			print('wantGo(' .. tostring(dir) .. ') ' .. self.name .. ' entProp attack ' .. tostring(nPos))
+			return action.Action.Attack, nPos
+		end
 	end
 
 	-- check elements
