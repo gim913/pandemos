@@ -7,6 +7,9 @@ local function astar_bestOpen(open, fScore)
 	local minNode = nil
 	local minId = -1
 	for id, node in pairs(open) do
+		-- if fScore[id] == min then
+		-- 	print('got dup ' .. tostring(node) .. ' vs ' .. tostring(minNode))
+		-- end
 		if fScore[id] < min then
 			min = fScore[id]
 			minId = id
@@ -21,18 +24,6 @@ local function getGScore(gScore, node)
 	return gScore[node] or astar_Big
 end
 
-function table.reverse(tbl)
-	local i, j = 1, #tbl
-	while i < j do
-		tbl[i], tbl[j] = tbl[j], tbl[i]
-
-		i = i + 1
-		j = j - 1
-	end
-
-	return tbl
-end
-
 local function astar_construct(cameFrom, node, nodeId)
 	local path = {}
 	while cameFrom[nodeId] do
@@ -45,6 +36,10 @@ local function astar_construct(cameFrom, node, nodeId)
 	return table.reverse(path)
 end
 
+-- handlers:
+--  + heuristic(node1, destination)
+--  + neigbors(source, node1)
+--  + cost(node1, node2)
 local function astar(source, destination, handlers)
 	local open = {}
 	local openCount = 0
@@ -96,7 +91,7 @@ local function astar(source, destination, handlers)
 		end
 	end
 
-	return nil
+	return nil, closed
 end
 
 return astar

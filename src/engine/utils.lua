@@ -63,4 +63,18 @@ local utils = {
 	, createGetterSetter = utils_createGetterSetter
 }
 
+-- hack: 'register' additional function in `table.`
+
+function table.reverse(tbl)
+	local i, j = 1, #tbl
+	while i < j do
+		tbl[i], tbl[j] = tbl[j], tbl[i]
+
+		i = i + 1
+		j = j - 1
+	end
+
+	return tbl
+end
+
 return utils

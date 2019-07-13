@@ -28,7 +28,7 @@ local f = math.floor
 
 console.initialize(800, 100, 900)
 
-local player = nil
+local player
 local Max_Dummies = 5
 local dummies = {}
 
@@ -176,6 +176,12 @@ end
 local tileSize = 30
 local tileBorder = 1
 
+function Game:mousepressed(x, y)
+	if player.astar_path then
+		player.follow_path = 1
+	end
+end
+
 function Game:wheelmoved(x, y)
 	if love.keyboard.isDown('lctrl') then
 		if love.keyboard.isDown('lshift') then
@@ -197,7 +203,7 @@ function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
-		-- -- TODO: XXX: TODO: devel: quit
+		-- TODO: XXX: TODO: devel: quit
 		love.event.push("quit")
 
 		gamestate.pop()
@@ -207,7 +213,7 @@ function Game:keypressed(key)
 		console.toggle()
 	end
 
-	-- -- TODO: XXX: TODO: devel: quit
+	-- TODO: XXX: TODO: devel: quit
 	if love.keyboard.isDown('lctrl') then
 		if key == "1" then
 			-- toggle flag
@@ -278,7 +284,7 @@ local function processActions()
 			end
 
 			e.action.progress = e.action.progress + Action_Step
-			--print ('action progress: ' .. e.name .. " " .. e.action.progress .. " " .. utils.repr(currentAction))
+			--console.log('action progress: ' .. e.name .. " " .. e.action.progress .. " " .. utils.repr(currentAction))
 
 			if e.action.progress >= e.action.need then
 				e.action.progress = e.action.progress - e.action.need
@@ -313,9 +319,10 @@ local function processMoves()
 	for _,e in pairs(entities.with(entities.Attr.Has_Move)) do
 		if e.actionState == action.Action.Move then
 			e:move()
-
-			-- reset action
 			e.actionState = action.Action.Idle
+
+			-- fire up ai to queue next action item
+			e:analyze(player)
 
 			if camera:isFollowing(e) then
 				updateTilesAfterMove = true
@@ -334,6 +341,9 @@ local function processAttacks()
 			print('processing attack')
 			e:attack(0, 0)
 			e.actionState = action.Action.Idle
+
+			-- fire up ai to queue next action item
+			e:analyze(player)
 
 			if camera:isFollowing(e) then
 				updateTilesAfterMove = true
@@ -378,15 +388,26 @@ end
 
 local totalTime = 0
 function Game:doUpdate(dt)
-	totalTime = totalTime + dt
-	if totalTime > 0.5 then
-		totalTime = totalTime - 0.5
-		if processAi() then
-			--self.doActions = true
+	-- at this point map should be ready, fire up AI once,
+	-- afterwards it should be fired after finishing actions
+	if totalTime == 0 then
+		processAi()
+		totalTime = 1
+	end
+
+	if player.astar_path and player.follow_path and player.follow_path > 0 then
+		-- note that this will queue action per every doUpdate call
+		action.queue(player.actions, Player.Base_Speed, action.Action.Move, player.astar_path[player.follow_path])
+		player.follow_path = player.follow_path + 1
+		if player.follow_path > #player.astar_path then
+			player.follow_path = nil
+			player.astar_path = nil
+		else
+			self.doActions = true
 		end
 	end
 
-	if self.doActions then
+	if self.doActions or #player.actions > 0 then
 		self.doActions = processActions()
 
 		local movementDone = processMoves()
@@ -400,6 +421,8 @@ function Game:doUpdate(dt)
 
 		if updateTilesAfterMove then
 			camera:update()
+
+			--processAi()
 
 			-- TODO: XXX: TODO: IMPORTANT: probably wrong location
 			processEntitiesFov()
@@ -420,6 +443,12 @@ function Game:doUpdate(dt)
 		if newMouseCellX ~= mouseCellX or newMouseCellY ~= mouseCellY then
 			mouseCellX = newMouseCellX
 			mouseCellY = newMouseCellY
+
+			if not player.follow_path or player.follow_path == 0 then
+				local cx, cy = camera:lu()
+				local destination = Vec(cx + mouseCellX , cy + mouseCellY)
+				player.astar_path = player:findPath(destination)
+			end
 		end
 	else
 		mouseCellX = nil
@@ -477,24 +506,32 @@ function Game:draw()
 				end
 
 
-				-- if ent.astar_visited then
-				-- 	for k, v in pairs(ent.astar_visited) do
-				-- 		local sx = v.x - camLuX
-				-- 		local sy = v.y - camLuY
+				if ent.astar_visited then
+					for k, v in pairs(ent.astar_visited) do
+						local sx = v.x - camLuX
+						local sy = v.y - camLuY
 
-				-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
-				-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
-				-- 	end
-				-- end
+						love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
+						love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+					end
+				end
+
 				if ent.astar_path then
 					for i, node in pairs(ent.astar_path) do
 						local sx = node.x - camLuX
 						local sy = node.y - camLuY
 
-						love.graphics.setColor(0.9, 0.9, 0.9, 0.5)
-						love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
-						love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
-						love.graphics.print(tostring(i), sx * ts, sy * ts)
+						if camera.followedEnt == ent then
+							love.graphics.setColor(0.1, 0.1, 0.1, 0.5)
+							love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+							love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+							love.graphics.print(tostring(i), sx * ts + 10, sy * ts + 10)
+						else
+							love.graphics.setColor(0.9, 0.7, 0.7, 0.5)
+							love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+							love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
+							love.graphics.print(tostring(i), sx * ts, sy * ts)
+						end
 					end
 				end
 			end

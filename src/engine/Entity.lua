@@ -16,7 +16,6 @@ local Entity = class('Entity')
 -- max LoS radius, modify if required
 -- every entity must have los below this value
 local Max_Los_Radius = 24
-
 local Max_Los_Radius_2 = Max_Los_Radius * Max_Los_Radius
 local sqrt = math.sqrt
 
@@ -196,15 +195,19 @@ function Entity:recalcVisMap()
 	los.calcVismapSquare(self.pos, self.vismap, 1, -1, r2)
 end
 
+function Entity:__tostring()
+	return self.name .. tostring(self.pos)
+end
+
 -- NOTE: seemap only contains ents in seeDist range, not all ents
 function Entity:checkEntVis(oth, dist)
 	if dist <= self.seeDist then
-		if not self.seemap[oth] then
-			local idx = oth.pos.y * map.width() + oth.pos.x
-			--print('log: vis '.. tostring(self.pos) .. " " .. tostring(oth.pos) .. " " .. idx .. " : " .. self.vismap[idx])
-			if self.vismap[idx] and self.vismap[idx] > 0 then
-				self.seemap[oth] = 1
-			end
+		local idx = oth.pos.y * map.width() + oth.pos.x
+		--console.log(' vis ' .. tostring(self) .. ' -- ' .. tostring(oth) .. " " .. idx .. " : " .. tostring(self.vismap[idx]))
+		if self.vismap[idx] and self.vismap[idx] > 0 then
+			self.seemap[oth] = 1
+		else
+			self.seemap[oth] = nil
 		end
 	else
 		if self.seemap[oth] then
@@ -219,9 +222,11 @@ function Entity:recalcSeeMap()
 	end
 
 	-- TODO: should there be some Attr?
+	--console.log('recalc for: ' .. self.name)
 	for _,e in pairs(entities.all()) do
 		if e ~= self then
 			local d2 = (e.pos - self.pos):len2()
+			-- entity can go out of distance, so need to make it larger...
 			if d2 < Max_Los_Radius_2 then
 				local d = sqrt(d2)
 				self:checkEntVis(e, d)
@@ -236,6 +241,15 @@ end
 function Entity:checkDirLight(position, dir)
 	local nPos = position + dir
 	local location = nPos.y * map.width() + nPos.x
+	-- if self.vismap[location] == 0 then
+	-- 	return action.Action.Blocked
+	-- end
+
+	-- TODO: need to disable this for non-player entities
+	if not map.isKnown(location) then
+		return action.Action.Blocked
+	end
+
 	if action.Action.Blocked == self:_checkMap(nPos, location) then
 		return action.Action.Blocked
 	end
@@ -247,12 +261,12 @@ end
 local Plan_Limit = 9
 function Entity:findPath(destination)
 	local time1 = love.timer.getTime()
-	local result = astar(self.pos, destination, {
+	local result, subres = astar(self.pos, destination, {
 		toId = function(pos)
 			return pos.y * map.width() + pos.x
 		end,
 		heuristic = function(a, b)
-			return 5 * math.abs(a.x - b.x) + math.abs(a.y - b.y)
+			return a:dist2(b)
 		end,
 		neighbors = function(source, node)
 			local n = {}
@@ -292,13 +306,13 @@ function Entity:findPath(destination)
 		end
 	})
 
-	local time2 = love.timer.getTime()
-	if result then
-		print(string.format('astar success took %.5f ms', (time2 - time1) * 1000))
-	else
-		print(string.format('astar failed took %.5f ms', (time2 - time1) * 1000))
-	end
-	return result
+	-- local time2 = love.timer.getTime()
+	-- if result then
+	-- 	print(string.format(tostring(self) .. 'astar success took %.5f ms', (time2 - time1) * 1000))
+	-- else
+	-- 	print(string.format(tostring(self) .. 'astar failed took %.5f ms', (time2 - time1) * 1000))
+	-- end
+	return result, subres
 end
 
 return Entity
