@@ -109,7 +109,7 @@ function console.update(dt)
 				console_height = console_Max_Height
 				console_state = ConsoleState.Full
 
-				print(debugTime() .. " " .. ay)
+				-- print(debugTime() .. " " .. ay)
 			end
 		elseif ConsoleState.Fold == console_state then
 			if ay < -0.2 then
@@ -123,7 +123,7 @@ function console.update(dt)
 				console_height = console_Min_Height
 				console_state = ConsoleState.Small
 
-				print(debugTime() .. " " .. ay)
+				-- print(debugTime() .. " " .. ay)
 			end
 		end
 	end

@@ -84,9 +84,9 @@ function Entity:die()
 	entities.del(self)
 end
 
-function Entity:wantGo(dir)
+function Entity:_checkDir(position, dir)
+	local nPos = position + dir
 	-- check map
-	local nPos = self.pos + dir
 	if nPos.x < 0 or nPos.x == map.width() or nPos.y < 0 or nPos.y == map.height() then
 		return action.Action.Blocked
 	end
@@ -100,10 +100,10 @@ function Entity:wantGo(dir)
 	if dir.x ~= 0 or dir.y ~= 0 then
 		local entProp = entities.check(location, self)
 		if entProp == action.Action.Blocked then
-			print('wantGo(' .. tostring(dir) .. ') ' .. self.name .. ' entProp blocked')
+			console.log('wantGo' .. tostring(dir) .. ' ' .. self.name .. ' entProp blocked')
 			return action.Action.Blocked
 		elseif entProp == action.Action.Attack then
-			print('wantGo(' .. tostring(dir) .. ') ' .. self.name .. ' entProp attack ' .. tostring(nPos))
+			console.log('wantGo' .. tostring(dir) .. ' ' .. self.name .. ' entProp attack ' .. tostring(nPos))
 			return action.Action.Attack, nPos
 		end
 	end
@@ -115,7 +115,11 @@ function Entity:wantGo(dir)
 	end
 
 	--print("OK new player position: ", nPos)
-	return action.Action.Move,nPos
+	return action.Action.Move, nPos
+end
+
+function Entity:wantGo(dir)
+	return self:_checkDir(self.pos, dir)
 end
 
 function Entity:move()
@@ -130,6 +134,7 @@ function Entity:move()
 		--  * do nothing (current)
 		--  * shift enemy further and move the player
 		--  * attack - probably not fair, cause move speed might be != attack speed
+		-- console.log('move() ' .. self.name .. ' specialCase')
 		return false
 	end
 

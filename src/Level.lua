@@ -189,6 +189,12 @@ function Level:update(_dt)
 		loadHouse('houses/house001.bin', houseGrid)
 		local houseX = map.width() / 2 - 12
 		local houseY = map.height() - 29 - 10 - 40
+
+		for x = 10, 20 do
+			houseGrid:set(x, 19, Tiles.House_Window)
+			houseGrid:set(x, 21, Tiles.House_Window)
+		end
+
 		minX, maxX, minY, maxY = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
 
 		-- make floor under whole house

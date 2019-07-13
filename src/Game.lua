@@ -382,7 +382,7 @@ function Game:doUpdate(dt)
 	if totalTime > 0.5 then
 		totalTime = totalTime - 0.5
 		if processAi() then
-			self.doActions = true
+			--self.doActions = true
 		end
 	end
 
@@ -453,24 +453,32 @@ function Game:draw()
 		batch.draw()
 
 		local scaleFactor = tileSize / Entity_Tile_Size
+		local camLuX, camLuY = camera.lu()
+		local ts = (tileSize + tileBorder)
 		for _,ent in pairs(entities.all()) do
-			local rx = ent.pos.x - camera.pos.x + camera.rel.x
-			local ry = ent.pos.y - camera.pos.y + camera.rel.y
+			local rx = ent.pos.x - camLuX
+			local ry = ent.pos.y - camLuY
 
 			if ent == player then
 				love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
 			else
-				love.graphics.setColor(0.9, 0.0, 0.0, 1.0)
+				love.graphics.setColor(0.7, 0.1, 0.1, 1.0)
 			end
 
 			if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
-				love.graphics.draw(ent.img, rx * (tileSize + tileBorder), ry * (tileSize + tileBorder), 0, scaleFactor, scaleFactor)
+				love.graphics.draw(ent.img, rx * ts, ry * ts, 0, scaleFactor, scaleFactor)
+				if rx == mouseCellX and ry == mouseCellY then
+					love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
+					love.graphics.rectangle('fill', (mouseCellX + 1) * ts, mouseCellY * ts, 2 * tileSize + 1, 16)
+					love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
+					love.graphics.print(ent.name, (mouseCellX + 1) * ts, mouseCellY * ts)
+				end
 			end
 		end
 
 		if mouseCellX then
 			love.graphics.setColor(0.9, 0.9, 0.9, 0.5)
-			love.graphics.rectangle('fill', mouseCellX * (tileSize + tileBorder), mouseCellY * (tileSize + tileBorder), tileSize + 1, tileSize + 1)
+			love.graphics.rectangle('fill', mouseCellX * ts, mouseCellY * ts, tileSize + 1, tileSize + 1)
 		end
 
 		local scale = S.resolution.y / minimapImg:getHeight()
