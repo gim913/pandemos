@@ -21,17 +21,26 @@ function Infected:onAdd()
 end
 
 function Infected:analyze(player)
-	if self.seemap[player] then
-		local path, visited = self:findPath(player.pos)
-		self.astar_path = path
-		self.astar_visited = visited
+	if self.seemap[player] or (self.astar_path and self.astar_index < #self.astar_path) then
+		if self.seemap[player] then
+			local path, visited = self:findPath(player.pos)
+			self.astar_path = path
+			self.astar_visited = visited
+			self.astar_index = 1
+		else
+			--console.log('continuig move')
+			if self.astar_path[self.astar_index] == self.pos then
+				self.astar_index = self.astar_index + 1
+			end
+		end
 
-		if path then
-			local dir = path[1] - self.pos
+		if self.astar_path then
+			local dir = self.astar_path[self.astar_index] - self.pos
 			nextAct, nPos = self:wantGo(dir)
+			console.log(action.name(nextAct))
 			if nextAct ~= action.Action.Blocked then
 				if nextAct == action.Action.Attack then
-					print(self.name .. 'queued action attack(0,0)')
+					--print(self.name .. 'queued action attack(0,0)')
 					action.queue(self.actions, self.Bash_Speed, action.Action.Attack, nPos)
 					self.actionState = action.Action.Processing
 					return true
@@ -43,6 +52,9 @@ function Infected:analyze(player)
 			else
 
 			end
+		else
+			-- idle
+			action.queue(self.actions, 1000, action.Action.Move, self.pos)
 		end
 	else
 		-- idle

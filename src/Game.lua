@@ -302,7 +302,6 @@ local function processAttacks()
 			e.actionState = action.Action.Idle
 
 			-- fire up ai to queue next action item
-			print('firing up analyze')
 			e:analyze(player)
 
 			if camera:isFollowing(e) then
@@ -369,7 +368,6 @@ function Game:doUpdate(dt)
 
 	if self.doActions or #player.actions > 0 then
 		self.doActions = entities.processActions(player)
-
 		local movementDone = processMoves()
 		processAttacks()
 
