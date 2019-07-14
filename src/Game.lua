@@ -26,7 +26,7 @@ local Game = class('Game')
 
 local f = math.floor
 
-console.initialize(800, 100, 900)
+console.initialize((31 * 25) + 10 + 128, 100, 900)
 
 local player
 local Max_Dummies = 5
@@ -302,6 +302,7 @@ local function processAttacks()
 			e.actionState = action.Action.Idle
 
 			-- fire up ai to queue next action item
+			print('firing up analyze')
 			e:analyze(player)
 
 			if camera:isFollowing(e) then
@@ -501,9 +502,9 @@ function Game:draw()
 			love.graphics.rectangle('fill', mouseCellX * ts, mouseCellY * ts, tileSize + 1, tileSize + 1)
 		end
 
-		local scale = S.resolution.y / minimapImg:getHeight()
+		local scale = (31 * 25) / minimapImg:getHeight()
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-		love.graphics.draw(minimapImg, 900 + 10, 0, 0, 1, scale)
+		love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
 
 		console.draw(0, 900 - console.height())
 	end

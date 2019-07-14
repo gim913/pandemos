@@ -3,7 +3,7 @@ random list of *things*
  - granades
  - minimap - might be problematic when it comes to elements :/
  - swim ability - different speed in water and on ground
-
+ - wild idea action queue items replacement - i.e. in the middle of move, but if hit by player, could replace action with strike-back (and proper action points progress) - not sure if good idea
 
 tech issues:
  - drop dumb args from astar handlers
