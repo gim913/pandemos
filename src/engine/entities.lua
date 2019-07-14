@@ -1,7 +1,7 @@
 -- imported modules
 local action = require 'engine.action'
 local console = require 'engine.console'
-local Color = require 'engine.Color'
+local color = require 'engine.color'
 local utils = require 'engine.utils'
 
 -- module
@@ -73,14 +73,14 @@ local function entities_check(idx, actor)
 end
 
 local function entities_attack(who, whom)
-	local gray = { Color.hsvToRgb(0.0, 0.0, 0.8, 1.0) }
+	local gray = { color.hsvToRgb(0.0, 0.0, 0.8, 1.0) }
 
 	console.log({
-		{ Color.hsvToRgb(0.33, 0.8, 1.0, 1.0) },
+		{ color.hsvToRgb(0.33, 0.8, 1.0, 1.0) },
 		who.name .. "_" .. tostring(who.pos),
 		gray,
 		' hits ',
-		{ Color.hsvToRgb(0.00, 0.8, 1.0, 1.0) },
+		{ color.hsvToRgb(0.00, 0.8, 1.0, 1.0) },
 		whom.name,
 		gray,
 		' giving ',

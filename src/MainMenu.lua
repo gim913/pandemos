@@ -1,6 +1,6 @@
 -- imported modules
 local class = require 'engine.oop'
-local Color = require 'engine.color'
+local color = require 'engine.color'
 local Game = require 'Game'
 local Grid = require 'Grid'
 local S = require 'settings'
@@ -48,7 +48,7 @@ function Fire:updateImg()
 		local act = self.grid:at(x, y)
 		local base = act / 255.0
 		local sat = math.sqrt(1.0 - base)
-		return Color.hsvToRgb(act / 255.0 / 5.5, sat, math.sqrt(base) * 0.4, 255.0)
+		return color.hsvToRgb(act / 255.0 / 5.5, sat, math.sqrt(base) * 0.4, 255.0)
 	end)
 	self.fireImg1 = love.graphics.newImage(self.data1)
 	self.fireImg1:setFilter("nearest", "nearest")
