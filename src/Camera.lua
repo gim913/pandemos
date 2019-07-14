@@ -86,7 +86,7 @@ function Camera:update()
 		end
 	end
 	self.pos = e.pos:clone()
-	print("> REL AND camera POS" .. self.rel.x .. "," .. self.rel.y .. " ; " .. self.pos.x .. "," .. self.pos.y)
+	--print("> REL AND camera POS" .. self.rel.x .. "," .. self.rel.y .. " ; " .. self.pos.x .. "," .. self.pos.y)
 end
 
 return Camera

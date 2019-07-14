@@ -201,10 +201,7 @@ function Game:wheelmoved(x, y)
 end
 
 local function playerMoveAction(moveVec)
-	if moveVec then
-		nextAct,nPos = player:wantGo(moveVec)
-	end
-
+	local nextAct,nPos = player:wantGo(moveVec)
 	if nextAct ~= action.Action.Blocked then
 		--print('action ', nextAct)
 		if nextAct == action.Action.Attack then
@@ -212,7 +209,7 @@ local function playerMoveAction(moveVec)
 		else
 			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
 		end
-		return true
+		return true, nextAct
 	end
 
 	return false
@@ -236,13 +233,22 @@ local function checkKeyPress(pressedKey, keyNames)
 	return false
 end
 
+local function movementKeyToVector(pressedKey)
+	for index = 1, #Move_Vectors do
+		if checkKeyPress(pressedKey, S.keyboard[index]) then
+			return Move_Vectors[index]
+		end
+	end
+
+	return nil
+end
+
 function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
 		-- TODO: XXX: TODO: devel: quit
 		love.event.push("quit")
-
 		gamestate.pop()
 	end
 
@@ -262,11 +268,10 @@ function Game:keypressed(key)
 
 	local moveVec = nil
 	if #(player.actions) == 0 then
-		for index = 1, #Move_Vectors do
-			if checkKeyPress(key, S.keyboard[index]) then
-				moveVec = Move_Vectors[index]
-				break
-			end
+		-- ignore keyboard controls if following the path
+		if not player.follow_path then
+			moveVec = movementKeyToVector(key)
+			print(tostring(moveVec))
 		end
 
 		-- TODO: remove this before releasing ^^
@@ -283,7 +288,7 @@ function Game:keypressed(key)
 		end
 	end
 
-	if playerMoveAction(moveVec) then
+	if moveVec and playerMoveAction(moveVec) then
 		self.doActions = true
 	end
 end
@@ -354,6 +359,26 @@ local function processAi()
 	return ret
 end
 
+local function pathPlayerMovement()
+	local ret = false
+
+	if player.astar_path and player.follow_path and player.follow_path > 0 then
+		local moveVec = player.astar_path[player.follow_path] - player.pos
+		local nextAction
+
+		ret, nextAction = playerMoveAction(moveVec)
+		if ret and action.Action.Move == nextAction then
+			player.follow_path = player.follow_path + 1
+			if player.follow_path > #player.astar_path then
+				player.follow_path = nil
+				player.astar_path = nil
+			end
+		end
+	end
+
+	return ret
+end
+
 local mouseCellX = nil
 local mouseCellY = nil
 
@@ -381,19 +406,11 @@ function Game:doUpdate(dt)
 		totalTime = 1
 	end
 
-	if player.astar_path and player.follow_path and player.follow_path > 0 then
-		-- note that this will queue action per every doUpdate call
-		action.queue(player.actions, Player.Base_Speed, action.Action.Move, player.astar_path[player.follow_path])
-		player.follow_path = player.follow_path + 1
-		if player.follow_path > #player.astar_path then
-			player.follow_path = nil
-			player.astar_path = nil
-		else
-			self.doActions = true
-		end
+	if #(player.actions) == 0 then
+		self.doActions = pathPlayerMovement()
 	end
 
-	if self.doActions or #player.actions > 0 then
+	if self.doActions then
 		self.doActions = entities.processActions(player)
 		local movementDone = processMoves()
 		processAttacks()
