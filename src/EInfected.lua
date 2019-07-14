@@ -28,7 +28,6 @@ function Infected:analyze(player)
 			self.astar_visited = visited
 			self.astar_index = 1
 		else
-			--console.log('continuig move')
 			if self.astar_path[self.astar_index] == self.pos then
 				self.astar_index = self.astar_index + 1
 			end

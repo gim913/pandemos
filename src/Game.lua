@@ -200,6 +200,42 @@ function Game:wheelmoved(x, y)
 	end
 end
 
+local function playerMoveAction(moveVec)
+	if moveVec then
+		nextAct,nPos = player:wantGo(moveVec)
+	end
+
+	if nextAct ~= action.Action.Blocked then
+		--print('action ', nextAct)
+		if nextAct == action.Action.Attack then
+			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
+		else
+			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
+		end
+		return true
+	end
+
+	return false
+end
+
+local Move_Vectors = {
+	Vec( 0, -1), -- up
+	Vec( 0,  1), -- down
+	Vec(-1,  0), -- left
+	Vec( 1,  0), -- right
+	Vec( 0,  0) -- rest
+}
+
+local function checkKeyPress(pressedKey, keyNames)
+	for _, keyName in pairs(keyNames) do
+		if keyName == pressedKey then
+			return true
+		end
+	end
+
+	return false
+end
+
 function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
@@ -224,20 +260,17 @@ function Game:keypressed(key)
 		end
 	end
 
+	local moveVec = nil
 	if #(player.actions) == 0 then
-		if key == "up" or key == "kp8" then
-			nextAct,nPos = player:wantGo(Vec( 0,-1))
-		elseif key == "down" or key == "kp2" then
-			nextAct,nPos = player:wantGo(Vec( 0, 1))
-		elseif key == "left" or key == "kp4" then
-			nextAct,nPos = player:wantGo(Vec(-1, 0))
-		elseif key == "right" or key == "kp6" then
-			nextAct,nPos = player:wantGo(Vec( 1, 0))
-		elseif key == "." or key == "kp5" then
-			nextAct,nPos = player:wantGo(Vec( 0, 0))
+		for index = 1, #Move_Vectors do
+			if checkKeyPress(key, S.keyboard[index]) then
+				moveVec = Move_Vectors[index]
+				break
+			end
+		end
 
 		-- TODO: remove this before releasing ^^
-		elseif key == "tab" then
+		if key == "tab" then
 			if cameraIdx == Max_Dummies then
 				camera:follow(player)
 				cameraIdx = 0
@@ -250,13 +283,7 @@ function Game:keypressed(key)
 		end
 	end
 
-	if nextAct ~= action.Action.Blocked then
-		--print('action ', nextAct)
-		if nextAct == action.Action.Attack then
-			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
-		else
-			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
-		end
+	if playerMoveAction(moveVec) then
 		self.doActions = true
 	end
 end

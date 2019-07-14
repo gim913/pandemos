@@ -1,6 +1,14 @@
 return {
 	resolution = { x = 1440, y=900 }
 	, vsync = false
+	, keyboard = {
+		-- movement
+		{ 'up', 'kp8' },
+		{ 'down', 'kp2' },
+		{ 'left', 'kp4' },
+		{ 'right', 'kp6' },
+		{ '.', 'kp5' }
+	}
 
 	-- not meant to be modified
 	, game = {
