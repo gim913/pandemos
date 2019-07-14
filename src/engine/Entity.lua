@@ -104,6 +104,9 @@ function Entity:_checkElements(nPos, location)
 	if prop == action.Action.Blocked then
 		return action.Action.Blocked
 	end
+	if prop == action.Action.Attack then
+		return action.Action.Attack,nPos
+	end
 
 	--print("OK new player position: ", nPos)
 	return action.Action.Move, nPos
@@ -165,6 +168,12 @@ function Entity:attack()
 		entities.attack(self, ent)
 		self.doRecalc = true
 		return 0,0
+	end
+
+	local prop = elements.property(idx)
+	-- TODO : element might have already been destroyed here (by someone else)
+	if prop == action.Action.Attack then
+		elements.smash(idx)
 	end
 
 	self.doRecalc = true

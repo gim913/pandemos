@@ -9,6 +9,14 @@ local Vec = require 'hump.vector'
 -- class
 local Infected = class('Infected', Entity)
 
+function Infected:ctor(initPos)
+	self.base.ctor(self, initPos)
+end
+
+function Infected:onAdd()
+	self.name = 'Infected'
+end
+
 function Infected:analyze(player)
 	if self.seemap[player] then
 		local path, visited = self:findPath(player.pos)

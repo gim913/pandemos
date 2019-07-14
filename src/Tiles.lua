@@ -7,6 +7,7 @@ return {
 	, House_Temporary = 16 * 3 + 1
 	, House_Floor = 16 * 3 + 3
 	, House_Window = 16 * 4 + 1
+	, House_Window_Broken = 16 * 4 + 13
 	, House_Door = 16 * 5 + 0
 	, House_Door_V1 = 16 * 5 + 0
 	, House_Door_V2 = 16 * 5 + 1

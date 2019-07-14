@@ -140,7 +140,8 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 				local v = getCode4(grid, function(code) return (code==Tiles.House_Wall or code == Tiles.House_Window or code == Tiles.House_Door) end, x, y)
 				local gobj = elements.create(idx)
 				gobj:setTileId(Tiles.House_Window - 1 + mapping[v])
-				--gobj:setSmash() - later
+				gobj:setSmashable({ state = 1, smashedTiles = { Tiles.House_Window_Broken } })
+
 			elseif (grid:at(x, y) == Tiles.House_Temporary) then
 				local gobj = elements.create(idx)
 				gobj:setTileId(Tiles.House_Temporary)
