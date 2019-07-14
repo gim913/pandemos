@@ -2,6 +2,7 @@
 local action = require 'engine.action'
 local console = require 'engine.console'
 local Color = require 'engine.Color'
+local utils = require 'engine.utils'
 
 -- module
 
@@ -92,6 +93,49 @@ local function entities_attack(who, whom)
 	whom:takeHit(who:getDamage())
 end
 
+local g_gameTime = 0
+local Action_Step = 60
+local function entities_processActions(player)
+	-- this is only justifiable place where .all() should be called
+	-- if entity has no 'actions', than probably it doesn't need to be
+	-- entity
+	for _,e in pairs(entities_all()) do
+		if #e.actions ~= 0 then
+			local currentAction = e.actions[1]
+			if e.action.need == 0 then
+				--print ("SETTING TO: " .. currentAction.time)
+				e.action.need = currentAction.time
+			end
+
+			e.action.progress = e.action.progress + Action_Step
+			--console.log('action progress: ' .. e.name .. " " .. e.action.progress .. " " .. utils.repr(currentAction))
+
+			if e.action.progress >= e.action.need then
+				e.action.progress = e.action.progress - e.action.need
+				-- debug
+				if (e == player) then
+					g_gameTime = g_gameTime + e.action.need
+				end
+				-- end debug
+				e.action.need = 0
+
+				-- finalize action
+				e.actionState = currentAction.state
+				e.actionData = currentAction.val
+				--console.log('action ended ' .. currentAction.val.x .. "," .. currentAction.val.y)
+				table.remove(e.actions, 1)
+				if (e == player) then
+					g_gameTime = g_gameTime + e.action.need
+					return false
+				end
+			end
+		end
+	end
+
+	return true
+end
+
+
 local entities = {
 	add = entities_add
 	, del = entities_del
@@ -100,6 +144,7 @@ local entities = {
 	, unoccupy = entities_unoccupy
 	, all = entities_all
 	, with = entities_with
+	, processActions = entities_processActions
 	, check = entities_check
 	, attack = entities_attack
 

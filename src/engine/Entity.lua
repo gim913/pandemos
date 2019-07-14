@@ -13,6 +13,9 @@ local Vec = require 'hump.vector'
 -- class
 local Entity = class('Entity')
 
+Entity.Base_Speed = 1200
+Entity.Bash_Speed = 720
+
 -- max LoS radius, modify if required
 -- every entity must have los below this value
 local Max_Los_Radius = 24
@@ -55,7 +58,6 @@ end
 
 function Entity:occupy()
 	local idx = self.pos.y * map.width() + self.pos.x
-	print('entity ' .. self.name .. ' is occupying ' .. idx)
 	entities.occupy(idx, self.id)
 end
 
@@ -281,28 +283,28 @@ function Entity:findPath(destination)
 			local n = {}
 			if node.x > source.x - Plan_Limit then
 				local r, nPos = self:checkDirLight(node, Vec(-1, 0))
-				if action.Action.Move == r then
+				if action.Action.Blocked  ~= r then
 					table.insert(n, nPos)
 				end
 			end
 
 			if node.x < source.x + Plan_Limit then
 				local r, nPos = self:checkDirLight(node, Vec(1, 0))
-				if action.Action.Move == r then
+				if action.Action.Blocked  ~= r then
 					table.insert(n, nPos)
 				end
 			end
 
 			if node.y > source.y - Plan_Limit then
 				local r, nPos = self:checkDirLight(node, Vec(0, -1))
-				if action.Action.Move == r then
+				if action.Action.Blocked  ~= r then
 					table.insert(n, nPos)
 				end
 			end
 
 			if node.y < source.y + Plan_Limit then
 				local r, nPos = self:checkDirLight(node, Vec(0, 1))
-				if action.Action.Move == r then
+				if action.Action.Blocked  ~= r then
 					table.insert(n, nPos)
 				end
 			end
@@ -311,7 +313,12 @@ function Entity:findPath(destination)
 			return n
 		end,
 		cost = function(a, b)
-			return 1
+			local dir = b - a
+			local r, nPos = self:checkDirLight(a, dir)
+			if r == action.Action.Attack then
+				return math.floor((self.Base_Speed + self.Bash_Speed) / 60)
+			end
+			return math.floor(self.Base_Speed / 60)
 		end
 	})
 

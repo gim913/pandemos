@@ -154,6 +154,7 @@ function Game:ctor(rng)
 		entities.add(dummy)
 		entities.addAttr(dummy, entities.Attr.Has_Fov)
 		entities.addAttr(dummy, entities.Attr.Has_Move)
+		entities.addAttr(dummy, entities.Attr.Has_Attack)
 		entities.addAttr(dummy, entities.Attr.Has_Ai)
 		dummy:occupy()
 
@@ -269,48 +270,6 @@ function Game:startLevel()
 	end
 end
 
-local g_gameTime = 0
-local Action_Step = 60
-local function processActions()
-	-- this is only justifiable place where .all() should be called
-	-- if entity has no 'actions', than probably it doesn't need to be
-	-- entity
-	for _,e in pairs(entities.all()) do
-		if #e.actions ~= 0 then
-			local currentAction = e.actions[1]
-			if e.action.need == 0 then
-				--print ("SETTING TO: " .. currentAction.time)
-				e.action.need = currentAction.time
-			end
-
-			e.action.progress = e.action.progress + Action_Step
-			--console.log('action progress: ' .. e.name .. " " .. e.action.progress .. " " .. utils.repr(currentAction))
-
-			if e.action.progress >= e.action.need then
-				e.action.progress = e.action.progress - e.action.need
-				-- debug
-				if (e == player) then
-					g_gameTime = g_gameTime + e.action.need
-				end
-				-- end debug
-				e.action.need = 0
-
-				-- finalize action
-				e.actionState = currentAction.state
-				e.actionData = currentAction.val
-				--print ('action ended ' .. currentAction.val.x .. "," .. currentAction.val.y)
-				table.remove(e.actions, 1)
-				if (e == player) then
-					g_gameTime = g_gameTime + e.action.need
-					return false
-				end
-			end
-		end
-	end
-
-	return true
-end
-
 local updateTilesAfterMove = false
 -- returns true when there was any move
 -- will require some recalculations later
@@ -339,7 +298,7 @@ local function processAttacks()
 	for _,e in pairs(entities.with(entities.Attr.Has_Attack)) do
 		if e.actionState == action.Action.Attack then
 			print('processing attack')
-			e:attack(0, 0)
+			e:attack()
 			e.actionState = action.Action.Idle
 
 			-- fire up ai to queue next action item
@@ -408,7 +367,7 @@ function Game:doUpdate(dt)
 	end
 
 	if self.doActions or #player.actions > 0 then
-		self.doActions = processActions()
+		self.doActions = entities.processActions(player)
 
 		local movementDone = processMoves()
 		processAttacks()
@@ -479,7 +438,7 @@ function Game:draw()
 		if mouseCellX then
 			love.graphics.print("mouse: " .. (cx + mouseCellX) .. "," .. (cy + mouseCellY), S.resolution.x - 200 - 10, 90)
 		end
-		love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 110)
+		--love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 110)
 
 		batch.draw()
 

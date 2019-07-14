@@ -9,6 +9,9 @@ local Vec = require 'hump.vector'
 -- class
 local Infected = class('Infected', Entity)
 
+Infected.Base_Speed = 1620
+Infected.Bash_Speed = 720
+
 function Infected:ctor(initPos)
 	self.base.ctor(self, initPos)
 end
@@ -28,13 +31,12 @@ function Infected:analyze(player)
 			nextAct, nPos = self:wantGo(dir)
 			if nextAct ~= action.Action.Blocked then
 				if nextAct == action.Action.Attack then
-					print(self.name .. 'queued action move(0,0)')
-					action.queue(self.actions, 1700, action.Action.Move, self.pos)
+					print(self.name .. 'queued action attack(0,0)')
+					action.queue(self.actions, self.Bash_Speed, action.Action.Attack, nPos)
 					self.actionState = action.Action.Processing
 					return true
 				else
-					print(self.name .. 'queued action move')
-					action.queue(self.actions, 1700, action.Action.Move, nPos)
+					action.queue(self.actions, self.Base_Speed, action.Action.Move, nPos)
 					self.actionState = action.Action.Processing
 					return true
 				end

@@ -11,7 +11,7 @@ local map = require 'engine.map'
 local Player = class('Player', Entity)
 
 Player.Base_Speed = 1200
-Player.Bash_Speed = 700
+Player.Bash_Speed = 720
 
 function Player:ctor(initPos)
 	self.base.ctor(self, initPos)
