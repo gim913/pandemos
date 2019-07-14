@@ -84,8 +84,8 @@ local function processEntitiesFov()
 end
 
 local function updateTiles()
-	local sx, sy = camera:lu()
-	batch.update(camera.followedEnt, sx, sy)
+	local camLu = camera.lu()
+	batch.update(camera.followedEnt, camLu.x, camLu.y)
 end
 
 local Entity_Tile_Size = 64
@@ -176,6 +176,7 @@ end
 
 local tileSize = 30
 local tileBorder = 1
+local tileSizeAdj = tileSize + tileBorder
 
 function Game:mousepressed(x, y)
 	if player.astar_path then
@@ -194,6 +195,7 @@ function Game:wheelmoved(x, y)
 		S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
 		tileSize = batch.recalc(S.game.VIS_RADIUS)
+		tileSizeAdj = tileSize + tileBorder
 		camera:follow(player)
 		camera:update()
 		updateTiles()
@@ -379,8 +381,7 @@ local function pathPlayerMovement()
 	return ret
 end
 
-local mouseCellX = nil
-local mouseCellY = nil
+local mouseCell = nil
 
 function Game:doUpdateLevel(dt)
 	local level = self.levels[self.depthLevel]
@@ -436,19 +437,14 @@ function Game:doUpdate(dt)
 
 	local mouseX, mouseY = love.mouse.getPosition()
 
-	local ts = (tileSize + tileBorder)
 	local vis = 2 * S.game.VIS_RADIUS + 1
-	if mouseX >= 0 and mouseX < (ts * vis) and mouseY >= 0 and mouseY < (ts * vis) then
-		local newMouseCellX = math.floor(mouseX / ts)
-		local newMouseCellY = math.floor(mouseY / ts)
-
-		if newMouseCellX ~= mouseCellX or newMouseCellY ~= mouseCellY then
-			mouseCellX = newMouseCellX
-			mouseCellY = newMouseCellY
-
+	if mouseX >= 0 and mouseX < (tileSizeAdj * vis) and mouseY >= 0 and mouseY < (tileSizeAdj * vis) then
+		local newMouseCell = Vec(math.floor(mouseX / tileSizeAdj), math.floor(mouseY / tileSizeAdj))
+		if not mouseCell or newMouseCell ~= mouseCell then
+			mouseCell = newMouseCell
 			if not player.follow_path or player.follow_path == 0 then
-				local cx, cy = camera:lu()
-				local destination = Vec(cx + mouseCellX , cy + mouseCellY)
+				local camLu = camera:lu()
+				local destination = camLu + mouseCell
 				player.astar_path = player:findPath(destination)
 			end
 		end
@@ -469,85 +465,99 @@ function Game:update(dt)
 	end
 end
 
+local function drawEntityPath(ent, camLu)
+	if not ent.astar_path then
+		return
+	end
+
+	for i, node in pairs(ent.astar_path) do
+		local relPos = node - camLu
+		if camera.followedEnt == ent then
+			love.graphics.setColor(0.1, 0.1, 0.1, 0.5)
+			love.graphics.rectangle('fill', relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, tileSize + 1, tileSize + 1)
+			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+			love.graphics.print(tostring(i), relPos.x * tileSizeAdj + 10, relPos.y * tileSizeAdj + 10)
+		else
+			love.graphics.setColor(0.9, 0.7, 0.7, 0.5)
+			love.graphics.rectangle('fill', relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, tileSize + 1, tileSize + 1)
+			love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
+			love.graphics.print(tostring(i), relPos.x * tileSizeAdj, relPos.y * tileSizeAdj)
+		end
+	end
+end
+
+local function drawEntities()
+	local scaleFactor = tileSize / Entity_Tile_Size
+	local camLu = camera.lu()
+	for _,ent in pairs(entities.all()) do
+		local relPos = ent.pos - camLu
+		if ent == player then
+			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+		else
+			love.graphics.setColor(0.7, 0.1, 0.1, 1.0)
+		end
+
+		-- drawEntity
+		if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
+			love.graphics.draw(ent.img, relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, 0, scaleFactor, scaleFactor)
+
+			-- show entity name on hover -- TODO: remove
+			if mouseCell and relPos == mouseCell then
+				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
+				love.graphics.rectangle('fill', (mouseCell.x + 1) * tileSizeAdj, mouseCell.y * tileSizeAdj, 2 * tileSize + 1, 16)
+				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
+				love.graphics.print(ent.name, (mouseCell.x + 1) * tileSizeAdj, mouseCell.y * tileSizeAdj)
+			end
+
+			-- if ent.astar_visited then
+			-- 	for k, v in pairs(ent.astar_visited) do
+			-- 		local sx = v.x - camLuX
+			-- 		local sy = v.y - camLuY
+
+			-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
+			-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+			-- 	end
+			-- end
+
+			drawEntityPath(ent, camLu)
+		end
+	end
+end
+
+local function drawMinimap()
+	local scale = (31 * 25) / minimapImg:getHeight()
+	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+	love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
+end
+
 function Game:draw()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		local cx, cy = camera:lu()
+		-- debug info
+		local camLu = camera.lu()
 		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
 		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
-		if mouseCellX then
-			love.graphics.print("mouse: " .. (cx + mouseCellX) .. "," .. (cy + mouseCellY), S.resolution.x - 200 - 10, 90)
+		if mouseCell then
+			local mapCoords = camLu + mouseCell
+			love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 		end
 		--love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 110)
 
+		-- draw map
 		batch.draw()
 
-		local scaleFactor = tileSize / Entity_Tile_Size
-		local camLuX, camLuY = camera.lu()
-		local ts = (tileSize + tileBorder)
-		for _,ent in pairs(entities.all()) do
-			local rx = ent.pos.x - camLuX
-			local ry = ent.pos.y - camLuY
+		-- ^^
+		drawEntities()
 
-			if ent == player then
-				love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
-			else
-				love.graphics.setColor(0.7, 0.1, 0.1, 1.0)
-			end
-
-			if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
-				love.graphics.draw(ent.img, rx * ts, ry * ts, 0, scaleFactor, scaleFactor)
-				if rx == mouseCellX and ry == mouseCellY then
-					love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-					love.graphics.rectangle('fill', (mouseCellX + 1) * ts, mouseCellY * ts, 2 * tileSize + 1, 16)
-					love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-					love.graphics.print(ent.name, (mouseCellX + 1) * ts, mouseCellY * ts)
-				end
-
-
-				if ent.astar_visited then
-					for k, v in pairs(ent.astar_visited) do
-						local sx = v.x - camLuX
-						local sy = v.y - camLuY
-
-						love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
-						love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
-					end
-				end
-
-				if ent.astar_path then
-					for i, node in pairs(ent.astar_path) do
-						local sx = node.x - camLuX
-						local sy = node.y - camLuY
-
-						if camera.followedEnt == ent then
-							love.graphics.setColor(0.1, 0.1, 0.1, 0.5)
-							love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
-							love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
-							love.graphics.print(tostring(i), sx * ts + 10, sy * ts + 10)
-						else
-							love.graphics.setColor(0.9, 0.7, 0.7, 0.5)
-							love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
-							love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
-							love.graphics.print(tostring(i), sx * ts, sy * ts)
-						end
-					end
-				end
-			end
+		if mouseCell then
+			love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
+			love.graphics.rectangle('line', mouseCell.x * tileSizeAdj, mouseCell.y * tileSizeAdj, tileSize + 1, tileSize + 1)
 		end
 
-		if mouseCellX then
-			love.graphics.setColor(0.9, 0.9, 0.9, 0.5)
-			love.graphics.rectangle('fill', mouseCellX * ts, mouseCellY * ts, tileSize + 1, tileSize + 1)
-		end
-
-		local scale = (31 * 25) / minimapImg:getHeight()
-		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-		love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
-
+		drawMinimap()
 		console.draw(0, 900 - console.height())
 	end
 end

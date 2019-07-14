@@ -74,7 +74,7 @@ local function batch_update(ent, cx, cy)
 				elseif map.isKnown(idx) then
 					batchData:setColor(0.5, 0.5, 0.5)
 				else
-					batchData:setColor(0.1, 0.1, 0.1)
+					batchData:setColor(0, 0, 0)
 				end
 			end
 

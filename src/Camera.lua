@@ -17,7 +17,7 @@ function Camera:ctor()
 end
 
 function Camera:lu()
-	return camera.pos.x - camera.rel.x, camera.pos.y - camera.rel.y
+	return camera.pos - camera.rel
 end
 
 function Camera:follow(entity)
