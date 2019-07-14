@@ -2,6 +2,7 @@
 local batch = require 'batch'
 local Camera = require 'Camera'
 local Infected = require 'EInfected'
+local interface = require 'interface'
 local Level = require 'Level'
 local Player = require 'Player'
 local S = require 'settings'
@@ -530,12 +531,26 @@ local function drawMinimap()
 	love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
 end
 
+local function drawInterface()
+	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
+	local h = interface.drawPlayerInfo(player, startX, 10, 260)
+
+	local camLu = camera.lu()
+	interface.drawVisible(player.seemap, startX, 10 + h + 10, 260, function(ent)
+		local relPos = ent.pos - camLu
+		if mouseCell and relPos == mouseCell then
+			return true
+		end
+		return false
+	end)
+end
+
 function Game:draw()
 	if self.updateLevel then
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		-- debug info
+		-- TODO: debug info
 		local camLu = camera.lu()
 		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
@@ -544,7 +559,7 @@ function Game:draw()
 			local mapCoords = camLu + mouseCell
 			love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 		end
-		--love.graphics.print("global timestep: " .. g_gameTime, S.resolution.x - 200 - 10, 110)
+
 
 		-- draw map
 		batch.draw()
@@ -557,6 +572,7 @@ function Game:draw()
 			love.graphics.rectangle('line', mouseCell.x * tileSizeAdj, mouseCell.y * tileSizeAdj, tileSize + 1, tileSize + 1)
 		end
 
+		drawInterface()
 		drawMinimap()
 		console.draw(0, 900 - console.height())
 	end

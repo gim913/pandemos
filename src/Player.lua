@@ -21,6 +21,10 @@ end
 function Player:onAdd()
 	self.name = 'Player'
 	self:occupy()
+
+	self.maxHp = 120
+	self.hp = 120
+	self.damage = 33
 end
 
 function Player:recalcSeeMap()

@@ -36,7 +36,9 @@ function Entity:ctor(initPos)
 	self.losRadius = 10
 	-- self.id = nil
 
-	self.life = 100
+	self.hp = 100
+	self.maxHp = 100
+	self.damage = 5
 
 	self:resetActions()
 end
@@ -71,14 +73,14 @@ function Entity:reactionTowards(other)
 end
 
 function Entity:getDamage()
-	return 10
+	return self.damage
 end
 
 function Entity:takeHit(dmg)
 	print(self.name .. ' is taking '..dmg..' damage')
-	self.life = self.life - dmg
+	self.hp = self.hp - dmg
 
-	if self.life <= 0 then
+	if self.hp <= 0 then
 		self:die()
 	end
 end
