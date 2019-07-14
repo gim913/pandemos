@@ -12,7 +12,7 @@ local MainMenu = class('MainMenu')
 
 
 local rng = nil
-local bigFont = love.graphics.newFont(48)
+local bigFont = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
 local texts = {
 	love.graphics.newText(bigFont, "new game")
 	, love.graphics.newText(bigFont, "settings")
@@ -35,6 +35,7 @@ function Fire:ctor()
 		self.grid:set(x, Fire.Height - 1, 255)
 	end
 
+	-- run some initial iterations, before showing anything
 	self.prev = 1
 	for i = 1, 200 do
 		while self:update() do

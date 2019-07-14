@@ -1,6 +1,7 @@
 -- imported modules
 local batch = require 'batch'
 local Camera = require 'Camera'
+local GameMenu = require 'GameMenu'
 local Infected = require 'EInfected'
 local interface = require 'interface'
 local Level = require 'Level'
@@ -136,7 +137,7 @@ function Game:ctor(rng)
 
 	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
 	player.img = self.letters['@'] --love.graphics.newImage("player.png")
 	player.losRadius = 15
 	player.seeDist = 15
@@ -250,9 +251,11 @@ function Game:keypressed(key)
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
+		gamestate.push(GameMenu:new())
+
 		-- TODO: XXX: TODO: devel: quit
-		love.event.push("quit")
-		gamestate.pop()
+		-- love.event.push("quit")
+		-- gamestate.pop()
 	end
 
 	if '`' == key or '~' == key then

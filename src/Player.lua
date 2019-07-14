@@ -37,15 +37,15 @@ function Player:checkEntVis(oth, dist)
 	self.base.checkEntVis(self, oth, dist)
 
 	if self.displaySee then
-		local gray = { color.hsvToRgb(0.0, 0.0, 0.8, 1.0) }
-		if self.seemap[oth] then
-			console.log({
-				gray,
-				'You see ',
-				{ color.hsvToRgb(0.00, 0.8, 1.0, 1.0) },
-				oth.name,
-			})
-		end
+		-- local gray = { color.hsvToRgb(0.0, 0.0, 0.8, 1.0) }
+		-- if self.seemap[oth] then
+		-- 	console.log({
+		-- 		gray,
+		-- 		'You see ',
+		-- 		{ color.hsvToRgb(0.00, 0.8, 1.0, 1.0) },
+		-- 		oth.name,
+		-- 	})
+		-- end
 	end
 end
 
