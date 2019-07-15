@@ -1,4 +1,6 @@
 -- imported modules
+local messages = require 'messages'
+
 local action = require 'engine.action'
 local astar = require 'engine.astar'
 local class = require 'engine.oop'
@@ -79,6 +81,11 @@ end
 function Entity:takeHit(dmg)
 	print(self.name .. ' is taking '..dmg..' damage')
 	self.hp = self.hp - dmg
+
+	messages.popups.queue({
+		txt=('-%d'):format(dmg), delay=0, fading=true,
+		getWorldPos=function() return self.pos end
+	})
 
 	if self.hp <= 0 then
 		self:die()

@@ -5,6 +5,7 @@ local GameMenu = require 'GameMenu'
 local Infected = require 'EInfected'
 local interface = require 'interface'
 local Level = require 'Level'
+local messages = require 'messages'
 local Player = require 'Player'
 local S = require 'settings'
 local Tiles = require 'Tiles'
@@ -17,7 +18,6 @@ local entities = require 'engine.entities'
 local fontManager = require 'engine.fontManager'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
-
 local Entity = require 'engine.Entity'
 
 local gamestate = require 'hump.gamestate'
@@ -27,6 +27,7 @@ local Vec = require 'hump.vector'
 local Game = class('Game')
 
 console.initialize((31 * 25) + 10 + 128, 100, 900)
+messages.initialize(31 * 25, 31 * 25)
 
 local f = math.floor
 local camera = nil
@@ -137,7 +138,7 @@ function Game:ctor(rng)
 
 	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 29))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 49))
 	player.img = self.letters['@'] --love.graphics.newImage("player.png")
 	player.losRadius = 15
 	player.seeDist = 15
@@ -176,9 +177,10 @@ function Game:ctor(rng)
 	--updateTiles()
 end
 
-local tileSize = 30
-local tileBorder = 1
-local tileSizeAdj = tileSize + tileBorder
+-- semi constants
+local Tile_Size = 30
+local Tile_Border = 1
+local Tile_Size_Adj = Tile_Size + Tile_Border
 
 function Game:mousepressed(x, y)
 	if player.astar_path then
@@ -196,8 +198,8 @@ function Game:wheelmoved(x, y)
 	else
 		S.game.VIS_RADIUS = math.max(12, math.min(63, S.game.VIS_RADIUS + y))
 
-		tileSize = batch.recalc(S.game.VIS_RADIUS)
-		tileSizeAdj = tileSize + tileBorder
+		Tile_Size = batch.recalc(S.game.VIS_RADIUS)
+		Tile_Size_Adj = Tile_Size + Tile_Border
 		camera:follow(player)
 		camera:update()
 		updateTiles()
@@ -411,9 +413,12 @@ function Game:doUpdate(dt)
 		totalTime = 1
 	end
 
+	-- 'execute' planned path
 	if #(player.actions) == 0 then
 		self.doActions = pathPlayerMovement()
 	end
+
+	messages.update(dt, camera:lu(), Tile_Size_Adj)
 
 	if self.doActions then
 		self.doActions = entities.processActions(player)
@@ -442,8 +447,8 @@ function Game:doUpdate(dt)
 	local mouseX, mouseY = love.mouse.getPosition()
 
 	local vis = 2 * S.game.VIS_RADIUS + 1
-	if mouseX >= 0 and mouseX < (tileSizeAdj * vis) and mouseY >= 0 and mouseY < (tileSizeAdj * vis) then
-		local newMouseCell = Vec(math.floor(mouseX / tileSizeAdj), math.floor(mouseY / tileSizeAdj))
+	if mouseX >= 0 and mouseX < (Tile_Size_Adj * vis) and mouseY >= 0 and mouseY < (Tile_Size_Adj * vis) then
+		local newMouseCell = Vec(math.floor(mouseX / Tile_Size_Adj), math.floor(mouseY / Tile_Size_Adj))
 		if not mouseCell or newMouseCell ~= mouseCell then
 			mouseCell = newMouseCell
 			if not player.follow_path or player.follow_path == 0 then
@@ -482,20 +487,20 @@ local function drawEntityPath(ent, camLu)
 		local relPos = node - camLu
 		if camera.followedEnt == ent then
 			love.graphics.setColor(0.1, 0.1, 0.1, 0.5)
-			love.graphics.rectangle('fill', relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, tileSize + 1, tileSize + 1)
+			love.graphics.rectangle('fill', relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
 			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
-			love.graphics.print(tostring(i), relPos.x * tileSizeAdj + 10, relPos.y * tileSizeAdj + 10)
+			love.graphics.print(tostring(i), relPos.x * Tile_Size_Adj + 10, relPos.y * Tile_Size_Adj + 10)
 		else
 			love.graphics.setColor(0.9, 0.7, 0.7, 0.5)
-			love.graphics.rectangle('fill', relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, tileSize + 1, tileSize + 1)
+			love.graphics.rectangle('fill', relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
 			love.graphics.setColor(0.3, 0.1, 0.1, 1.0)
-			love.graphics.print(tostring(i), relPos.x * tileSizeAdj, relPos.y * tileSizeAdj)
+			love.graphics.print(tostring(i), relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj)
 		end
 	end
 end
 
 local function drawEntities()
-	local scaleFactor = tileSize / Entity_Tile_Size
+	local scaleFactor = Tile_Size / Entity_Tile_Size
 	local camLu = camera:lu()
 	for _,ent in pairs(entities.all()) do
 		local relPos = ent.pos - camLu
@@ -507,14 +512,14 @@ local function drawEntities()
 
 		-- drawEntity
 		if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
-			love.graphics.draw(ent.img, relPos.x * tileSizeAdj, relPos.y * tileSizeAdj, 0, scaleFactor, scaleFactor)
+			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
 
 			-- show entity name on hover -- TODO: remove
 			if mouseCell and relPos == mouseCell then
 				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-				love.graphics.rectangle('fill', (mouseCell.x + 1) * tileSizeAdj, mouseCell.y * tileSizeAdj, 2 * tileSize + 1, 16)
+				love.graphics.rectangle('fill', (mouseCell.x + 1) * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
 				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-				love.graphics.print(ent.name, (mouseCell.x + 1) * tileSizeAdj, mouseCell.y * tileSizeAdj)
+				love.graphics.print(ent.name, (mouseCell.x + 1) * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj)
 			end
 
 			-- if ent.astar_visited then
@@ -523,7 +528,7 @@ local function drawEntities()
 			-- 		local sy = v.y - camLuY
 
 			-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
-			-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, tileSize + 1, tileSize + 1)
+			-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, Tile_Size + 1, Tile_Size + 1)
 			-- 	end
 			-- end
 
@@ -542,7 +547,7 @@ local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local h = interface.drawPlayerInfo(player, startX, 10, 260)
 
-	local camLu = camera.lu()
+	local camLu = camera:lu()
 	interface.drawVisible(player.seemap, startX, 10 + h + 10, 260, function(ent)
 		local relPos = ent.pos - camLu
 		if mouseCell and relPos == mouseCell then
@@ -576,7 +581,7 @@ function Game:draw()
 
 		if mouseCell then
 			love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-			love.graphics.rectangle('line', mouseCell.x * tileSizeAdj, mouseCell.y * tileSizeAdj, tileSize + 1, tileSize + 1)
+			love.graphics.rectangle('line', mouseCell.x * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
 		end
 
 		drawInterface()
