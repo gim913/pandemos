@@ -49,13 +49,17 @@ function Infected:analyze(player)
 					return true
 				end
 			else
-
+				-- action blocked
+				-- idle
+				action.queue(self.actions, 1000, action.Action.Move, self.pos)
 			end
 		else
+			-- path towards player not found (maybe blocked by obstacles)
 			-- idle
 			action.queue(self.actions, 1000, action.Action.Move, self.pos)
 		end
 	else
+		-- nothing to do
 		-- idle
 		action.queue(self.actions, 1000, action.Action.Move, self.pos)
 	end
