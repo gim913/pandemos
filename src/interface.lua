@@ -1,12 +1,13 @@
 -- imported modules
 local color = require 'engine.color'
 local console = require 'engine.console'
+local fontManager = require 'engine.fontManager'
 
 -- module
 local interface = {}
 
 local interface_lineHeight = 22
-local interface_font = love.graphics.newFont('fonts/scp.otf', 16, 'light')
+local interface_font = fontManager.get('fonts/scp.otf', 16, 'light')
 
 local Box_Height = 66
 

@@ -1,16 +1,18 @@
 -- imported modules
-local class = require 'engine.oop'
-local color = require 'engine.color'
 local Grid = require 'Grid'
 local Menu = require 'Menu'
 local S = require 'settings'
+
+local class = require 'engine.oop'
+local color = require 'engine.color'
+local fontManager = require 'engine.fontManager'
 
 local gamestate = require 'hump.gamestate'
 
 -- class
 local GameMenu = class('GameMenu', Menu)
 
-local bigFont = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
+local bigFont = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 
 function GameMenu:ctor()
 	local texts = {

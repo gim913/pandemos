@@ -6,7 +6,7 @@ local Tiles = require 'Tiles'
 
 local class = require 'engine.oop'
 local elements = require 'engine.elements'
-local fontManager = require 'engine.fm'
+local fontManager = require 'engine.fontManager'
 local map = require 'engine.map'
 
 local ffi = require 'ffi'

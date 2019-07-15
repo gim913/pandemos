@@ -14,7 +14,7 @@ local class = require 'engine.oop'
 local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
-local fontManager = require 'engine.fm'
+local fontManager = require 'engine.fontManager'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
 
@@ -93,7 +93,7 @@ end
 local Entity_Tile_Size = 64
 
 local function prepareLetters(letters)
-	local font = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
+	local font = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 	love.graphics.setFont(font)
 
 	local images = {}
@@ -470,6 +470,10 @@ function Game:update(dt)
 end
 
 local function drawEntityPath(ent, camLu)
+	if S.game.debug and not S.game.debug.show_astar_paths then
+		return
+	end
+
 	if not ent.astar_path then
 		return
 	end

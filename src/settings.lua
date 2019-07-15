@@ -17,7 +17,8 @@ return {
 		, DEPTH = 1
 		, VIS_RADIUS = 12
 		, debug = {
-			no_fog_of_war = false
+			no_fog_of_war = false,
+			show_astar_paths = false
 		}
 	}
 }

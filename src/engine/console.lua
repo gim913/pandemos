@@ -1,3 +1,6 @@
+-- imported modules
+local fontManager = require 'engine.fontManager'
+
 -- module
 local console = {
 	buffer = {}
@@ -14,8 +17,6 @@ local function createCanvas()
 end
 createCanvas()
 
---local console_font = love.graphics.newFont('fonts/arimo.ttf', 16, 'light')
---local console_font = love.graphics.newFont('fonts/inconsolata.otf', 18, 'light')
 local console_fontSize = 16
 local console_lineHeight = 18
 local console_transform = love.math.newTransform()
@@ -34,7 +35,7 @@ local console_fonts = {
 	'fonts/scp.otf',
 	-- 'fonts/tinos.ttf',
 }
-local console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
+local console_font = fontManager.get(console_fonts[console_fontId], console_fontSize, 'light')
 
 -- region console folding/unfolding
 
@@ -142,7 +143,7 @@ function console.changeFontSize(deltaY)
 	if newSize ~= console_fontSize then
 		console_fontSize = newSize
 		console_lineHeight = newSize + 2
-		console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
+		console_font = fontManager.get(console_fonts[console_fontId], console_fontSize, 'light')
 		console_needRefresh = true
 	end
 end
@@ -153,7 +154,7 @@ function console.nextFont()
 		console_fontId = 1
 	end
 
-	console_font = love.graphics.newFont(console_fonts[console_fontId], console_fontSize, 'light')
+	console_font = fontManager.get(console_fonts[console_fontId], console_fontSize, 'light')
 	console_needRefresh = true
 	print(console_fonts[console_fontId] .. " " .. console_fontSize)
 end

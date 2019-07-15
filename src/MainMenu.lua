@@ -1,10 +1,12 @@
 -- imported modules
-local class = require 'engine.oop'
-local color = require 'engine.color'
 local Game = require 'Game'
 local Grid = require 'Grid'
 local Menu = require 'Menu'
 local S = require 'settings'
+
+local class = require 'engine.oop'
+local color = require 'engine.color'
+local fontManager = require 'engine.fontManager'
 
 local gamestate = require 'hump.gamestate'
 
@@ -12,7 +14,7 @@ local gamestate = require 'hump.gamestate'
 local MainMenu = class('MainMenu', Menu)
 
 local rng = nil
-local bigFont = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
+local bigFont = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 
 local Fire = class("Fire")
 Fire.Width = 200
