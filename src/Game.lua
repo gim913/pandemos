@@ -149,7 +149,7 @@ function Game:ctor(rng)
 
 	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 49))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 79))
 	player.img = self.letters['@']
 	player.class = classes.Player
 
@@ -598,6 +598,8 @@ function Game:draw()
 			love.graphics.rectangle('line', mouseCell.x * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
 		end
 
+		love.graphics.setColor(1, 1, 1, 1)
+		love.graphics.draw(messages.popups.getCanvas())
 		drawInterface()
 		drawMinimap()
 		console.draw(0, 900 - console.height())
