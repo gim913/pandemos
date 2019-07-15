@@ -13,6 +13,7 @@ local MainMenu = class('MainMenu')
 
 local rng = nil
 local bigFont = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
+local Line_Height = 80
 local texts = {
 	love.graphics.newText(bigFont, "new game")
 	, love.graphics.newText(bigFont, "settings")
@@ -155,13 +156,51 @@ function MainMenu:update(dt)
 	end
 end
 
+local function drawCorner(x, y, cs)
+	for i = 1, 5 do
+		local base = (6 - i) / 5.0
+		local sat = math.sqrt(1.0 - base)
+		love.graphics.setColor(color.hsvToRgb(base / 5.0, sat, math.sqrt(base) * 0.8, 255.0))
+		love.graphics.rectangle('line', x + i * i, y + i * i, cs - 2 * i * i, cs - 2 * i * i)
+	end
+end
+
+local function drawFrame(x, y, width, height)
+	love.graphics.setLineWidth(1)
+	love.graphics.setLineStyle('rough')
+
+	local padding = 50
+	local sx, sy = x - padding, y - padding
+	local sw, sh = width + padding * 2, height + padding * 2
+	for i = 1, 5 do
+		local base = (6 - i) / 5.0
+		local sat = math.sqrt(1.0 - base)
+		love.graphics.setColor(color.hsvToRgb(base / 5.0, sat, math.sqrt(base) * 0.8, 255.0))
+
+		love.graphics.rectangle('line', sx - i * i, sy - i * i, sw + 2 * i * i, sh + 2 * i * i)
+	end
+
+	local Corner_Size = 80
+	drawCorner(sx - Corner_Size, sy - Corner_Size, Corner_Size)
+	drawCorner(sx + sw, sy - Corner_Size, Corner_Size)
+	drawCorner(sx - Corner_Size, sy + sh, Corner_Size)
+	drawCorner(sx +sw, sy + sh, Corner_Size)
+end
+
 function MainMenu:draw()
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 	love.graphics.draw(fire.fireImg1, 0, 0, 0, S.resolution.x / Fire.Width, S.resolution.y / Fire.Height)
 
 	local w2 = S.resolution.x / 2
-	local h2 = (S.resolution.y - 70 * 3) / 2
+	local h2 = (S.resolution.y - Line_Height * 3) / 2
 	local off = 0
+	local maxWidth = 0
+	for _, text in pairs(texts) do
+		maxWidth = math.max(maxWidth, text:getWidth())
+	end
+
+	drawFrame(w2 - maxWidth / 2, h2, maxWidth, Line_Height * 3)
+
 	for k, text in pairs(texts) do
 		if self.selected == k then
 			love.graphics.setColor(0.9, 0.7, 0.0, 1.0)
@@ -169,7 +208,7 @@ function MainMenu:draw()
 			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
 		end
 		love.graphics.draw(text, w2 - text:getWidth() / 2, h2 + off)
-		off = off + 70
+		off = off + Line_Height
 	end
 end
 
