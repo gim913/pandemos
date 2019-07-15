@@ -26,10 +26,10 @@ local Vec = require 'hump.vector'
 -- class
 local Game = class('Game')
 
-local f = math.floor
-
 console.initialize((31 * 25) + 10 + 128, 100, 900)
 
+local f = math.floor
+local camera = nil
 local player
 local Max_Dummies = 5
 local dummies = {}
@@ -86,7 +86,7 @@ local function processEntitiesFov()
 end
 
 local function updateTiles()
-	local camLu = camera.lu()
+	local camLu = camera:lu()
 	batch.update(camera.followedEnt, camLu.x, camLu.y)
 end
 
@@ -127,7 +127,7 @@ function Game:ctor(rng)
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
-	map.init(level.w, level.h)
+	map.initialize(level.w, level.h)
 
 	minimapData = love.image.newImageData(level.w, level.h)
 	minimapData:mapPixel(function(x, y, r, g, b, a)
@@ -496,7 +496,7 @@ end
 
 local function drawEntities()
 	local scaleFactor = tileSize / Entity_Tile_Size
-	local camLu = camera.lu()
+	local camLu = camera:lu()
 	for _,ent in pairs(entities.all()) do
 		local relPos = ent.pos - camLu
 		if ent == player then
@@ -558,7 +558,7 @@ function Game:draw()
 		level:show()
 	else
 		-- TODO: debug info
-		local camLu = camera.lu()
+		local camLu = camera:lu()
 		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
 		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)

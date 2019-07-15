@@ -17,7 +17,6 @@ local function fontManager_get(a, b, c)
 
 	if LoadedFonts[name] == nil then
 		LoadedFonts[name] = love.graphics.newFont(a, b, c)
-		print(LoadedFonts[name])
 	end
 
 	return LoadedFonts[name]

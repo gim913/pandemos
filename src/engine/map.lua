@@ -10,7 +10,7 @@ local mapdata = {
 	, known = {}
 }
 
-local function map_init(width, height)
+local function map_initialize(width, height)
 	mapdata.width = width
 	mapdata.height = height
 	mapdata.tiles = {}
@@ -194,7 +194,7 @@ local function map_notPassLight(idx)
 end
 
 local map = {
-	init = map_init
+	initialize = map_initialize
 	, getTileId = map_getTileId
 	, setTileId = map_setTileId
 	, fixupTiles = map_fixupTiles
