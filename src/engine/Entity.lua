@@ -164,6 +164,11 @@ function Entity:move()
 		--  * attack - probably not fair, cause move speed might be != attack speed
 		-- console.log('move() ' .. self.name .. ' specialCase')
 		return false
+
+	elseif action.Action.Blocked == entProperty then
+		-- one ent that have self has non-negative reaction towards blocked the field earlier,
+		-- really nothing to do in this case
+		return false
 	end
 
 	self:unoccupy()
@@ -221,7 +226,7 @@ function Entity:recalcVisMap()
 end
 
 function Entity:__tostring()
-	return self.name .. tostring(self.pos)
+	return self.name .. '[' .. self.id .. ']' .. tostring(self.pos)
 end
 
 -- NOTE: seemap only contains ents in seeDist range, not all ents
