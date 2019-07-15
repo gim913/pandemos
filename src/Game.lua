@@ -78,6 +78,11 @@ local function processEntitiesFov()
 				r,g,b = 64, 64, 64
 			end
 
+			local t = elements.getTileId(k)
+			if t and t >= Tiles.Trees and t <= Tiles.Tree_Maple then
+				r,g,b = 0x8, 0x2c, 0x8
+			end
+
 			local x = f(k % map.width())
 			local y = f(k / map.width())
 			minimapData:setPixel(x, y, r / 255.0, g / 255.0, b / 255.0, 1.0)

@@ -3,6 +3,7 @@ local Grid = require 'Grid'
 local LevelGen = require 'LevelGen'
 local S = require 'settings'
 local Tiles = require 'Tiles'
+local trees = require 'trees'
 
 local class = require 'engine.oop'
 local elements = require 'engine.elements'
@@ -14,11 +15,14 @@ local ffi = require 'ffi'
 -- class
 local Level = class('Level')
 
-local MODE_GENERATING_LEVEL = 1
-local MODE_COPY_TO_GMAP = 2
-local MODE_HOUSES = 3
-local MODE_FIXUP = 4
-local MODE_FINISHED = 10
+local Mode = {
+	GENERATING_LEVEL = 1
+	, COPY_TO_GMAP = 2
+	, TREES = 3
+	, HOUSES = 4
+	, FIXUP = 5
+	, FINISHED = 10
+}
 
 function Level:ctor(rng, depth)
 	self.rng = rng
@@ -28,11 +32,10 @@ function Level:ctor(rng, depth)
 	self.visited = false
 	self.fatFont = fontManager.get(32)
 
-	self.mode = MODE_GENERATING_LEVEL
+	self.mode = Mode.GENERATING_LEVEL
 
 	self.w = S.game.COLS
 	self.h = S.game.ROWS
-
 end
 
 function Level:initializeGenerator()
@@ -163,17 +166,34 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 	return minX, maxX, minY, maxY
 end
 
+local function createTreesAsElements(grid)
+	local idx = 0
+	for y = 0, grid.h - 1 do
+		for x = 0, grid.w - 1 do
+			local v = grid:at(x, y)
+			if v > 0 then
+				local gobj = elements.create(idx)
+				gobj:setTileId(Tiles.Trees + v - 1)
+				gobj:setOpaque(true)
+
+			end
+
+			idx = idx +1
+		end
+	end
+end
+
 local function isPassable(tileId)
 	return Tiles.Water ~= tileId
 end
 
 function Level:update(_dt)
-	if MODE_GENERATING_LEVEL == self.mode then
+	if Mode.GENERATING_LEVEL == self.mode then
 		if self.generator:update(dt) then
-			self.mode = MODE_COPY_TO_GMAP
+			self.mode = Mode.COPY_TO_GMAP
 		end
 
-	elseif MODE_COPY_TO_GMAP == self.mode then
+	elseif Mode.COPY_TO_GMAP == self.mode then
 		local idx = 0
 		for y = 0, self.h - 1 do
 			for x = 0, self.w - 1 do
@@ -183,9 +203,32 @@ function Level:update(_dt)
 				idx = idx + 1
 			end
 		end
-		self.mode = MODE_HOUSES
+		self.mode = Mode.TREES
 
-	elseif MODE_HOUSES == self.mode then
+	elseif Mode.TREES == self.mode then
+		self.grid:fill(0)
+
+		-- forest
+		local randShiftX = self.rng:random(10000)
+		local randShiftY = self.rng:random(10000)
+
+		local treeCount = self.grid.w * self.grid.h * 6 / 100
+		local actualTreeCount = 0
+		for i = 1, treeCount do
+			local tx = self.rng:random(0, self.grid.w - 1)
+			local ty = self.rng:random(0, self.grid.h - 1)
+
+			local m = 10 * love.math.noise((randShiftX + tx) / 55.0, (randShiftY + ty) / 55.0)
+			if m > 7 then
+				self.grid:set(tx, ty, self.rng:random(1, #trees))
+				actualTreeCount = actualTreeCount + 1
+			end
+		end
+
+		print('wanted to generate ' .. treeCount .. ' trees, generated ' .. actualTreeCount)
+		self.mode = Mode.HOUSES
+
+	elseif Mode.HOUSES == self.mode then
 		local houseGrid = Grid:new({ w = House_W, h = House_H })
 		loadHouse('houses/house001.bin', houseGrid)
 		local houseX = map.width() / 2 - 12
@@ -193,11 +236,12 @@ function Level:update(_dt)
 
 		minX, maxX, minY, maxY = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
 
-		-- make floor under whole house
+		-- make floor under whole house, remove any trees
 		for y = houseY + minY, houseY + maxY do
 			for x = houseX + minX, houseX + maxX do
 				local idx = y * map.width() + x
 				map.setTileId(idx, Tiles.House_Floor)
+				self.grid:set(x, y, 0)
 			end
 		end
 
@@ -206,20 +250,23 @@ function Level:update(_dt)
 		local houseX = map.width() / 2 + 12
 		local houseY = map.height() - 29 - 10 - 40
 		minX, maxX, minY, maxY = self:fixupWallsAndCreateAsElements(houseGrid, houseX, houseY)
-		self.mode = MODE_FIXUP
+		self.mode = Mode.FIXUP
 
 		-- make floor under whole house
 		for y = houseY + minY, houseY + maxY do
 			for x = houseX + minX, houseX + maxX do
 				local idx = y * map.width() + x
 				map.setTileId(idx, Tiles.House_Floor)
+				self.grid:set(x, y, 0)
 			end
 		end
 
-	elseif MODE_FIXUP == self.mode then
+		createTreesAsElements(self.grid)
+
+	elseif Mode.FIXUP == self.mode then
 		map.fixupTiles(Tiles.Water, Tiles.Earth)
 		map.fixupTiles(Tiles.Earth, Tiles.Grass)
-		self.mode = MODE_FINISHED
+		self.mode = Mode.FINISHED
 
 	else
 		return false
