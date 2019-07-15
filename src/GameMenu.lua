@@ -2,25 +2,24 @@
 local class = require 'engine.oop'
 local color = require 'engine.color'
 local Grid = require 'Grid'
+local Menu = require 'Menu'
 local S = require 'settings'
 
 local gamestate = require 'hump.gamestate'
 
 -- class
-local GameMenu = class('GameMenu')
+local GameMenu = class('GameMenu', Menu)
 
-local rng = nil
 local bigFont = love.graphics.newFont('fonts/FSEX300.ttf', 64, 'normal')
 
-local texts = {
-	love.graphics.newText(bigFont, "continue")
-	, love.graphics.newText(bigFont, "settings")
-	, love.graphics.newText(bigFont, "save")
-	, love.graphics.newText(bigFont, "quit")
-}
-
 function GameMenu:ctor()
-	rng = love.math.newRandomGenerator()
+	local texts = {
+		love.graphics.newText(bigFont, "continue")
+		, love.graphics.newText(bigFont, "settings")
+		, love.graphics.newText(bigFont, "save")
+		, love.graphics.newText(bigFont, "quit")
+	}
+	self.base.ctor(self, texts)
 
 	self.shader = love.graphics.newShader[[
 		extern vec2 dims;
@@ -35,19 +34,16 @@ function GameMenu:ctor()
 end
 
 function GameMenu:enter(from)
+	self.base.enter(self, from)
 	self.from = from
-	self.selected = 1
-	self.totalTime = 0
 end
 
 local quitCounter = 0
 
 function GameMenu:keypressed(key)
-	if 'down' == key then
-		self.selected = math.min(#texts, self.selected + 1)
-	elseif 'up' == key then
-		self.selected = math.max(1, self.selected - 1)
-	elseif 'return' == key then
+	self.base.keypressed(self, key)
+
+	if 'return' == key then
 		if 1 == self.selected then
 			gamestate.pop()
 		elseif 2 == self.selected then
@@ -59,7 +55,8 @@ function GameMenu:keypressed(key)
 end
 
 function GameMenu:update(dt)
-	self.totalTime = self.totalTime + dt
+	self.base.update(self, dt)
+
 	self.shader:send("dims", { love.graphics.getWidth(), love.graphics.getHeight() })
 end
 
@@ -73,20 +70,7 @@ function GameMenu:draw()
 	love.graphics.rectangle('fill', 0, 0, W, H)
 	love.graphics.setShader()
 
-	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-
-	local w2 = S.resolution.x / 2
-	local h2 = (S.resolution.y - 70 * 3) / 2
-	local off = 0
-	for k, text in pairs(texts) do
-		if self.selected == k then
-			love.graphics.setColor(0.9, 0.7, 0.0, 1.0)
-		else
-			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
-		end
-		love.graphics.draw(text, w2 - text:getWidth() / 2, h2 + off)
-		off = off + 70
-	end
+	self.base.draw(self)
 end
 
 return GameMenu
