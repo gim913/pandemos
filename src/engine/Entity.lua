@@ -37,6 +37,7 @@ function Entity:ctor(initPos)
 	self.seeDist = 10
 	self.losRadius = 10
 	-- self.id = nil
+	self.class = 0
 
 	self.hp = 100
 	self.maxHp = 100
@@ -71,7 +72,11 @@ function Entity:unoccupy()
 end
 
 function Entity:reactionTowards(other)
-	return -1
+	if self.class ~= other.class then
+		return -1
+	end
+
+	return 0
 end
 
 function Entity:getDamage()

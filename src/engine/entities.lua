@@ -58,13 +58,12 @@ local function entities_with(attr)
 	return entities_with_attrs[attr]
 end
 
-local function entities_check(idx, actor)
+local function entities_check(idx, initiatior)
 	if entities_location[idx] then
 		local entId = entities_location[idx]
 		local ent = entities_data[entId]
 
-		-- hmm probably should be other way around actor:reactionTowards(ent)...
-		if ent:reactionTowards(actor) < 0 then
+		if initiatior:reactionTowards(ent) < 0 then
 			return action.Action.Attack,ent
 		end
 

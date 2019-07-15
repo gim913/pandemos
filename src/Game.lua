@@ -112,6 +112,12 @@ local function prepareLetters(letters)
 	return images
 end
 
+
+local classes = {
+	Player = 1,
+	Infected = 2
+}
+
 function Game:ctor(rng)
 	self.rng = rng
 	self.seed = 0
@@ -139,9 +145,8 @@ function Game:ctor(rng)
 	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 49))
-	player.img = self.letters['@'] --love.graphics.newImage("player.png")
-	player.losRadius = 15
-	player.seeDist = 15
+	player.img = self.letters['@']
+	player.class = classes.Player
 
 	entities.add(player)
 	entities.addAttr(player, entities.Attr.Has_Fov)
@@ -154,6 +159,8 @@ function Game:ctor(rng)
 		local ry = self.rng:random(0, 30)
 		local dummy = Infected:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
 		dummy.img = self.letters['I']
+		dummy.class = classes.Infected
+
 		entities.add(dummy)
 		entities.addAttr(dummy, entities.Attr.Has_Fov)
 		entities.addAttr(dummy, entities.Attr.Has_Move)
@@ -271,6 +278,8 @@ function Game:keypressed(key)
 			current = batch.debug('disableVismap') or false
 			batch.debug({ disableVismap = not current })
 			updateTiles()
+		elseif key == "2" then
+			S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
 		end
 	end
 

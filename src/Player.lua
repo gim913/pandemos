@@ -16,15 +16,18 @@ Player.Bash_Speed = 720
 function Player:ctor(initPos)
 	self.base.ctor(self, initPos)
 	self.displaySee = false
+
+	self.losRadius = 15
+	self.seeDist = 15
 end
 
 function Player:onAdd()
 	self.name = 'Player'
 	self:occupy()
 
-	self.maxHp = 120
-	self.hp = 120
-	self.damage = 33
+	self.maxHp = 1200
+	self.hp = 1200
+	self.damage = 10
 end
 
 function Player:recalcSeeMap()
