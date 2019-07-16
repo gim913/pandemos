@@ -563,9 +563,9 @@ local function drawInterface()
 
 	interface.begin(startX, 10)
 
-	local h = interface.drawPlayerInfo(player, startX, 10, 260)
+	local h = interface.drawPlayerInfo(player, 260)
 
-	interface.drawVisible(player.seemap, startX, 10 + h + 10, 260, function(ent)
+	interface.drawVisible(player.seemap, 260, function(ent)
 		local relPos = ent.pos - camLu
 		if mouseCell and relPos == mouseCell then
 			return true
