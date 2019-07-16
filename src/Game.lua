@@ -32,7 +32,7 @@ messages.initialize(31 * 25, 31 * 25)
 local f = math.floor
 local camera = nil
 local player
-local Max_Dummies = 5
+local Max_Dummies = 50
 local dummies = {}
 
 local minimapData = nil
@@ -149,7 +149,7 @@ function Game:ctor(rng)
 
 	self.letters = prepareLetters('@IBCSTM')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 79))
+	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
 	player.img = self.letters['@']
 	player.class = classes.Player
 
@@ -559,9 +559,12 @@ end
 
 local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
+	local camLu = camera:lu()
+
+	interface.begin(startX, 10)
+
 	local h = interface.drawPlayerInfo(player, startX, 10, 260)
 
-	local camLu = camera:lu()
 	interface.drawVisible(player.seemap, startX, 10 + h + 10, 260, function(ent)
 		local relPos = ent.pos - camLu
 		if mouseCell and relPos == mouseCell then
@@ -569,6 +572,39 @@ local function drawInterface()
 		end
 		return false
 	end)
+	interface.finish()
+
+	imgui.Render();
+end
+
+function Game:show()
+	-- TODO: debug info
+	local camLu = camera:lu()
+	love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
+	love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
+	love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
+	if mouseCell then
+		local mapCoords = camLu + mouseCell
+		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
+	end
+
+
+	-- draw map
+	batch.draw()
+
+	-- ^^
+	drawEntities()
+
+	if mouseCell then
+		love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
+		love.graphics.rectangle('line', mouseCell.x * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
+	end
+
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.draw(messages.popups.getCanvas())
+	drawInterface()
+	drawMinimap()
+	console.draw(0, 900 - console.height())
 end
 
 function Game:draw()
@@ -576,33 +612,7 @@ function Game:draw()
 		local level = self.levels[self.depthLevel]
 		level:show()
 	else
-		-- TODO: debug info
-		local camLu = camera:lu()
-		love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
-		love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
-		love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
-		if mouseCell then
-			local mapCoords = camLu + mouseCell
-			love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
-		end
-
-
-		-- draw map
-		batch.draw()
-
-		-- ^^
-		drawEntities()
-
-		if mouseCell then
-			love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-			love.graphics.rectangle('line', mouseCell.x * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
-		end
-
-		love.graphics.setColor(1, 1, 1, 1)
-		love.graphics.draw(messages.popups.getCanvas())
-		drawInterface()
-		drawMinimap()
-		console.draw(0, 900 - console.height())
+		self:show()
 	end
 end
 
