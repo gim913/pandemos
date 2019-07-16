@@ -561,17 +561,37 @@ local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
-	interface.begin(startX, 10)
+	interface.begin('Entities', startX, 0)
 
 	local h = interface.drawPlayerInfo(player, 260)
 
-	interface.drawVisible(player.seemap, 260, function(ent)
+	interface.drawVisible(player.seemap, 260, 260, function(ent)
 		local relPos = ent.pos - camLu
 		if mouseCell and relPos == mouseCell then
 			return true
 		end
 		return false
 	end)
+	interface.finish()
+
+	interface.begin('Equipment', startX, 260 + h + 50)
+
+	imgui.BeginGroup()
+	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
+	imgui.Text('beep bop beep')
+	imgui.EndChild()
+	imgui.EndGroup()
+
+	interface.finish()
+
+	interface.begin('Inventory', startX, 260 + h + 50 + 150 + 50)
+
+	imgui.BeginGroup()
+	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
+	imgui.Text('beep bop beep')
+	imgui.EndChild()
+	imgui.EndGroup()
+
 	interface.finish()
 
 	imgui.Render();

@@ -13,9 +13,9 @@ imgui.AddFontFromFileTTF('fonts/scp.otf', 20)
 
 local Box_Height = 66
 
-function interface.begin(x, y)
-	imgui.SetNextWindowPos(x, y, 'ImGuiCond_FirstUseEver')
-	imgui.Begin('Entities', true, { 'ImGuiWindowFlags_AlwaysAutoResize', 'ImGuiWindowFlags_NoMove' });
+function interface.begin(name, x, y)
+	imgui.SetNextWindowPos(x, y, 'ImGuiCond_Always')
+	imgui.Begin(name, true, { 'ImGuiWindowFlags_AlwaysAutoResize', 'ImGuiWindowFlags_NoMove' });
 end
 
 function interface.finish()
@@ -59,7 +59,7 @@ function interface.drawPlayerInfo(ent, width)
 	return Box_Height
 end
 
-function interface.drawVisible(ents, width, isHovered)
+function interface.drawVisible(ents, width, height, isHovered)
 	--imgui.ShowDemoWindow(true)
 
 	imgui.BeginGroup()
@@ -67,7 +67,7 @@ function interface.drawVisible(ents, width, isHovered)
 	imgui.PushStyleColor('ImGuiCol_ScrollbarGrab', 0.5,0.5,0.5, 1.0)
 	imgui.PushStyleColor('ImGuiCol_ScrollbarGrabHovered', 0.7, 0.7, 0.7, 1.0)
 	imgui.PushStyleColor('ImGuiCol_ScrollbarGrabActive', 0.97, 0.97, 0.97, 1.0)
-	imgui.BeginChild_2(2, width, 200, true, "ImGuiWindowFlags_None");
+	imgui.BeginChild_2(2, width, height, true, "ImGuiWindowFlags_None");
 
 	local track_item = 33
 	local sliderVal = 10
