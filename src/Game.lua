@@ -506,10 +506,30 @@ function Game:updateGameLogic(dt)
 	end
 end
 
+function Game:handleGrabUpdate(dt)
+	local locationId = player.pos.y * map.width() + player.pos.x
+	local items, itemCount = elements.getItems(locationId)
+	if items then
+		if itemCount == 1 then
+			for itemId, item in pairs(items) do
+				table.insert(player.inventory, item)
+				elements.del(locationId, itemId)
+
+				updateTiles()
+			end
+		else
+			console.log('Game:handleGrabUpdate() more items inside the cell')
+		end
+	end
+
+	self.ui.showGrabMenu = false
+end
+
 function Game:doUpdate(dt)
 	if self.ui.showGrabMenu then
 		-- if single item on the ground and there is a space in inventory, just grab it
 		-- if more items show menu
+		self:handleGrabUpdate(dt)
 	else
 		self:updateGameLogic(dt)
 	end
@@ -646,11 +666,19 @@ local function drawInterface()
 
 	imgui.BeginGroup()
 	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
-	imgui.Text('<filler>')
-	imgui.Text('<filler>')
-	imgui.Text('<filler>')
-	imgui.Text('<filler>')
-	imgui.Text('<filler>')
+	if #player.inventory > 0 then
+		for _, item in pairs(player.inventory) do
+			imgui.Text(item.desc.name)
+			imgui.SameLine(150)
+			imgui.Text(item.desc.type)
+		end
+	else
+		imgui.Text('<filler>')
+		imgui.Text('<filler>')
+		imgui.Text('<filler>')
+		imgui.Text('<filler>')
+		imgui.Text('<filler>')
+	end
 	imgui.EndChild()
 	imgui.EndGroup()
 
@@ -670,6 +698,9 @@ function Game:show()
 		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 	end
 
+	if self.ui.showGrabMenu then
+		love.graphics.print("show grab menu", S.resolution.x - 200 - 10, 110)
+	end
 
 	-- draw map
 	batch.draw()

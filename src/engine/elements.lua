@@ -37,7 +37,7 @@ end
 
 -- -- -- -- --
 
-local elements_data = {}
+--local elements_data = {}
 local elements_location = {}
 
 local function elements_add(location, element)
@@ -48,9 +48,19 @@ local function elements_add(location, element)
 	table.insert(elements_location[location], element)
 end
 
+local function elements_del(location, index)
+	if elements_location[location] then
+		if id and #elements_location[location] > 1 then
+			table.remove(elements_location[location], index)
+		else
+			elements_location[location] = nil
+		end
+	end
+end
+
 local function elements_create(location)
 	local r = Gobject:new()
-	table.insert(elements_data, r)
+	--table.insert(elements_data, r)
 	if location ~= nil then
 		elements_add(location, r)
 	end
@@ -107,14 +117,31 @@ local function elements_notPassLight(idx)
 	return false
 end
 
+local function elements_getItems(idx)
+	if  elements_location[idx] then
+		local items = {}
+		local count = 0
+		for k, object in pairs(elements_location[idx]) do
+			if object.item then
+				items[k] = object
+				count = count + 1
+			end
+		end
+		return items, count
+	end
+	return nil
+end
+
 local elements = {
 	create = elements_create
+	, del = elements_del
 	, smash = elements_smash
 	, check = elements_check
 	, getTileId = elements_getTileId
 	, process = elements_process
 
 	, notPassLight = elements_notPassLight
+	, getItems = elements_getItems
 }
 
 return elements

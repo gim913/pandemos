@@ -43,6 +43,8 @@ function Entity:ctor(initPos)
 	self.maxHp = 100
 	self.damage = 5
 
+	self.inventory = {}
+
 	self:resetActions()
 end
 
