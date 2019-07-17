@@ -136,6 +136,8 @@ function Game:ctor(rng)
 	self.depthLevel = 1
 	self.updateLevel = false
 	self.doActions = false
+	self.ui = {}
+	-- self.ui.showGrabMenu
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
@@ -308,18 +310,14 @@ function Game:keypressed(key)
 
 	local nextAct=action.Action.Blocked, nPos
 
+	-- general / UI
 	if 'escape' == key then
 		gamestate.push(GameMenu:new())
-
-		-- TODO: XXX: TODO: devel: quit
-		-- love.event.push("quit")
-		-- gamestate.pop()
-	end
-
-	if '`' == key or '~' == key then
+	elseif '`' == key or '~' == key then
 		console.toggle()
 	end
 
+	-- debug
 	-- TODO: XXX: TODO: devel: quit
 	if love.keyboard.isDown('lctrl') then
 		if key == "1" then
@@ -332,15 +330,18 @@ function Game:keypressed(key)
 		end
 	end
 
+	-- movement / game / actions
 	local moveVec = nil
 	if #(player.actions) == 0 then
 		-- ignore keyboard controls if following the path
 		if not player.follow_path then
 			moveVec = movementKeyToVector(key)
-			print(tostring(moveVec))
+			if ',' == key or 'g' == key then
+				self.ui.showGrabMenu = true
+			end
 		end
 
-		-- TODO: remove this before releasing ^^
+		-- TODO: XXX: TODO: devel: remove this before releasing ^^
 		if key == "tab" then
 			if cameraIdx == Max_Dummies then
 				camera:follow(player)
@@ -462,13 +463,13 @@ function Game:doUpdateLevel(dt)
 	end
 end
 
-local totalTime = 0
-function Game:doUpdate(dt)
+local initializeAi = true
+function Game:updateGameLogic()
 	-- at this point map should be ready, fire up AI once,
 	-- afterwards it should be fired after finishing actions
-	if totalTime == 0 then
+	if initializeAi then
 		processAi()
-		totalTime = 1
+		initializeAi = false
 	end
 
 	-- 'execute' planned path
@@ -476,6 +477,7 @@ function Game:doUpdate(dt)
 		self.doActions = pathPlayerMovement()
 	end
 
+	-- not yet sure if it should be here
 	messages.update(dt, camera:lu(), Tile_Size_Adj)
 
 	if self.doActions then
@@ -492,14 +494,24 @@ function Game:doUpdate(dt)
 		if updateTilesAfterMove then
 			camera:update()
 
+			-- not needed here anymore
 			--processAi()
 
-			-- TODO: XXX: TODO: IMPORTANT: probably wrong location
+			-- TODO: probably wrong location
 			processEntitiesFov()
 
 			updateTiles()
 			updateTilesAfterMove = false
 		end
+	end
+end
+
+function Game:doUpdate(dt)
+	if self.ui.showGrabMenu then
+		-- if single item on the ground and there is a space in inventory, just grab it
+		-- if more items show menu
+	else
+		self:updateGameLogic(dt)
 	end
 
 	local mouseX, mouseY = love.mouse.getPosition()
