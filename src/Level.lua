@@ -178,7 +178,7 @@ local function createTreesAsElements(grid)
 					gobj:setOpaque(true)
 				else
 					local gobj = elements.create(idx)
-					gobj:setTileId(Tiles.House_Chest)
+					gobj:setTileId(nil)
 					gobj:setPassable(true)
 					gobj:setItem({ symbol = '[', name = 'Bo', type = 'staff' })
 				end

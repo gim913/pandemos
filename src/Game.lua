@@ -123,6 +123,8 @@ local classes = {
 	Infected = 2
 }
 
+local Letters
+
 function Game:ctor(rng)
 	self.rng = rng
 	self.seed = 0
@@ -138,6 +140,7 @@ function Game:ctor(rng)
 	self.doActions = false
 	self.ui = {}
 	-- self.ui.showGrabMenu
+	-- self.ui.examine
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
@@ -149,10 +152,10 @@ function Game:ctor(rng)
 	end)
 	updateMinimap()
 
-	self.letters = prepareLetters('@IBCSTM')
+	Letters = prepareLetters('@iBCSTM[')
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
-	player.img = self.letters['@']
+	player.img = Letters['@']
 	player.class = classes.Player
 
 	entities.add(player)
@@ -165,7 +168,7 @@ function Game:ctor(rng)
 		local rx = self.rng:random(-15, 15)
 		local ry = self.rng:random(0, 30)
 		local dummy = Infected:new(Vec(f(map.width() / 2 + rx), map.height() - 45 - ry))
-		dummy.img = self.letters['I']
+		dummy.img = Letters['i']
 		dummy.class = classes.Infected
 
 		entities.add(dummy)
@@ -312,7 +315,11 @@ function Game:keypressed(key)
 
 	-- general / UI
 	if 'escape' == key then
-		gamestate.push(GameMenu:new())
+		if self.ui.examine then
+			self.ui.examine = false
+		else
+			gamestate.push(GameMenu:new())
+		end
 	elseif '`' == key or '~' == key then
 		console.toggle()
 	end
@@ -338,6 +345,8 @@ function Game:keypressed(key)
 			moveVec = movementKeyToVector(key)
 			if ',' == key or 'g' == key then
 				self.ui.showGrabMenu = true
+			elseif 'x' == key then
+				self.ui.examine = true
 			end
 		end
 
@@ -355,8 +364,12 @@ function Game:keypressed(key)
 		end
 	end
 
-	if moveVec and playerMoveAction(moveVec) then
-		self.doActions = true
+	if self.ui.examine then
+		-- use moveVec to move selection
+	else
+		if moveVec and playerMoveAction(moveVec) then
+			self.doActions = true
+		end
 	end
 end
 
@@ -548,8 +561,7 @@ function Game:doUpdate(dt)
 			end
 		end
 	else
-		mouseCellX = nil
-		mouseCellY = nil
+		mouseCell = nil
 	end
 
 	console.update(dt)
@@ -561,6 +573,34 @@ function Game:update(dt)
 		self:doUpdateLevel(dt)
 	else
 		self:doUpdate(dt)
+	end
+end
+
+local function drawItems(ent, camLu)
+	local scaleFactor = Tile_Size / Entity_Tile_Size
+	local ya = camLu.y
+	local xa = camLu.x
+
+	local tc = 2 * S.game.VIS_RADIUS + 1
+	for y=0, tc - 1 do
+		if ya + y > map.height() then
+			break
+		end
+
+		local locationId = (ya + y) * map.width() + xa
+		for x=0, tc - 1 do
+			local items, itemCount = elements.getItems(locationId)
+			if itemCount > 0 then
+				local vismap = ent.vismap
+				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
+					love.graphics.setColor(1.0, 1.0, 1.0)
+
+					local itemImg = Letters[items[1].desc.symbol]
+					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+				end
+			end
+			locationId = locationId + 1
+		end
 	end
 end
 
@@ -589,9 +629,8 @@ local function drawEntityPath(ent, camLu)
 	end
 end
 
-local function drawEntities()
+local function drawEntities(camLu)
 	local scaleFactor = Tile_Size / Entity_Tile_Size
-	local camLu = camera:lu()
 	for _,ent in pairs(entities.all()) do
 		local relPos = ent.pos - camLu
 		if ent == player then
@@ -698,15 +737,16 @@ function Game:show()
 		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 	end
 
-	if self.ui.showGrabMenu then
-		love.graphics.print("show grab menu", S.resolution.x - 200 - 10, 110)
+	if self.ui.examine then
+		love.graphics.print("self.ui.examine", S.resolution.x - 200 - 10, 110)
 	end
 
 	-- draw map
 	batch.draw()
+	drawItems(camera.followedEnt, camLu)
 
 	-- ^^
-	drawEntities()
+	drawEntities(camLu)
 
 	if mouseCell then
 		love.graphics.setColor(0.5, 0.9, 0.5, 0.9)

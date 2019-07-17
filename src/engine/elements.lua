@@ -129,7 +129,7 @@ local function elements_getItems(idx)
 		end
 		return items, count
 	end
-	return nil
+	return nil, 0
 end
 
 local elements = {
