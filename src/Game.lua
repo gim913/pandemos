@@ -194,13 +194,45 @@ local Tile_Size = 30
 local Tile_Border = 1
 local Tile_Size_Adj = Tile_Size + Tile_Border
 
-function Game:mousepressed(x, y)
+
+-- function love.textinput(t)
+--     imgui.TextInput(t)
+--     if not imgui.GetWantCaptureKeyboard() then
+--         -- Pass event to the game
+--     end
+-- end
+
+function Game:mousemoved(x, y)
+    imgui.MouseMoved(x, y)
+	if imgui.GetWantCaptureMouse() then
+		return
+    end
+end
+
+function Game:mousereleased(x, y, button)
+    imgui.MouseReleased(button)
+	if imgui.GetWantCaptureMouse() then
+		return
+    end
+end
+
+function Game:mousepressed(x, y, button)
+	imgui.MousePressed(button)
+	if imgui.GetWantCaptureMouse() then
+		return
+	end
+
 	if player.astar_path then
 		player.follow_path = 1
 	end
 end
 
 function Game:wheelmoved(x, y)
+	imgui.WheelMoved(y)
+	if imgui.GetWantCaptureMouse() then
+		return
+	end
+
 	if love.keyboard.isDown('lctrl') then
 		if love.keyboard.isDown('lshift') then
 			console.nextFont()
@@ -261,7 +293,19 @@ local function movementKeyToVector(pressedKey)
 	return nil
 end
 
+function Game:keyreleased(key)
+    imgui.KeyReleased(key)
+    if imgui.GetWantCaptureKeyboard() then
+        return
+    end
+end
+
 function Game:keypressed(key)
+	imgui.KeyPressed(key)
+    if imgui.GetWantCaptureKeyboard() then
+        return
+	end
+
 	local nextAct=action.Action.Blocked, nPos
 
 	if 'escape' == key then
