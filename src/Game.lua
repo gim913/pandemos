@@ -464,7 +464,7 @@ function Game:doUpdateLevel(dt)
 end
 
 local initializeAi = true
-function Game:updateGameLogic()
+function Game:updateGameLogic(dt)
 	-- at this point map should be ready, fire up AI once,
 	-- afterwards it should be fired after finishing actions
 	if initializeAi then

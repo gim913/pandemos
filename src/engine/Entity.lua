@@ -116,7 +116,7 @@ end
 
 function Entity:_checkElements(nPos, location)
 	-- check elements
-	local prop = elements.property(location)
+	local prop = elements.check(location)
 	if prop == action.Action.Blocked then
 		return action.Action.Blocked
 	end
@@ -191,7 +191,7 @@ function Entity:attack()
 		return 0,0
 	end
 
-	local prop = elements.property(idx)
+	local prop = elements.check(idx)
 	-- TODO : element might have already been destroyed here (by someone else)
 	if prop == action.Action.Attack then
 		elements.smash(idx)

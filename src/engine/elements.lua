@@ -7,7 +7,7 @@ local Gobject = class('Gobject')
 function Gobject:ctor()
 	self.tileId = 0
 	-- state descriptor
-	self.sd = { state = 0 }
+	self.desc = { state = 0 }
 
 	-- additional unset properties
 	-- self.opaque
@@ -27,7 +27,12 @@ end
 
 function Gobject:setSmashable(stateDescriptor)
 	self.smashable = true
-	self.sd = stateDescriptor
+	self.desc = stateDescriptor
+end
+
+function Gobject:setItem(itemDescriptor)
+	self.item = true
+	self.desc = itemDescriptor
 end
 
 -- -- -- -- --
@@ -55,16 +60,16 @@ end
 local function elements_smash(location)
 	print('smashing element ' .. location)
 	if elements_location[location] and elements_location[location][1].smashable then
-		if elements_location[location][1].sd.state ~= 0 then
-			local smashedId = elements_location[location][1].sd.state
-			elements_location[location][1].sd.state = smashedId - 1
-			elements_location[location][1].tileId = elements_location[location][1].sd.smashedTiles[smashedId]
+		if elements_location[location][1].desc.state ~= 0 then
+			local smashedId = elements_location[location][1].desc.state
+			elements_location[location][1].desc.state = smashedId - 1
+			elements_location[location][1].tileId = elements_location[location][1].desc.smashedTiles[smashedId]
 			print('HITHITHIT')
 		end
 	end
 end
 
-local function elements_property(location)
+local function elements_check(location)
 	if elements_location[location] then
 		-- not sure what to do with this, check only first element
 		if elements_location[location][1].passable then
@@ -72,7 +77,7 @@ local function elements_property(location)
 		end
 		if elements_location[location][1].smashable then
 			-- if not smashed, allow attack, else treat as non-existing
-			if elements_location[location][1].sd.state ~= 0 then
+			if elements_location[location][1].desc.state ~= 0 then
 				return action.Action.Attack
 			else
 				return nil
@@ -105,7 +110,7 @@ end
 local elements = {
 	create = elements_create
 	, smash = elements_smash
-	, property = elements_property
+	, check = elements_check
 	, getTileId = elements_getTileId
 	, process = elements_process
 
