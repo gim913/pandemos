@@ -1,4 +1,4 @@
-## *dev does the complete roguelike toutorial
+ *dev does the complete roguelike toutorial
 
 ### repo clone
 
@@ -15,6 +15,7 @@ If you forgot to pass `--recursive`:
    * [Week 2](#week-2)
    * [Week 3](#week-3)
    * [Week 4](#week-4)
+   * [Week 5](#week-5)
 
 ### Week 1
 
@@ -90,3 +91,17 @@ Plan for this week:
   * inventory
   * modal/non-modal dialogs - not sure if needed
   * "voice" messages
+
+### Week 5
+
+Week 4 went pretty nicely and I feel it was pretty productive.
+Week 4 as outlined in tutorial was using composition, right now I somewhat ignored that part,
+so it's not super beauty, but it shouldn't be hard to change it later
+
+This week I have super limited time, so probably things will get delayed by one week.
+
+Very short plan is to:
+ * add ability to eXamine with a keyboard
+ * add some dumb inventory (for all entities, reason is there will be enemies with non-empty inventory),
+ * generate lot of items as elements (really super dumb, polishing will come much later)
+ * let the player pick up items
