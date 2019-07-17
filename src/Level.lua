@@ -172,10 +172,15 @@ local function createTreesAsElements(grid)
 		for x = 0, grid.w - 1 do
 			local v = grid:at(x, y)
 			if v > 0 then
-				local gobj = elements.create(idx)
-				gobj:setTileId(Tiles.Trees + v - 1)
-				gobj:setOpaque(true)
-
+				if v <= 16 then
+					local gobj = elements.create(idx)
+					gobj:setTileId(Tiles.Trees + v - 1)
+					gobj:setOpaque(true)
+				else
+					local gobj = elements.create(idx)
+					gobj:setTileId(Tiles.House_Chest)
+					gobj:setPassable(true)
+				end
 			end
 
 			idx = idx +1
@@ -214,6 +219,7 @@ function Level:update(_dt)
 
 		local treeCount = self.grid.w * self.grid.h * 6 / 100
 		local actualTreeCount = 0
+		local forestItemCount = 0
 		for i = 1, treeCount do
 			local tx = self.rng:random(0, self.grid.w - 1)
 			local ty = self.rng:random(0, self.grid.h - 1)
@@ -222,10 +228,13 @@ function Level:update(_dt)
 			if m > 7 then
 				self.grid:set(tx, ty, self.rng:random(1, #trees))
 				actualTreeCount = actualTreeCount + 1
+			else
+				self.grid:set(tx, ty, 100)
+				forestItemCount = forestItemCount + 1
 			end
 		end
 
-		print('wanted to generate ' .. treeCount .. ' trees, generated ' .. actualTreeCount)
+		print('wanted to generate ' .. treeCount .. ' trees, generated ' .. actualTreeCount .. ", items: " .. forestItemCount)
 		self.mode = Mode.HOUSES
 
 	elseif Mode.HOUSES == self.mode then

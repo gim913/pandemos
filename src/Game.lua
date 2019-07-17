@@ -32,7 +32,7 @@ messages.initialize(31 * 25, 31 * 25)
 local f = math.floor
 local camera = nil
 local player
-local Max_Dummies = 50
+local Max_Dummies = 5
 local dummies = {}
 
 local minimapData = nil
@@ -489,7 +489,7 @@ function Game:update(dt)
 end
 
 local function drawEntityPath(ent, camLu)
-	if S.game.debug and not S.game.debug.show_astar_paths then
+	if ent ~= player and S.game.debug and not S.game.debug.show_astar_paths then
 		return
 	end
 
@@ -561,7 +561,7 @@ local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
-	interface.begin('Entities', startX, 0)
+	interface.begin('Entities', startX, 10)
 
 	local h = interface.drawPlayerInfo(player, 260)
 
@@ -574,21 +574,27 @@ local function drawInterface()
 	end)
 	interface.finish()
 
-	interface.begin('Equipment', startX, 260 + h + 50)
+	interface.begin('Equipment', startX, 260 + 20 + h + 50)
 
 	imgui.BeginGroup()
-	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
-	imgui.Text('beep bop beep')
+	imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
+	imgui.Text('1: <filler>')
+	imgui.Text('2: <filler>')
+	imgui.Text('3: <filler>')
 	imgui.EndChild()
 	imgui.EndGroup()
 
 	interface.finish()
 
-	interface.begin('Inventory', startX, 260 + h + 50 + 150 + 50)
+	interface.begin('Inventory', startX, 260 + h + 50 + 80 + 60)
 
 	imgui.BeginGroup()
 	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
-	imgui.Text('beep bop beep')
+	imgui.Text('<filler>')
+	imgui.Text('<filler>')
+	imgui.Text('<filler>')
+	imgui.Text('<filler>')
+	imgui.Text('<filler>')
 	imgui.EndChild()
 	imgui.EndGroup()
 

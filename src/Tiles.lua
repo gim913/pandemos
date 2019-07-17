@@ -5,6 +5,7 @@ return {
 	, House_Wall = 16 * 2 + 1
 	, Bridge = 16 * 3 + 0
 	, House_Temporary = 16 * 3 + 1
+	, House_Chest = 16 * 3 + 2
 	, House_Floor = 16 * 3 + 3
 	, House_Window = 16 * 4 + 1
 	, House_Window_Broken = 16 * 4 + 13
