@@ -127,8 +127,6 @@ function interface.drawVisible(ents, width, height, isMouseHovered)
 			imgui.PushStyleColor('ImGuiCol_Separator', 0.4, 0.85, 0.4, 1)
 			imgui.PushStyleColor('ImGuiCol_Border', 0.4, 0.85, 0.4, 1)
 			imgui.PushStyleColor('ImGuiCol_Text', 0.4, 0.85, 0.4, 1)
-
-
 		else
 			imgui.PushStyleColor('ImGuiCol_Separator', 0.439, 0.502, 0.565, 1)
 			imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)

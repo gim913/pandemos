@@ -684,7 +684,7 @@ local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
-	imgui.ShowDemoWindow(true)
+	--imgui.ShowDemoWindow(true)
 	interface.begin('Entities', startX, 10)
 
 	local h = interface.drawPlayerInfo(player, 260, function(ent)
