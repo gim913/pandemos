@@ -672,20 +672,27 @@ local function drawMinimap()
 	love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
 end
 
+local function isMouseOverEntity(ent, camLu)
+	local relPos = ent.pos - camLu
+	if mouseCell and relPos == mouseCell then
+		return true
+	end
+	return false
+end
+
 local function drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
+	imgui.ShowDemoWindow(true)
 	interface.begin('Entities', startX, 10)
 
-	local h = interface.drawPlayerInfo(player, 260)
+	local h = interface.drawPlayerInfo(player, 260, function(ent)
+		return isMouseOverEntity(ent, camLu)
+	end)
 
 	interface.drawVisible(player.seemap, 260, 260, function(ent)
-		local relPos = ent.pos - camLu
-		if mouseCell and relPos == mouseCell then
-			return true
-		end
-		return false
+		return isMouseOverEntity(ent, camLu)
 	end)
 	interface.finish()
 

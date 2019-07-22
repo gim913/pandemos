@@ -32,8 +32,7 @@ function interface.begin(name, x, y)
 	imgui.Begin(name, nil, {
 		'ImGuiWindowFlags_AlwaysAutoResize',
 		'ImGuiWindowFlags_NoMove',
-		'ImGuiWindowFlags_NoCollapse',
-		'ImGuiWindowFlags_NoBackground'
+		'ImGuiWindowFlags_NoCollapse'
 	});
 end
 
@@ -44,43 +43,56 @@ function interface.finish()
 end
 
 
-local function interface_drawEnt(ent, width, hovered)
-	if hovered then
-		imgui.TextColored(0.3, 0.9, 0.3, 1, ent.name)
-		imgui.SetScrollHere(1 * 0.25)
-		imgui.SameLine(width - 80)
-		imgui.Text(ent.id)
+local hoveredUiEntId = nil
 
-	else
-		imgui.Text(ent.name)
-		imgui.SameLine(width - 80)
-		imgui.Text(ent.id)
-	end
+local function interface_drawEnt(ent, width, displayHovered)
+	imgui.PushID(ent.id)
+	imgui.BeginGroup()
+
+	imgui.Text(ent.name)
+	imgui.SameLine(width - 80)
+	imgui.Text("(" .. ent.id .. ")")
 
 	local hpHue = 1.0 - 10 * ent.hp / ent.maxHp / 24.0
 	local hpWidth = ent.hp / ent.maxHp
 	local r,g,b,a = color.hsvToRgb(hpHue, 0.7, 0.7, 1.0)
 
-	--imgui.PushID(ent.id);
-	imgui.PushStyleColor('ImGuiCol_FrameBg', 0.3,0.3,0.3, 1.0)
-	imgui.PushStyleColor('ImGuiCol_PlotHistogram', r,g,b,a)
+	if displayHovered or hoveredUiEntId == ent.id then
+		imgui.SetScrollHere(1 * 0.25)
+		r,g,b,a = color.hsvToRgb(hpHue, 0.3, 0.7, 1.0)
+	end
+
+	imgui.PushStyleColor('ImGuiCol_PlotHistogram', r, g, b, a)
 	imgui.ProgressBar(hpWidth, width, 16, '')
 	imgui.PopStyleColor(1);
-	--imgui.PopID();
+	imgui.EndGroup()
+
+	-- this will work with a delay, but it shouldn't matter much
+	if imgui.IsItemHovered() then
+		hoveredUiEntId = ent.id
+	elseif hoveredUiEntId == ent.id then
+		hoveredUiEntId = nil
+	end
+
+	imgui.PopID()
 end
 
-function interface.drawPlayerInfo(ent, width)
+function interface.drawPlayerInfo(ent, width, isMouseHovered)
 	imgui.BeginGroup()
 
-	imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)
-	imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
+	if isMouseHovered(ent) or hoveredUiEntId == ent.id then
+		imgui.PushStyleColor('ImGuiCol_Border', 0.4, 0.85, 0.4, 1)
+		imgui.PushStyleColor('ImGuiCol_Text', 0.4, 0.85, 0.4, 1)
+	else
+		imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)
+		imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
+	end
 	imgui.PushStyleVar_2('ImGuiStyleVar_FramePadding', 10, 10)
 
-	imgui.BeginChild_2(10001, width, Box_Height, true, 'ImGuiWindowFlags_NoBackground');
-
-	interface_drawEnt(ent, width, false)
-
+	imgui.BeginChild_2(10001, width, Box_Height, true, 'ImGuiWindowFlags_None');
+	interface_drawEnt(ent, width, isMouseHovered(ent))
 	imgui.EndChild()
+
 	imgui.PopStyleVar(1);
 	imgui.PopStyleColor(2);
 	imgui.EndGroup()
@@ -93,7 +105,7 @@ function interface.drawPlayerInfo(ent, width)
 	return Box_Height
 end
 
-function interface.drawVisible(ents, width, height, isHovered)
+function interface.drawVisible(ents, width, height, isMouseHovered)
 	imgui.BeginGroup()
 
 	imgui.PushStyleColor('ImGuiCol_ScrollbarBg', 0.25,0.25,0.25, 1.0)
@@ -106,13 +118,29 @@ function interface.drawVisible(ents, width, height, isHovered)
 	imgui.PushStyleVar_2('ImGuiStyleVar_WindowPadding', 3, 3)
 	imgui.PushStyleVar('ImGuiStyleVar_WindowRounding', 0)
 
-	imgui.BeginChild_2(10002, width, height, false, "ImGuiWindowFlags_NoBackground");
+	imgui.BeginChild_2(10002, width, height, false, "ImGuiWindowFlags_None");
 
 	local track_item = 33
 	local sliderVal = 10
 	for ent,_ in pairs(ents) do
-		interface_drawEnt(ent, width, isHovered(ent))
+		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
+			imgui.PushStyleColor('ImGuiCol_Separator', 0.4, 0.85, 0.4, 1)
+			imgui.PushStyleColor('ImGuiCol_Border', 0.4, 0.85, 0.4, 1)
+			imgui.PushStyleColor('ImGuiCol_Text', 0.4, 0.85, 0.4, 1)
+
+
+		else
+			imgui.PushStyleColor('ImGuiCol_Separator', 0.439, 0.502, 0.565, 1)
+			imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)
+			imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
+		end
+
+		interface_drawEnt(ent, width, isMouseHovered(ent))
 		imgui.Separator()
+
+		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
+			imgui.PopStyleColor(7);
+		end
 	end
 
 	imgui.EndChild()
