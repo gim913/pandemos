@@ -19,6 +19,9 @@ function Player:ctor(initPos)
 
 	self.losRadius = 15
 	self.seeDist = 15
+
+	self.capacity = 6
+	self.inventory = {}
 end
 
 function Player:onAdd()

@@ -525,14 +525,21 @@ function Game:handleGrabUpdate(dt)
 	if items then
 		if itemCount == 1 then
 			for itemId, item in pairs(items) do
+				if #player.inventory == player.capacity then
+					console.log('Inventory is full!')
+					break
+				end
 				table.insert(player.inventory, item)
 				elements.del(locationId, itemId)
 
-				updateTiles()
+				console.log(('Picked up %s'):format(item.desc.name))
 			end
+			updateTiles()
 		else
 			console.log('Game:handleGrabUpdate() more items inside the cell')
 		end
+	else
+		console.log('There\'s nothing lying here')
 	end
 
 	self.ui.showGrabMenu = false
