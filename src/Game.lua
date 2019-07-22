@@ -593,7 +593,8 @@ local function drawItems(ent, camLu)
 			if itemCount > 0 then
 				local vismap = ent.vismap
 				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-					love.graphics.setColor(1.0, 1.0, 1.0)
+					local c = items[1].desc.color
+					love.graphics.setColor(c[1], c[2], c[3], c[4])
 
 					local itemImg = Letters[items[1].desc.symbol]
 					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)

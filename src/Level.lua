@@ -6,6 +6,7 @@ local Tiles = require 'Tiles'
 local trees = require 'trees'
 
 local class = require 'engine.oop'
+local color = require 'engine.color'
 local elements = require 'engine.elements'
 local fontManager = require 'engine.fontManager'
 local map = require 'engine.map'
@@ -180,7 +181,7 @@ local function createTreesAsElements(grid)
 					local gobj = elements.create(idx)
 					gobj:setTileId(nil)
 					gobj:setPassable(true)
-					gobj:setItem({ symbol = '[', name = 'Bo', type = 'staff' })
+					gobj:setItem({ symbol = '[', name = 'Bo', type = 'staff', color = { color.hsvToRgb(0.058, 0.67, 0.60, 1.0) } })
 				end
 			end
 
