@@ -639,8 +639,16 @@ end
 
 local function drawEntities(camLu)
 	local scaleFactor = Tile_Size / Entity_Tile_Size
+
+	local hoveredUiEntId = interface.hoveredEntId()
 	for _,ent in pairs(entities.all()) do
 		local relPos = ent.pos - camLu
+
+		if hoveredUiEntId == ent.id then
+			love.graphics.setColor(0.5, 0.9, 0.5, 0.5)
+			love.graphics.rectangle('fill', relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, Tile_Size_Adj, Tile_Size_Adj)
+		end
+
 		if ent == player then
 			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
 		else

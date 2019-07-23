@@ -45,6 +45,10 @@ end
 
 local hoveredUiEntId = nil
 
+function interface.hoveredEntId()
+	return hoveredUiEntId
+end
+
 local function interface_drawEnt(ent, width, displayHovered)
 	imgui.PushID(ent.id)
 	imgui.BeginGroup()
