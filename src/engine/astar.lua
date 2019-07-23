@@ -61,7 +61,7 @@ local function astar(source, destination, handlers)
 	-- pick best node
 	while openCount > 0 do
 		local current, cId = astar_bestOpen(open, fScore)
-		--print(tostring(current) .. " " .. cId)
+		--print('  bestOpen ' .. tostring(current) .. " " .. cId)
 		open[cId] = nil
 		openCount = openCount - 1
 		closed[cId] = current

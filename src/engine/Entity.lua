@@ -275,8 +275,8 @@ function Entity:checkDirLight(position, dir)
 	-- 	return action.Action.Blocked
 	-- end
 
-	-- TODO: need to disable this for non-player entities
-	if not map.isKnown(location) then
+	-- TODO: need to disable this for non-player entities (currently hack using id=1)
+	if 1 == self.id and not map.isKnown(location) then
 		return action.Action.Blocked
 	end
 
@@ -291,12 +291,15 @@ end
 local Plan_Limit = 9
 function Entity:findPath(destination)
 	local time1 = love.timer.getTime()
+
+	local normalCost = math.floor(self.Base_Speed / 60)
+	local bashCost = math.floor((self.Base_Speed + self.Bash_Speed) / 60)
 	local result, subres = astar(self.pos, destination, {
 		toId = function(pos)
 			return pos.y * map.width() + pos.x
 		end,
 		heuristic = function(a, b)
-			return a:dist2(b)
+			return 7 * normalCost * a:dist(b)
 		end,
 		neighbors = function(source, node)
 			local n = {}
@@ -335,9 +338,9 @@ function Entity:findPath(destination)
 			local dir = b - a
 			local r, nPos = self:checkDirLight(a, dir)
 			if r == action.Action.Attack then
-				return math.floor((self.Base_Speed + self.Bash_Speed) / 60)
+				return bashCost
 			end
-			return math.floor(self.Base_Speed / 60)
+			return normalCost
 		end
 	})
 
