@@ -167,6 +167,16 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 	return minX, maxX, minY, maxY
 end
 
+local items = {
+	{ symbol = '[', name = 'Bo', type = 'melee', color = { color.hsvToRgb(0.058, 0.67, 0.60, 1.0) } },
+	{ symbol = '[', name = 'Baseball bat', type = 'melee', color = { color.hsvToRgb(0.1, 0.36, 0.55, 1.0) } },
+	{ symbol = '[', name = 'Crowbar', type = 'melee', color = { color.hsvToRgb(0.0, 1.0, 0.38, 1.0) } },
+	{ symbol = '[', name = 'Machete', type = 'melee', color = { color.hsvToRgb(0.56, 0.24, 0.72, 1.0) } },
+
+	{ symbol = '[', name = 'Beretta M9', type = 'light', color = color.dimgray },
+	{ symbol = '[', name = 'Grand Power K100', type = 'light', color = { color.gray } }
+}
+
 local function createTreesAsElements(grid)
 	local idx = 0
 	for y = 0, grid.h - 1 do
@@ -178,10 +188,11 @@ local function createTreesAsElements(grid)
 					gobj:setTileId(Tiles.Trees + v - 1)
 					gobj:setOpaque(true)
 				else
+					local itemId = v - 100
 					local gobj = elements.create(idx)
 					gobj:setTileId(nil)
 					gobj:setPassable(true)
-					gobj:setItem({ symbol = '[', name = 'Bo', type = 'staff', color = { color.hsvToRgb(0.058, 0.67, 0.60, 1.0) } })
+					gobj:setItem(items[itemId])
 				end
 			end
 
@@ -231,7 +242,7 @@ function Level:update(_dt)
 				self.grid:set(tx, ty, self.rng:random(1, #trees))
 				actualTreeCount = actualTreeCount + 1
 			else
-				self.grid:set(tx, ty, 100)
+				self.grid:set(tx, ty, 100 + self.rng:random(#items))
 				forestItemCount = forestItemCount + 1
 			end
 		end

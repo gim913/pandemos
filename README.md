@@ -16,6 +16,7 @@ If you forgot to pass `--recursive`:
    * [Week 3](#week-3)
    * [Week 4](#week-4)
    * [Week 5](#week-5)
+   * [Week 6](#week-6)
 
 ### Week 1
 
@@ -105,3 +106,11 @@ Very short plan is to:
  * add some dumb inventory (for all entities, reason is there will be enemies with non-empty inventory),
  * generate lot of items as elements (really super dumb, polishing will come much later)
  * let the player pick up items
+
+### Week 6
+
+Due to lack of time, I'm a bit behind.
+
+Still want to do bit more around Part 8 and Part 9 of tutorial.
+
+Need to modify keyboard handling but can postpone it till later

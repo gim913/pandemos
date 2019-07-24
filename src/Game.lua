@@ -12,6 +12,7 @@ local Tiles = require 'Tiles'
 
 local action = require 'engine.action'
 local class = require 'engine.oop'
+local color = require 'engine.color'
 local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
@@ -98,6 +99,54 @@ end
 
 local Entity_Tile_Size = 64
 
+local function createOutlineB(imgData)
+	for x = 0, imgData:getWidth() - 1 do
+		for y = 0, imgData:getHeight() - 1 do
+			local r, g, b, a = imgData:getPixel(x, y)
+			if a > 0.01 then
+				imgData:setPixel(x, y - 1, 0, 0, 0, 1.0)
+				imgData:setPixel(x, y - 2, 0, 0, 0, 1.0)
+				break
+			end
+		end
+
+		for y = imgData:getHeight() - 1, 0, -1 do
+			local r, g, b, a = imgData:getPixel(x, y)
+			if a > 0.01 then
+				imgData:setPixel(x, y + 1, 0, 0, 0, 1.0)
+				imgData:setPixel(x, y + 2, 0, 0, 0, 1.0)
+				break
+			end
+		end
+	end
+
+	for y = 0, imgData:getHeight() - 1 do
+		for x = 0, imgData:getWidth() - 1 do
+			local r, g, b, a = imgData:getPixel(x, y)
+			if a > 0.01 then
+				imgData:setPixel(x - 1, y, 0, 0, 0, 1.0)
+				imgData:setPixel(x - 2, y, 0, 0, 0, 1.0)
+				break
+			end
+		end
+
+		for x = imgData:getWidth() - 1, 0, -1 do
+			local r, g, b, a = imgData:getPixel(x, y)
+			if a > 0.01 then
+				imgData:setPixel(x + 1, y, 0, 0, 0, 1.0)
+				imgData:setPixel(x + 2, y, 0, 0, 0, 1.0)
+				break
+			end
+		end
+	end
+
+	return imgData
+end
+
+local function createOutline(imgData)
+	return createOutlineB(imgData)
+end
+
 local function prepareLetters(letters)
 	local font = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 	love.graphics.setFont(font)
@@ -105,13 +154,13 @@ local function prepareLetters(letters)
 	local images = {}
 	for i = 1, #letters do
 		local c = letters:sub(i, i)
-		canvas = love.graphics.newCanvas(64, 64)
+		canvas = love.graphics.newCanvas(64 + 10, 64 + 10)
 		love.graphics.setCanvas(canvas)
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 		love.graphics.printf(c, 0, 0, 64, 'center')
 		love.graphics.setCanvas()
 
-		images[c] = canvas
+		images[c] = love.graphics.newImage(createOutline(canvas:newImageData())) --canvas
 	end
 
 	return images
@@ -141,6 +190,7 @@ function Game:ctor(rng)
 	self.ui = {}
 	-- self.ui.showGrabMenu
 	-- self.ui.examine
+	-- self.ui.inventory
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
@@ -209,6 +259,32 @@ local Tile_Size_Adj = Tile_Size + Tile_Border
 
 local cursorCell = nil
 
+local function logItems()
+	local pos = cursorCell + camera:lu()
+	local locationId = pos.y * map.width() + pos.x
+	local items, itemCount = elements.getItems(locationId)
+	local vismap = player.vismap
+	if itemCount <= 0 then
+		return
+	end
+
+	if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
+		if 1 == itemCount then
+			--('There is lying there')
+			console.log({
+				{ 1, 1, 1, 1 }, 'There is ',
+				color.crimson, items[1].desc.name,
+				{ 1, 1, 1, 1 }, ' lying there'
+			})
+		else
+			console.log('There are multiple items lying here')
+		end
+		-- for _, item in ipairs(items) do
+		-- 	items[1].desc.name
+		-- end
+	end
+end
+
 function Game:mousemoved(mouseX, mouseY)
     imgui.MouseMoved(mouseX, mouseY)
 	if imgui.GetWantCaptureMouse() then
@@ -222,6 +298,7 @@ function Game:mousemoved(mouseX, mouseY)
 		local newMouseCell = Vec(math.floor(mouseX / Tile_Size_Adj), math.floor(mouseY / Tile_Size_Adj))
 		if not cursorCell or newMouseCell ~= cursorCell then
 			cursorCell = newMouseCell
+			logItems()
 			if not player.follow_path or player.follow_path == 0 then
 				local camLu = camera:lu()
 				local destination = camLu + cursorCell
@@ -294,6 +371,7 @@ local function moveExamine(moveVec)
 	local vis = 2 * S.game.VIS_RADIUS + 1
 	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
 		cursorCell = newCursorCell
+		logItems()
 	end
 end
 
@@ -385,7 +463,7 @@ function Game:keypressed(key)
 			moveVec = movementKeyToVector(key)
 			if ',' == key or 'g' == key then
 				self.ui.showGrabMenu = true
-			elseif 'x' == key then
+			elseif 'x' == key or 'l' == key then
 				if self.ui.examine then
 					self:examineOff()
 				else
@@ -616,13 +694,13 @@ local function drawItems(ent, camLu)
 	local xa = camLu.x
 
 	local tc = 2 * S.game.VIS_RADIUS + 1
-	for y=0, tc - 1 do
+	for y = 0, tc - 1 do
 		if ya + y > map.height() then
 			break
 		end
 
 		local locationId = (ya + y) * map.width() + xa
-		for x=0, tc - 1 do
+		for x = 0, tc - 1 do
 			local items, itemCount = elements.getItems(locationId)
 			if itemCount > 0 then
 				local vismap = ent.vismap
@@ -632,12 +710,33 @@ local function drawItems(ent, camLu)
 
 					local itemImg = Letters[items[1].desc.symbol]
 					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+				end
+			end
+			locationId = locationId + 1
+		end
+	end
 
+	-- description
+	if not cursorCell then
+		return
+	end
+
+	for y = 0, tc - 1 do
+		if ya + y > map.height() then
+			break
+		end
+
+		local locationId = (ya + y) * map.width() + xa
+		for x = 0, tc - 1 do
+			local items, itemCount = elements.getItems(locationId)
+			if itemCount > 0 then
+				local vismap = ent.vismap
+				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
 					if cursorCell and Vec(x, y) == cursorCell then
-						love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
+						love.graphics.setColor(0.9, 0.9, 0.9, 0.6)
+						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 32)
 						love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-						love.graphics.print(items[1].desc.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
+						love.graphics.printf(items[1].desc.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
 					end
 				end
 			end
@@ -696,7 +795,7 @@ local function drawEntities(camLu)
 			-- show entity name on hover -- TODO: remove
 			if cursorCell and relPos == cursorCell then
 				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-				love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
+				love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 16)
 				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
 				love.graphics.print(ent.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
 			end
@@ -750,9 +849,9 @@ local function drawInterface()
 
 	imgui.BeginGroup()
 	imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
-	imgui.Text('1: <filler>')
-	imgui.Text('2: <filler>')
-	imgui.Text('3: <filler>')
+	imgui.Text('1: ')
+	imgui.Text('2: ')
+	imgui.Text('3: ')
 	imgui.EndChild()
 	imgui.EndGroup()
 
@@ -763,17 +862,15 @@ local function drawInterface()
 	imgui.BeginGroup()
 	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
 	if #player.inventory > 0 then
-		for _, item in pairs(player.inventory) do
-			imgui.Text(item.desc.name)
-			imgui.SameLine(150)
+		for id, item in pairs(player.inventory) do
+			imgui.Text(id .. ": " .. item.desc.name)
+			imgui.SameLine(190)
 			imgui.Text(item.desc.type)
 		end
 	else
-		imgui.Text('<filler>')
-		imgui.Text('<filler>')
-		imgui.Text('<filler>')
-		imgui.Text('<filler>')
-		imgui.Text('<filler>')
+		for id = 1, 5 do
+			imgui.Text(id .. ': ')
+		end
 	end
 	imgui.EndChild()
 	imgui.EndGroup()
