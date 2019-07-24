@@ -190,7 +190,7 @@ function Game:ctor(rng)
 	self.ui = {}
 	-- self.ui.showGrabMenu
 	-- self.ui.examine
-	-- self.ui.inventory
+	-- self.ui.inventoryActions
 
 	batch.prepare()
 	local level = self.levels[self.depthLevel]
@@ -468,6 +468,17 @@ function Game:keypressed(key)
 					self:examineOff()
 				else
 					self:examineOn()
+				end
+			end
+			if '4' == key or '5' == key or '6' == key or '7' == key or '8' == key or '9' == key then
+				local inventoryIndex = string.byte(key) - string.byte('4') + 1
+				if player.inventory[inventoryIndex] then
+					self.ui.inventoryActions = {
+						item = player.inventory[inventoryIndex],
+						visible = true,
+					}
+				else
+					console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
 				end
 			end
 		end
@@ -829,7 +840,7 @@ local function isMouseOverEntity(ent, camLu)
 	return false
 end
 
-local function drawInterface()
+local function drawInterface(inventoryActions)
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
@@ -849,9 +860,9 @@ local function drawInterface()
 
 	imgui.BeginGroup()
 	imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
-	imgui.Text('1: ')
-	imgui.Text('2: ')
-	imgui.Text('3: ')
+	imgui.Text('1: (melee)')
+	imgui.Text('2: (light)')
+	imgui.Text('3: (heavy)')
 	imgui.EndChild()
 	imgui.EndGroup()
 
@@ -863,13 +874,13 @@ local function drawInterface()
 	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
 	if #player.inventory > 0 then
 		for id, item in pairs(player.inventory) do
-			imgui.Text(id .. ": " .. item.desc.name)
+			imgui.Text((id + 3) .. ": " .. item.desc.name)
 			imgui.SameLine(190)
 			imgui.Text(item.desc.type)
 		end
 	else
-		for id = 1, 5 do
-			imgui.Text(id .. ': ')
+		for id = 1, 6 do
+			imgui.Text((id + 3) .. ': ')
 		end
 	end
 	imgui.EndChild()
@@ -877,7 +888,30 @@ local function drawInterface()
 
 	interface.finish()
 
+	local inventoryModalName = inventoryActions and inventoryActions.item.desc.name or ''
+	if inventoryActions and inventoryActions.visible then
+		if imgui.IsKeyDown(15) then
+			inventoryActions.visible = false
+			print('bye')
+		else
+			imgui.OpenPopup(inventoryModalName)
+		end
+	end
+
+	imgui.SetNextWindowPos(startX - 40, 260 + 20 + h + 50 + 80 + 60, 'ImGuiCond_Always')
+	if imgui.BeginPopupModal(inventoryModalName, inventoryActions and inventoryActions.visible, 'ImGuiWindowFlags_AlwaysAutoResize') then
+		imgui.Text('(e)at / drink / consume')
+		imgui.Text('(t)hrow')
+		imgui.Text('(u)se')
+		imgui.Text('(r)eplace ' .. inventoryActions.item.desc.type .. ' class in equipment')
+		imgui.Separator()
+		imgui.Text('(c)lose popup')
+		imgui.EndPopup()
+	end
+
 	imgui.Render();
+
+	return inventoryActions
 end
 
 function Game:show()
@@ -909,8 +943,8 @@ function Game:show()
 
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(messages.popups.getCanvas())
-	drawInterface()
 	drawMinimap()
+	self.ui.inventoryActions = drawInterface(self.ui.inventoryActions)
 	console.draw(0, 900 - console.height())
 end
 
