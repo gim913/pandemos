@@ -207,11 +207,30 @@ local Tile_Size_Adj = Tile_Size + Tile_Border
 --     end
 -- end
 
-function Game:mousemoved(x, y)
-    imgui.MouseMoved(x, y)
+local cursorCell = nil
+
+function Game:mousemoved(mouseX, mouseY)
+    imgui.MouseMoved(mouseX, mouseY)
 	if imgui.GetWantCaptureMouse() then
 		return
-    end
+	end
+
+	-- TODO: limit to case where layer is generated
+
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	if mouseX >= 0 and mouseX < (Tile_Size_Adj * vis) and mouseY >= 0 and mouseY < (Tile_Size_Adj * vis) then
+		local newMouseCell = Vec(math.floor(mouseX / Tile_Size_Adj), math.floor(mouseY / Tile_Size_Adj))
+		if not cursorCell or newMouseCell ~= cursorCell then
+			cursorCell = newMouseCell
+			if not player.follow_path or player.follow_path == 0 then
+				local camLu = camera:lu()
+				local destination = camLu + cursorCell
+				player.astar_path = player:findPath(destination)
+			end
+		end
+	else
+		cursorCell = nil
+	end
 end
 
 function Game:mousereleased(x, y, button)
@@ -270,6 +289,14 @@ local function playerMoveAction(moveVec)
 	return false
 end
 
+local function moveExamine(moveVec)
+	local newCursorCell = cursorCell + moveVec
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
+		cursorCell = newCursorCell
+	end
+end
+
 local Move_Vectors = {
 	Vec( 0, -1), -- up
 	Vec( 0,  1), -- down
@@ -305,6 +332,19 @@ function Game:keyreleased(key)
     end
 end
 
+function Game:examineOn()
+	self.ui.examine = true
+
+	if not cursorCell then
+		cursorCell = player.pos - camera:lu()
+	end
+end
+
+function Game:examineOff()
+	self.ui.examine = false
+	cursorCell = nil
+end
+
 function Game:keypressed(key)
 	imgui.KeyPressed(key)
     if imgui.GetWantCaptureKeyboard() then
@@ -316,7 +356,7 @@ function Game:keypressed(key)
 	-- general / UI
 	if 'escape' == key then
 		if self.ui.examine then
-			self.ui.examine = false
+			self:examineOff()
 		else
 			gamestate.push(GameMenu:new())
 		end
@@ -346,7 +386,11 @@ function Game:keypressed(key)
 			if ',' == key or 'g' == key then
 				self.ui.showGrabMenu = true
 			elseif 'x' == key then
-				self.ui.examine = true
+				if self.ui.examine then
+					self:examineOff()
+				else
+					self:examineOn()
+				end
 			end
 		end
 
@@ -365,7 +409,9 @@ function Game:keypressed(key)
 	end
 
 	if self.ui.examine then
-		-- use moveVec to move selection
+		if moveVec then
+			moveExamine(moveVec)
+		end
 	else
 		if moveVec and playerMoveAction(moveVec) then
 			self.doActions = true
@@ -458,8 +504,6 @@ local function pathPlayerMovement()
 
 	return ret
 end
-
-local mouseCell = nil
 
 function Game:doUpdateLevel(dt)
 	local level = self.levels[self.depthLevel]
@@ -554,23 +598,6 @@ function Game:doUpdate(dt)
 		self:updateGameLogic(dt)
 	end
 
-	local mouseX, mouseY = love.mouse.getPosition()
-
-	local vis = 2 * S.game.VIS_RADIUS + 1
-	if mouseX >= 0 and mouseX < (Tile_Size_Adj * vis) and mouseY >= 0 and mouseY < (Tile_Size_Adj * vis) then
-		local newMouseCell = Vec(math.floor(mouseX / Tile_Size_Adj), math.floor(mouseY / Tile_Size_Adj))
-		if not mouseCell or newMouseCell ~= mouseCell then
-			mouseCell = newMouseCell
-			if not player.follow_path or player.follow_path == 0 then
-				local camLu = camera:lu()
-				local destination = camLu + mouseCell
-				player.astar_path = player:findPath(destination)
-			end
-		end
-	else
-		mouseCell = nil
-	end
-
 	console.update(dt)
 end
 
@@ -605,6 +632,13 @@ local function drawItems(ent, camLu)
 
 					local itemImg = Letters[items[1].desc.symbol]
 					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+
+					if cursorCell and Vec(x, y) == cursorCell then
+						love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
+						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
+						love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
+						love.graphics.print(items[1].desc.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
+					end
 				end
 			end
 			locationId = locationId + 1
@@ -660,11 +694,11 @@ local function drawEntities(camLu)
 			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
 
 			-- show entity name on hover -- TODO: remove
-			if mouseCell and relPos == mouseCell then
+			if cursorCell and relPos == cursorCell then
 				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-				love.graphics.rectangle('fill', (mouseCell.x + 1) * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
+				love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2 * Tile_Size + 1, 16)
 				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-				love.graphics.print(ent.name, (mouseCell.x + 1) * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj)
+				love.graphics.print(ent.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
 			end
 
 			-- if ent.astar_visited then
@@ -690,7 +724,7 @@ end
 
 local function isMouseOverEntity(ent, camLu)
 	local relPos = ent.pos - camLu
-	if mouseCell and relPos == mouseCell then
+	if cursorCell and relPos == cursorCell then
 		return true
 	end
 	return false
@@ -755,8 +789,8 @@ function Game:show()
 	love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 	love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
 	love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
-	if mouseCell then
-		local mapCoords = camLu + mouseCell
+	if cursorCell then
+		local mapCoords = camLu + cursorCell
 		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 	end
 
@@ -771,9 +805,9 @@ function Game:show()
 	-- ^^
 	drawEntities(camLu)
 
-	if mouseCell then
+	if cursorCell then
 		love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-		love.graphics.rectangle('line', mouseCell.x * Tile_Size_Adj, mouseCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
+		love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)
