@@ -174,7 +174,9 @@ local items = {
 	{ symbol = '[', name = 'Machete', type = 'melee', color = { color.hsvToRgb(0.56, 0.24, 0.72, 1.0) } },
 
 	{ symbol = '[', name = 'Beretta M9', type = 'light', color = color.dimgray },
-	{ symbol = '[', name = 'Grand Power K100', type = 'light', color = { color.gray } }
+	{ symbol = '[', name = 'Grand Power K100', type = 'light', color = { color.gray } },
+
+	{ symbol = '!', name = 'Goo', type = 'throwable', color = color.lime },
 }
 
 local function createTreesAsElements(grid)

@@ -202,7 +202,7 @@ function Game:ctor(rng)
 	end)
 	updateMinimap()
 
-	Letters = prepareLetters('@iBCSTM[')
+	Letters = prepareLetters('@iBCSTM[!')
 	local f = math.floor
 	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
 	player.img = Letters['@']
@@ -900,10 +900,12 @@ local function drawInterface(inventoryActions)
 
 	imgui.SetNextWindowPos(startX - 40, 260 + 20 + h + 50 + 80 + 60, 'ImGuiCond_Always')
 	if imgui.BeginPopupModal(inventoryModalName, inventoryActions and inventoryActions.visible, 'ImGuiWindowFlags_AlwaysAutoResize') then
+		imgui.Text('(d)rop')
 		imgui.Text('(e)at / drink / consume')
+		imgui.Text('(r)eplace ' .. inventoryActions.item.desc.type .. ' class in equipment')
+		imgui.Text('(s)wap with item on the ground')
 		imgui.Text('(t)hrow')
 		imgui.Text('(u)se')
-		imgui.Text('(r)eplace ' .. inventoryActions.item.desc.type .. ' class in equipment')
 		imgui.Separator()
 		imgui.Text('(c)lose popup')
 		imgui.EndPopup()
