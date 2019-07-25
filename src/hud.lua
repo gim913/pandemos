@@ -4,16 +4,16 @@ local console = require 'engine.console'
 local fontManager = require 'engine.fontManager'
 
 -- module
-local interface = {}
+local hud = {}
 
-local interface_lineHeight = 22
-local interface_font = fontManager.get('fonts/scp.otf', 16, 'light')
+local hud_lineHeight = 22
+local hud_font = fontManager.get('fonts/scp.otf', 16, 'light')
 
 imgui.AddFontFromFileTTF('fonts/scp.otf', 20)
 
 local Box_Height = 66
 
-function interface.begin(name, x, y)
+function hud.begin(name, x, y)
 	imgui.SetNextWindowPos(x, y, 'ImGuiCond_Always')
 
 	imgui.PushStyleColor('ImGuiCol_ChildBg', 0, 0, 0, 0)
@@ -36,7 +36,7 @@ function interface.begin(name, x, y)
 	});
 end
 
-function interface.finish()
+function hud.finish()
 	imgui.End()
 	imgui.PopStyleVar(4)
 	imgui.PopStyleColor(6);
@@ -45,11 +45,11 @@ end
 
 local hoveredUiEntId = nil
 
-function interface.hoveredEntId()
+function hud.hoveredEntId()
 	return hoveredUiEntId
 end
 
-local function interface_drawEnt(ent, width, displayHovered)
+local function hud_drawEnt(ent, width, displayHovered)
 	imgui.PushID(ent.id)
 	imgui.BeginGroup()
 
@@ -81,7 +81,7 @@ local function interface_drawEnt(ent, width, displayHovered)
 	imgui.PopID()
 end
 
-function interface.drawPlayerInfo(ent, width, isMouseHovered)
+function hud.drawPlayerInfo(ent, width, isMouseHovered)
 	imgui.BeginGroup()
 
 	if isMouseHovered(ent) or hoveredUiEntId == ent.id then
@@ -94,7 +94,7 @@ function interface.drawPlayerInfo(ent, width, isMouseHovered)
 	imgui.PushStyleVar_2('ImGuiStyleVar_FramePadding', 10, 10)
 
 	imgui.BeginChild_2(10001, width, Box_Height, true, 'ImGuiWindowFlags_None');
-	interface_drawEnt(ent, width, isMouseHovered(ent))
+	hud_drawEnt(ent, width, isMouseHovered(ent))
 	imgui.EndChild()
 
 	imgui.PopStyleVar(1);
@@ -109,7 +109,7 @@ function interface.drawPlayerInfo(ent, width, isMouseHovered)
 	return Box_Height
 end
 
-function interface.drawVisible(ents, width, height, isMouseHovered)
+function hud.drawVisible(ents, width, height, isMouseHovered)
 	imgui.BeginGroup()
 
 	imgui.PushStyleColor('ImGuiCol_ScrollbarBg', 0.25,0.25,0.25, 1.0)
@@ -137,7 +137,7 @@ function interface.drawVisible(ents, width, height, isMouseHovered)
 			imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
 		end
 
-		interface_drawEnt(ent, width, isMouseHovered(ent))
+		hud_drawEnt(ent, width, isMouseHovered(ent))
 		imgui.Separator()
 
 		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
@@ -151,4 +151,4 @@ function interface.drawVisible(ents, width, height, isMouseHovered)
 	imgui.EndGroup()
 end
 
-return interface
+return hud
