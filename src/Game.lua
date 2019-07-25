@@ -294,11 +294,6 @@ local function logItems()
 end
 
 function Game:mousemoved(mouseX, mouseY)
-    imgui.MouseMoved(mouseX, mouseY)
-	if imgui.GetWantCaptureMouse() then
-		return
-	end
-
 	-- TODO: limit to case where layer is generated
 
 	local vis = 2 * S.game.VIS_RADIUS + 1
@@ -318,30 +313,13 @@ function Game:mousemoved(mouseX, mouseY)
 	end
 end
 
-function Game:mousereleased(x, y, button)
-    imgui.MouseReleased(button)
-	if imgui.GetWantCaptureMouse() then
-		return
-    end
-end
-
 function Game:mousepressed(x, y, button)
-	imgui.MousePressed(button)
-	if imgui.GetWantCaptureMouse() then
-		return
-	end
-
 	if player.astar_path then
 		player.follow_path = 1
 	end
 end
 
 function Game:wheelmoved(x, y)
-	imgui.WheelMoved(y)
-	if imgui.GetWantCaptureMouse() then
-		return
-	end
-
 	if love.keyboard.isDown('lctrl') then
 		if love.keyboard.isDown('lshift') then
 			console.nextFont()
@@ -357,13 +335,6 @@ function Game:wheelmoved(x, y)
 		camera:update()
 		updateTiles()
 	end
-end
-
-function Game:keyreleased(key)
-    imgui.KeyReleased(key)
-    if imgui.GetWantCaptureKeyboard() then
-        return
-    end
 end
 
 function Game:examineOn()
@@ -508,11 +479,6 @@ local function actionDebugToggleAstar()
 end
 
 function Game:keypressed(key)
-	imgui.KeyPressed(key)
-    if imgui.GetWantCaptureKeyboard() then
-        return
-	end
-
 	local hasLctrl = love.keyboard.isDown('lctrl')
 	local uiAction = keyToAction(hasLctrl, key)
 
@@ -892,8 +858,8 @@ local function drawInterface(inventoryActions)
 	local camLu = camera:lu()
 
 	--imgui.ShowDemoWindow(true)
-	hud.begin('Entities', startX, 10)
 
+	hud.begin('Entities', startX, 10)
 	local h = hud.drawPlayerInfo(player, 260, function(ent)
 		return isMouseOverEntity(ent, camLu)
 	end)
@@ -901,64 +867,64 @@ local function drawInterface(inventoryActions)
 	hud.drawVisible(player.seemap, 260, 260, function(ent)
 		return isMouseOverEntity(ent, camLu)
 	end)
-	hud.finish()
+	hud.finish(266)
 
 	hud.begin('Equipment', startX, 260 + 20 + h + 50)
 
-	imgui.BeginGroup()
-	imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
-	imgui.Text('1: (melee)')
-	imgui.Text('2: (light)')
-	imgui.Text('3: (heavy)')
-	imgui.EndChild()
-	imgui.EndGroup()
+	-- imgui.BeginGroup()
+	-- imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
+	-- imgui.Text('1: (melee)')
+	-- imgui.Text('2: (light)')
+	-- imgui.Text('3: (heavy)')
+	-- imgui.EndChild()
+	-- imgui.EndGroup()
 
-	hud.finish()
+	hud.finish(260)
 
 	hud.begin('Inventory', startX, 260 + h + 50 + 80 + 60)
 
-	imgui.BeginGroup()
-	imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
-	if #player.inventory > 0 then
-		for id, item in pairs(player.inventory) do
-			imgui.Text((id + 3) .. ": " .. item.desc.name)
-			imgui.SameLine(190)
-			imgui.Text(item.desc.type)
-		end
-	else
-		for id = 1, 6 do
-			imgui.Text((id + 3) .. ': ')
-		end
-	end
-	imgui.EndChild()
-	imgui.EndGroup()
+	-- imgui.BeginGroup()
+	-- imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
+	-- if #player.inventory > 0 then
+	-- 	for id, item in pairs(player.inventory) do
+	-- 		imgui.Text((id + 3) .. ": " .. item.desc.name)
+	-- 		imgui.SameLine(190)
+	-- 		imgui.Text(item.desc.type)
+	-- 	end
+	-- else
+	-- 	for id = 1, 6 do
+	-- 		imgui.Text((id + 3) .. ': ')
+	-- 	end
+	-- end
+	-- imgui.EndChild()
+	-- imgui.EndGroup()
 
-	hud.finish()
+	hud.finish(260)
 
-	local inventoryModalName = inventoryActions and inventoryActions.item.desc.name or ''
-	if inventoryActions and inventoryActions.visible then
-		if imgui.IsKeyDown(15) then
-			inventoryActions.visible = false
-		else
-			imgui.OpenPopup(inventoryModalName)
-		end
-	end
+	-- local inventoryModalName = inventoryActions and inventoryActions.item.desc.name or ''
+	-- if inventoryActions and inventoryActions.visible then
+	-- 	if imgui.IsKeyDown(15) then
+	-- 		inventoryActions.visible = false
+	-- 	else
+	-- 		imgui.OpenPopup(inventoryModalName)
+	-- 	end
+	-- end
 
-	imgui.SetNextWindowPos(startX - 400, 260 + 20 + h + 50 + 80 + 60 - 100, 'ImGuiCond_Always')
-	local temp = inventoryActions and inventoryActions.visible
-	if imgui.BeginPopupModal(inventoryModalName, temp, 'ImGuiWindowFlags_AlwaysAutoResize') then
-		imgui.Text('drop')
-		imgui.Text('eat/drink/consume')
-		imgui.Text('equip/replace ' .. inventoryActions.item.desc.type .. ' class in equipment')
-		imgui.Text('swap with item on the ground')
-		imgui.Text('throw')
-		imgui.Text('use')
-		imgui.Separator()
-		imgui.Text('close popup')
-		imgui.EndPopup()
-	end
+	-- imgui.SetNextWindowPos(startX - 400, 260 + 20 + h + 50 + 80 + 60 - 100, 'ImGuiCond_Always')
+	-- local temp = inventoryActions and inventoryActions.visible
+	-- if imgui.BeginPopupModal(inventoryModalName, temp, 'ImGuiWindowFlags_AlwaysAutoResize') then
+	-- 	imgui.Text('drop')
+	-- 	imgui.Text('eat/drink/consume')
+	-- 	imgui.Text('equip/replace ' .. inventoryActions.item.desc.type .. ' class in equipment')
+	-- 	imgui.Text('swap with item on the ground')
+	-- 	imgui.Text('throw')
+	-- 	imgui.Text('use')
+	-- 	imgui.Separator()
+	-- 	imgui.Text('close popup')
+	-- 	imgui.EndPopup()
+	-- end
 
-	imgui.Render();
+	-- imgui.Render();
 
 	return inventoryActions
 end

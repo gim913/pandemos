@@ -1,6 +1,4 @@
 -- imported modules
-require "imgui"
-
 local Game = require 'Game'
 local MainMenu = require 'MainMenu'
 local S = require 'settings'
@@ -27,10 +25,6 @@ end
 
 local defaultFont = love.graphics.getFont()
 
-function love.update(dt)
-	imgui.NewFrame()
-end
-
 local function draw_info()
 	love.graphics.setBlendMode('alpha')
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
@@ -41,8 +35,4 @@ end
 function love.draw()
 	love.graphics.clear(0.25, 0.25, 0.25, 1.0)
 	draw_info()
-end
-
-function love.quit()
-    imgui.ShutDown();
 end

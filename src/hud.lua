@@ -9,39 +9,28 @@ local hud = {}
 local hud_lineHeight = 22
 local hud_font = fontManager.get('fonts/scp.otf', 16, 'light')
 
-imgui.AddFontFromFileTTF('fonts/scp.otf', 20)
-
 local Box_Height = 66
 
+local currentX
+local currentY
+
+local startX
+local startY
 function hud.begin(name, x, y)
-	imgui.SetNextWindowPos(x, y, 'ImGuiCond_Always')
+	love.graphics.setFont(hud_font)
+	startX = x
+	startY = y
+	currentX = startX + 3
+	currentY = startY + 3
+	love.graphics.print(name, startX, startY)
 
-	imgui.PushStyleColor('ImGuiCol_ChildBg', 0, 0, 0, 0)
-	imgui.PushStyleColor('ImGuiCol_WindowBg', 0, 0, 0, 0)
-
-	imgui.PushStyleColor('ImGuiCol_Border', 0.439, 0.502, 0.565, 1)
-	imgui.PushStyleColor('ImGuiCol_TitleBg', 0.25, 0.25, 0.25, 1.0)
-	imgui.PushStyleColor('ImGuiCol_TitleBgHovered', 0.9, 0.9, 0.97, 1.0)
-	imgui.PushStyleColor('ImGuiCol_TitleBgActive', 0.25, 0.25, 0.25, 1.0)
-
-	imgui.PushStyleVar('ImGuiStyleVar_WindowBorderSize', 1)
-	imgui.PushStyleVar_2('ImGuiStyleVar_FramePadding', 10, 3)
-	imgui.PushStyleVar_2('ImGuiStyleVar_WindowPadding', 3, 3)
-	imgui.PushStyleVar('ImGuiStyleVar_WindowRounding', 0)
-
-	imgui.Begin(name, nil, {
-		'ImGuiWindowFlags_AlwaysAutoResize',
-		'ImGuiWindowFlags_NoMove',
-		'ImGuiWindowFlags_NoCollapse'
-	});
+	currentY = startY + hud_lineHeight
 end
 
-function hud.finish()
-	imgui.End()
-	imgui.PopStyleVar(4)
-	imgui.PopStyleColor(6);
+function hud.finish(width)
+	love.graphics.setColor(color.slategray)
+	love.graphics.rectangle('line', startX, startY, width, currentY)
 end
-
 
 local hoveredUiEntId = nil
 
@@ -49,106 +38,145 @@ function hud.hoveredEntId()
 	return hoveredUiEntId
 end
 
-local function hud_drawEnt(ent, width, displayHovered)
-	imgui.PushID(ent.id)
-	imgui.BeginGroup()
+local function hud_drawEnt(ent, width, colorScheme, displayHovered)
+	local locX = currentX
+	local locY = currentY
+	local maxW = width - 1
+	love.graphics.setColor(colorScheme.text)
+	love.graphics.print(ent.name, locX, locY)
+	love.graphics.print(tostring(ent.id), locX + maxW - 30, locY)
 
-	imgui.Text(ent.name)
-	imgui.SameLine(width - 80)
-	imgui.Text("(" .. ent.id .. ")")
+	locY = locY + hud_lineHeight
 
+	-- goes from blu-ish to red
 	local hpHue = 1.0 - 10 * ent.hp / ent.maxHp / 24.0
-	local hpWidth = ent.hp / ent.maxHp
-	local r,g,b,a = color.hsvToRgb(hpHue, 0.7, 0.7, 1.0)
+	local hpWidth = math.ceil((maxW * ent.hp) / ent.maxHp)
+	local r,g,b,a = color.hsvToRgb(hpHue, unpack(colorScheme.hp))
 
-	if displayHovered or hoveredUiEntId == ent.id then
-		imgui.SetScrollHere(1 * 0.25)
-		r,g,b,a = color.hsvToRgb(hpHue, 0.3, 0.7, 1.0)
-	end
+	love.graphics.setColor(r, g, b, a)
+	love.graphics.rectangle('fill', locX, locY, hpWidth, 14)
 
-	imgui.PushStyleColor('ImGuiCol_PlotHistogram', r, g, b, a)
-	imgui.ProgressBar(hpWidth, width, 16, '')
-	imgui.PopStyleColor(1);
-	imgui.EndGroup()
+	currentY = locY + 18
 
-	-- this will work with a delay, but it shouldn't matter much
-	if imgui.IsItemHovered() then
-		hoveredUiEntId = ent.id
-	elseif hoveredUiEntId == ent.id then
-		hoveredUiEntId = nil
-	end
-
-	imgui.PopID()
+	-- -- this will work with a delay, but it shouldn't matter much
+	-- if imgui.IsItemHovered() then
+	-- 	hoveredUiEntId = ent.id
+	-- elseif hoveredUiEntId == ent.id then
+	-- 	hoveredUiEntId = nil
+	-- end
 end
 
 function hud.drawPlayerInfo(ent, width, isMouseHovered)
-	imgui.BeginGroup()
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setLineWidth(1)
+	love.graphics.setLineStyle('rough')
 
+	local normal = {
+		text = color.white
+		, border = color.ivory
+		, hp = { 0.7, 0.7, 1.0 }
+	}
+	local hovered = {
+		text = { 0.4, 0.85, 0.4 }
+		, border = { 0.4, 0.85, 0.4 }
+		, hp = { 0.3, 0.7, 1.0 }
+	}
+	local colorScheme = normal
 	if isMouseHovered(ent) or hoveredUiEntId == ent.id then
-		imgui.PushStyleColor('ImGuiCol_Border', 0.4, 0.85, 0.4, 1)
-		imgui.PushStyleColor('ImGuiCol_Text', 0.4, 0.85, 0.4, 1)
-	else
-		imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)
-		imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
+		colorScheme = hovered
 	end
-	imgui.PushStyleVar_2('ImGuiStyleVar_FramePadding', 10, 10)
 
-	imgui.BeginChild_2(10001, width, Box_Height, true, 'ImGuiWindowFlags_None');
-	hud_drawEnt(ent, width, isMouseHovered(ent))
-	imgui.EndChild()
+	love.graphics.setColor(colorScheme.border)
+	love.graphics.rectangle('line', currentX, currentY, width, Box_Height)
 
-	imgui.PopStyleVar(1);
-	imgui.PopStyleColor(2);
-	imgui.EndGroup()
-
-	imgui.Spacing()
-	imgui.Separator()
-	imgui.Separator()
-	imgui.Spacing()
+	currentX = currentX + 3
+	local savedY = currentY
+	hud_drawEnt(ent, width - 6, colorScheme, isMouseHovered(ent))
+	currentX = currentX - 3
+	currentY = savedY + Box_Height + 4
 
 	return Box_Height
 end
 
+local entsCanvas = nil
+local entsQuad = nil
+local lastSelected = -1
+
 function hud.drawVisible(ents, width, height, isMouseHovered)
-	imgui.BeginGroup()
+	local normal = {
+		text = color.lightgray
+		, border = color.slategray
+		, hp = { 0.7, 0.7, 1.0 }
+	}
+	local hovered = {
+		text = { 0.4, 0.85, 0.4 }
+		, border = { 0.4, 0.85, 0.4 }
+		, hp = { 0.3, 0.7, 1.0 }
+	}
 
-	imgui.PushStyleColor('ImGuiCol_ScrollbarBg', 0.25,0.25,0.25, 1.0)
-	imgui.PushStyleColor('ImGuiCol_ScrollbarGrab', 0.5,0.5,0.5, 1.0)
-	imgui.PushStyleColor('ImGuiCol_ScrollbarGrabHovered', 0.7, 0.7, 0.7, 1.0)
-	imgui.PushStyleColor('ImGuiCol_ScrollbarGrabActive', 0.97, 0.97, 0.97, 1.0)
-
-	imgui.PushStyleVar('ImGuiStyleVar_WindowBorderSize', 1)
-	imgui.PushStyleVar_2('ImGuiStyleVar_FramePadding', 3, 3)
-	imgui.PushStyleVar_2('ImGuiStyleVar_WindowPadding', 3, 3)
-	imgui.PushStyleVar('ImGuiStyleVar_WindowRounding', 0)
-
-	imgui.BeginChild_2(10002, width, height, false, "ImGuiWindowFlags_None");
-
-	local track_item = 33
-	local sliderVal = 10
-	for ent,_ in pairs(ents) do
+	-- calculate size
+	local cnt = 0
+	local selected = 0
+	for ent, _ in pairs(ents) do
 		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
-			imgui.PushStyleColor('ImGuiCol_Separator', 0.4, 0.85, 0.4, 1)
-			imgui.PushStyleColor('ImGuiCol_Border', 0.4, 0.85, 0.4, 1)
-			imgui.PushStyleColor('ImGuiCol_Text', 0.4, 0.85, 0.4, 1)
-		else
-			imgui.PushStyleColor('ImGuiCol_Separator', 0.439, 0.502, 0.565, 1)
-			imgui.PushStyleColor('ImGuiCol_Border', 1, 1, 1, 1)
-			imgui.PushStyleColor('ImGuiCol_Text', 1, 1, 1, 1)
+			selected = cnt
 		end
-
-		hud_drawEnt(ent, width, isMouseHovered(ent))
-		imgui.Separator()
-
-		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
-			imgui.PopStyleColor(7);
-		end
+		cnt = cnt + 1
 	end
 
-	imgui.EndChild()
-	imgui.PopStyleVar(4);
-	imgui.PopStyleColor(4);
-	imgui.EndGroup()
+	local entryHeight = (hud_lineHeight + 18 + 4)
+	local newHeight = entryHeight * cnt + 10
+
+	-- create canvas if needed
+	if not entsCanvas or newHeight > entsCanvas:getHeight() then
+		entsCanvas = love.graphics.newCanvas(width, newHeight)
+	end
+	if selected ~= lastSelected then
+		local offsetY = selected * entryHeight -- math.max(0, math.min(selected * entryHeight, entsCanvas:getHeight() - height))
+		entsQuad = love.graphics.newQuad(0, offsetY, width, height, entsCanvas:getWidth(), entsCanvas:getHeight())
+	end
+
+	local scrollbarAwareWidth = width
+	if newHeight > height then
+		scrollbarAwareWidth = width - 20
+	end
+
+	love.graphics.setCanvas(entsCanvas)
+	love.graphics.clear(0, 0, 0, 0)
+
+	local tempX, tempY = currentX, currentY
+	currentX = 0
+	currentY = 0
+	for ent,_ in pairs(ents) do
+		local colorScheme = normal
+		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
+			colorScheme = hovered
+		end
+
+		hud_drawEnt(ent, scrollbarAwareWidth, colorScheme, isMouseHovered(ent))
+
+		love.graphics.setColor(colorScheme.border)
+		love.graphics.line(currentX, currentY, currentX + scrollbarAwareWidth, currentY)
+		currentY = currentY + 4
+	end
+	love.graphics.setCanvas()
+
+	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.setBlendMode('alpha', 'premultiplied')
+	love.graphics.draw(entsCanvas, entsQuad, tempX, tempY)
+	love.graphics.setBlendMode('alpha')
+
+	if newHeight > height then
+		love.graphics.setColor(color.dimgray)
+		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY, 10, height, 5, 5)
+
+		love.graphics.setColor(color.gray)
+		local offsetY = math.floor((height - 20) * (selected / (cnt - 6)))
+		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY + offsetY, 10, 20, 5, 5)
+	end
+
+	currentX = tempX + currentX
+	currentY = tempY + height
 end
 
 return hud
