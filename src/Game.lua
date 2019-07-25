@@ -440,6 +440,8 @@ function Game:keypressed(key)
 	local nextAct = action.Action.Blocked, nPos
 
 	-- general / UI
+	local moveVec = nil
+
 	if GameAction.Escape == uiAction then
 		if self.ui.examine then
 			self:examineOff()
@@ -447,8 +449,44 @@ function Game:keypressed(key)
 			gamestate.push(GameMenu:new())
 		end
 
+	elseif GameAction.Up <= uiAction and GameAction.Rest >= uiAction then
+		moveVec = movementActionToVector(uiAction)
+
+	elseif GameAction.Grab == uiAction then
+		self.ui.showGrabMenu = true
+
+	elseif GameAction.Examine == uiAction then
+		if self.ui.examine then
+			self:examineOff()
+		else
+			self:examineOn()
+		end
+
+	elseif GameAction.Inventory1 <= uiAction and GameAction.Inventory6 >= uiAction then
+		local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
+		if player.inventory[inventoryIndex] then
+			self.ui.inventoryActions = {
+				item = player.inventory[inventoryIndex],
+				visible = true,
+			}
+		else
+			console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
+		end
+
 	elseif GameAction.Toggle_Console == uiAction then
 		console.toggle()
+
+	-- TODO: XXX: TODO: devel: remove this before releasing ^^
+	elseif GameAction.Experimental_Camera_Switch == uiAction then
+		if cameraIdx == Max_Dummies then
+			camera:follow(player)
+			cameraIdx = 0
+		else
+			cameraIdx = cameraIdx + 1
+			camera:follow(dummies[cameraIdx])
+		end
+		camera:update()
+		updateTiles()
 
 	elseif GameAction.Debug_Toggle_Vismap == uiAction then
 		-- toggle flag
@@ -460,56 +498,17 @@ function Game:keypressed(key)
 		S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
 	end
 
-	-- movement / game / actions
-	local moveVec = nil
-	if #(player.actions) == 0 then
-		-- ignore keyboard controls if following the path
-		if not player.follow_path then
-			moveVec = movementActionToVector(uiAction)
-			if GameAction.Grab == uiAction then
-				self.ui.showGrabMenu = true
-
-			elseif GameAction.Examine == uiAction then
-				if self.ui.examine then
-					self:examineOff()
-				else
-					self:examineOn()
-				end
-
-			elseif GameAction.Inventory1 <= uiAction and GameAction.Inventory6 >= uiAction then
-				local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
-				if player.inventory[inventoryIndex] then
-					self.ui.inventoryActions = {
-						item = player.inventory[inventoryIndex],
-						visible = true,
-					}
-				else
-					console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
-				end
-			end
-		end
-
-		-- TODO: XXX: TODO: devel: remove this before releasing ^^
-		if GameAction.Experimental_Camera_Switch == uiAction then
-			if cameraIdx == Max_Dummies then
-				camera:follow(player)
-				cameraIdx = 0
-			else
-				cameraIdx = cameraIdx + 1
-				camera:follow(dummies[cameraIdx])
-			end
-			camera:update()
-			updateTiles()
-		end
-	end
-
 	if self.ui.examine then
 		if moveVec then
 			moveExamine(moveVec)
 		end
 	else
-		if moveVec and playerMoveAction(moveVec) then
-			self.doActions = true
+		-- ignore keyboard controls if following the path
+		if #(player.actions) == 0 and not player.follow_path then
+			-- if move and move or attack allowed
+			if moveVec and playerMoveAction(moveVec) then
+				self.doActions = true
+			end
 		end
 	end
 end
