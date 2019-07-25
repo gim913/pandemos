@@ -353,30 +353,6 @@ function Game:wheelmoved(x, y)
 	end
 end
 
-local function playerMoveAction(moveVec)
-	local nextAct,nPos = player:wantGo(moveVec)
-	if nextAct ~= action.Action.Blocked then
-		--print('action ', nextAct)
-		if nextAct == action.Action.Attack then
-			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
-		else
-			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
-		end
-		return true, nextAct
-	end
-
-	return false
-end
-
-local function moveExamine(moveVec)
-	local newCursorCell = cursorCell + moveVec
-	local vis = 2 * S.game.VIS_RADIUS + 1
-	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
-		cursorCell = newCursorCell
-		logItems()
-	end
-end
-
 function Game:keyreleased(key)
     imgui.KeyReleased(key)
     if imgui.GetWantCaptureKeyboard() then
@@ -423,6 +399,104 @@ local function movementActionToVector(uiAction)
 	return nil
 end
 
+function Game:actionEscape()
+	if self.ui.examine then
+		self:examineOff()
+	else
+		-- in game menu
+		gamestate.push(GameMenu:new())
+	end
+end
+
+function Game:actionGrab()
+	self.ui.showGrabMenu = true
+end
+
+function Game:actionExamine()
+	if self.ui.examine then
+		self:examineOff()
+	else
+		self:examineOn()
+	end
+end
+
+local function playerMoveAction(moveVec)
+	local nextAct,nPos = player:wantGo(moveVec)
+	if nextAct ~= action.Action.Blocked then
+		--print('action ', nextAct)
+		if nextAct == action.Action.Attack then
+			action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
+		else
+			action.queue(player.actions, Player.Base_Speed, action.Action.Move, nPos)
+		end
+		return true, nextAct
+	end
+
+	return false
+end
+
+local function moveExamine(moveVec)
+	local newCursorCell = cursorCell + moveVec
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
+		cursorCell = newCursorCell
+		logItems()
+	end
+end
+
+function Game:actionMovement(uiAction)
+	local moveVec = movementActionToVector(uiAction)
+
+	if self.ui.examine then
+		if moveVec then
+			moveExamine(moveVec)
+		end
+	else
+		-- ignore keyboard controls if following the path
+		if #(player.actions) == 0 and not player.follow_path then
+			-- if move and move or attack allowed
+			if moveVec and playerMoveAction(moveVec) then
+				self.doActions = true
+			end
+		end
+	end
+end
+
+function Game:actionInventory(uiAction)
+	local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
+	if player.inventory[inventoryIndex] then
+		self.ui.inventoryActions = {
+			item = player.inventory[inventoryIndex],
+			visible = true,
+		}
+	else
+		console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
+	end
+end
+
+local function actionExperimentalCameraSwitch()
+	if cameraIdx == Max_Dummies then
+		camera:follow(player)
+		cameraIdx = 0
+	else
+		cameraIdx = cameraIdx + 1
+		camera:follow(dummies[cameraIdx])
+	end
+	camera:update()
+	updateTiles()
+end
+
+local function actionDebugToggleVismap()
+	-- toggle flag
+	current = batch.debug('disableVismap') or false
+	batch.debug({ disableVismap = not current })
+	updateTiles()
+end
+
+local function actionDebugToggleAstar()
+	S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
+end
+
 function Game:keypressed(key)
 	imgui.KeyPressed(key)
     if imgui.GetWantCaptureKeyboard() then
@@ -437,79 +511,34 @@ function Game:keypressed(key)
 		return
 	end
 
-	local nextAct = action.Action.Blocked, nPos
-
 	-- general / UI
-	local moveVec = nil
+	local actionDispatcher = {
+		[GameAction.Up] = Game.actionMovement
+		, [GameAction.Down] = Game.actionMovement
+		, [GameAction.Left] = Game.actionMovement
+		, [GameAction.Right] = Game.actionMovement
+		, [GameAction.Rest] = Game.actionMovement
+		, [GameAction.Escape] = Game.actionEscape
+		, [GameAction.Grab] = Game.actionGrab
+		, [GameAction.Examine] = Game.actionExamine
 
-	if GameAction.Escape == uiAction then
-		if self.ui.examine then
-			self:examineOff()
-		else
-			gamestate.push(GameMenu:new())
-		end
+		, [GameAction.Inventory1] = Game.actionInventory
+		, [GameAction.Inventory2] = Game.actionInventory
+		, [GameAction.Inventory3] = Game.actionInventory
+		, [GameAction.Inventory4] = Game.actionInventory
+		, [GameAction.Inventory5] = Game.actionInventory
+		, [GameAction.Inventory6] = Game.actionInventory
 
-	elseif GameAction.Up <= uiAction and GameAction.Rest >= uiAction then
-		moveVec = movementActionToVector(uiAction)
+		, [GameAction.Toggle_Console] = console.toggle
 
-	elseif GameAction.Grab == uiAction then
-		self.ui.showGrabMenu = true
+		-- TODO: XXX: TODO: devel: comment out before releasing ^^
+		, [GameAction.Experimental_Camera_Switch] = actionExperimentalCameraSwitch
+		, [GameAction.Debug_Toggle_Vismap] = actionDebugToggleVismap
+		, [GameAction.Debug_Toggle_Astar] = actionDebugToggleAstar
+	}
 
-	elseif GameAction.Examine == uiAction then
-		if self.ui.examine then
-			self:examineOff()
-		else
-			self:examineOn()
-		end
-
-	elseif GameAction.Inventory1 <= uiAction and GameAction.Inventory6 >= uiAction then
-		local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
-		if player.inventory[inventoryIndex] then
-			self.ui.inventoryActions = {
-				item = player.inventory[inventoryIndex],
-				visible = true,
-			}
-		else
-			console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
-		end
-
-	elseif GameAction.Toggle_Console == uiAction then
-		console.toggle()
-
-	-- TODO: XXX: TODO: devel: remove this before releasing ^^
-	elseif GameAction.Experimental_Camera_Switch == uiAction then
-		if cameraIdx == Max_Dummies then
-			camera:follow(player)
-			cameraIdx = 0
-		else
-			cameraIdx = cameraIdx + 1
-			camera:follow(dummies[cameraIdx])
-		end
-		camera:update()
-		updateTiles()
-
-	elseif GameAction.Debug_Toggle_Vismap == uiAction then
-		-- toggle flag
-		current = batch.debug('disableVismap') or false
-		batch.debug({ disableVismap = not current })
-		updateTiles()
-
-	elseif GameAction.Debug_Toggle_Astar == uiAction then
-		S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
-	end
-
-	if self.ui.examine then
-		if moveVec then
-			moveExamine(moveVec)
-		end
-	else
-		-- ignore keyboard controls if following the path
-		if #(player.actions) == 0 and not player.follow_path then
-			-- if move and move or attack allowed
-			if moveVec and playerMoveAction(moveVec) then
-				self.doActions = true
-			end
-		end
+	if actionDispatcher[uiAction] then
+		actionDispatcher[uiAction](self, uiAction)
 	end
 end
 
