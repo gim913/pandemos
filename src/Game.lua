@@ -32,6 +32,11 @@ local Game = class('Game')
 console.initialize((31 * 25) + 10 + 128, 100, 900)
 messages.initialize(31 * 25, 31 * 25)
 
+local function logError(message)
+	console.log({ color.red, 'ERROR: ' .. message })
+	print('ERROR: ' .. message)
+end
+
 local f = math.floor
 local camera = nil
 local player
@@ -191,6 +196,7 @@ function Game:ctor(rng)
 	self.doActions = false
 	self.ui = {}
 	-- self.ui.showGrabMenu
+	-- self.ui.showDropMenu
 	-- self.ui.examine
 	-- self.ui.inventoryActions
 
@@ -412,6 +418,10 @@ function Game:actionGrab()
 	self.ui.showGrabMenu = true
 end
 
+function Game:actionDrop()
+	self.ui.showDropMenu = true
+end
+
 function Game:actionExamine()
 	if self.ui.examine then
 		self:examineOff()
@@ -520,6 +530,7 @@ function Game:keypressed(key)
 		, [GameAction.Rest] = Game.actionMovement
 		, [GameAction.Escape] = Game.actionEscape
 		, [GameAction.Grab] = Game.actionGrab
+		, [GameAction.Drop] = Game.actionDrop
 		, [GameAction.Examine] = Game.actionExamine
 
 		, [GameAction.Inventory1] = Game.actionInventory
@@ -539,6 +550,8 @@ function Game:keypressed(key)
 
 	if actionDispatcher[uiAction] then
 		actionDispatcher[uiAction](self, uiAction)
+	else
+		logError('no handler for action ' .. uiAction)
 	end
 end
 
@@ -961,9 +974,15 @@ function Game:show()
 		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
 	end
 
-	if self.ui.examine then
-		love.graphics.print("self.ui.examine", S.resolution.x - 200 - 10, 110)
+	local uiElements = '{ '
+	for key, value in pairs(self.ui) do
+		if value then
+			uiElements = uiElements .. key .. ', '
+		end
 	end
+	uiElements = uiElements .. '}'
+
+	love.graphics.print("self.ui: " .. uiElements, S.resolution.x - 200 - 10, 110)
 
 	-- draw map
 	batch.draw()

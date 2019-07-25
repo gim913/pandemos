@@ -15,6 +15,7 @@ local bindings = {
 
 	, [","] = Action.Grab
 	, ["g"] = Action.Grab
+	, ["d"] = Action.Drop
 	, ["x"] = Action.Examine
 	, ["l"] = Action.Examine
 
