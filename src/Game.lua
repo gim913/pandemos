@@ -1,6 +1,8 @@
 -- imported modules
 local batch = require 'batch'
+local bindings = require 'bindings'
 local Camera = require 'Camera'
+local GameAction = require 'GameAction'
 local GameMenu = require 'GameMenu'
 local Infected = require 'EInfected'
 local interface = require 'interface'
@@ -375,34 +377,6 @@ local function moveExamine(moveVec)
 	end
 end
 
-local Move_Vectors = {
-	Vec( 0, -1), -- up
-	Vec( 0,  1), -- down
-	Vec(-1,  0), -- left
-	Vec( 1,  0), -- right
-	Vec( 0,  0) -- rest
-}
-
-local function checkKeyPress(pressedKey, keyNames)
-	for _, keyName in pairs(keyNames) do
-		if keyName == pressedKey then
-			return true
-		end
-	end
-
-	return false
-end
-
-local function movementKeyToVector(pressedKey)
-	for index = 1, #Move_Vectors do
-		if checkKeyPress(pressedKey, S.keyboard[index]) then
-			return Move_Vectors[index]
-		end
-	end
-
-	return nil
-end
-
 function Game:keyreleased(key)
     imgui.KeyReleased(key)
     if imgui.GetWantCaptureKeyboard() then
@@ -423,36 +397,67 @@ function Game:examineOff()
 	cursorCell = nil
 end
 
+local function keyToAction(lctrl, key)
+	local bindingName = ''
+	if lctrl then
+		bindingName = bindingName .. 'lctrl+'
+	end
+
+	bindingName = bindingName .. key
+
+	return bindings[bindingName]
+end
+
+local Move_Vectors = {
+	Vec( 0, -1), -- up
+	Vec( 0,  1), -- down
+	Vec(-1,  0), -- left
+	Vec( 1,  0), -- right
+	Vec( 0,  0) -- rest
+}
+
+local function movementActionToVector(uiAction)
+	if uiAction <= #Move_Vectors then
+		return Move_Vectors[uiAction]
+	end
+	return nil
+end
+
 function Game:keypressed(key)
 	imgui.KeyPressed(key)
     if imgui.GetWantCaptureKeyboard() then
         return
 	end
 
-	local nextAct=action.Action.Blocked, nPos
+	local hasLctrl = love.keyboard.isDown('lctrl')
+	local uiAction = keyToAction(hasLctrl, key)
+
+	-- unknown action
+	if not uiAction then
+		return
+	end
+
+	local nextAct = action.Action.Blocked, nPos
 
 	-- general / UI
-	if 'escape' == key then
+	if GameAction.Escape == uiAction then
 		if self.ui.examine then
 			self:examineOff()
 		else
 			gamestate.push(GameMenu:new())
 		end
-	elseif '`' == key or '~' == key then
-		console.toggle()
-	end
 
-	-- debug
-	-- TODO: XXX: TODO: devel: quit
-	if love.keyboard.isDown('lctrl') then
-		if key == "1" then
-			-- toggle flag
-			current = batch.debug('disableVismap') or false
-			batch.debug({ disableVismap = not current })
-			updateTiles()
-		elseif key == "2" then
-			S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
-		end
+	elseif GameAction.Toggle_Console == uiAction then
+		console.toggle()
+
+	elseif GameAction.Debug_Toggle_Vismap == uiAction then
+		-- toggle flag
+		current = batch.debug('disableVismap') or false
+		batch.debug({ disableVismap = not current })
+		updateTiles()
+
+	elseif GameAction.Debug_Toggle_Astar == uiAction then
+		S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
 	end
 
 	-- movement / game / actions
@@ -460,18 +465,19 @@ function Game:keypressed(key)
 	if #(player.actions) == 0 then
 		-- ignore keyboard controls if following the path
 		if not player.follow_path then
-			moveVec = movementKeyToVector(key)
-			if ',' == key or 'g' == key then
+			moveVec = movementActionToVector(uiAction)
+			if GameAction.Grab == uiAction then
 				self.ui.showGrabMenu = true
-			elseif 'x' == key or 'l' == key then
+
+			elseif GameAction.Examine == uiAction then
 				if self.ui.examine then
 					self:examineOff()
 				else
 					self:examineOn()
 				end
-			end
-			if '4' == key or '5' == key or '6' == key or '7' == key or '8' == key or '9' == key then
-				local inventoryIndex = string.byte(key) - string.byte('4') + 1
+
+			elseif GameAction.Inventory1 <= uiAction and GameAction.Inventory6 >= uiAction then
+				local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
 				if player.inventory[inventoryIndex] then
 					self.ui.inventoryActions = {
 						item = player.inventory[inventoryIndex],
@@ -484,7 +490,7 @@ function Game:keypressed(key)
 		end
 
 		-- TODO: XXX: TODO: devel: remove this before releasing ^^
-		if key == "tab" then
+		if GameAction.Experimental_Camera_Switch == uiAction then
 			if cameraIdx == Max_Dummies then
 				camera:follow(player)
 				cameraIdx = 0
@@ -898,11 +904,11 @@ local function drawInterface(inventoryActions)
 		end
 	end
 
-	imgui.SetNextWindowPos(startX - 40, 260 + 20 + h + 50 + 80 + 60, 'ImGuiCond_Always')
+	imgui.SetNextWindowPos(startX - 400, 260 + 20 + h + 50 + 80 + 60 - 100, 'ImGuiCond_Always')
 	if imgui.BeginPopupModal(inventoryModalName, inventoryActions and inventoryActions.visible, 'ImGuiWindowFlags_AlwaysAutoResize') then
 		imgui.Text('(d)rop')
 		imgui.Text('(e)at / drink / consume')
-		imgui.Text('(r)eplace ' .. inventoryActions.item.desc.type .. ' class in equipment')
+		imgui.Text('equip /(r)eplace ' .. inventoryActions.item.desc.type .. ' class in equipment')
 		imgui.Text('(s)wap with item on the ground')
 		imgui.Text('(t)hrow')
 		imgui.Text('(u)se')
