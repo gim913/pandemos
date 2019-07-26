@@ -853,12 +853,23 @@ local function isMouseOverEntity(ent, camLu)
 	return false
 end
 
+local function findKey(uiAction)
+	for name, action in pairs(bindings) do
+		if uiAction == action then
+			return name
+		end
+	end
+
+	return nil
+end
+
 local function drawInterface(inventoryActions)
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
 	--imgui.ShowDemoWindow(true)
 
+	love.graphics.setColor(color.white)
 	hud.begin('Entities', startX, 10)
 	local h = hud.drawPlayerInfo(player, 260, function(ent)
 		return isMouseOverEntity(ent, camLu)
@@ -869,36 +880,31 @@ local function drawInterface(inventoryActions)
 	end)
 	hud.finish(266)
 
+	love.graphics.setColor(color.white)
 	hud.begin('Equipment', startX, 260 + 20 + h + 50)
+	hud.drawMenu(260, {
+		{ key = findKey(GameAction.Equip1),  item = '(melee)' }
+		, { key = findKey(GameAction.Equip2), item = '(light)' }
+		, { key = findKey(GameAction.Equip3), item = '(heavy)' }
+	})
 
-	-- imgui.BeginGroup()
-	-- imgui.BeginChild_2(1, 260, 80, true, "ImGuiWindowFlags_None");
-	-- imgui.Text('1: (melee)')
-	-- imgui.Text('2: (light)')
-	-- imgui.Text('3: (heavy)')
-	-- imgui.EndChild()
-	-- imgui.EndGroup()
+	hud.finish(266)
 
-	hud.finish(260)
-
+	love.graphics.setColor(color.white)
 	hud.begin('Inventory', startX, 260 + h + 50 + 80 + 60)
 
-	-- imgui.BeginGroup()
-	-- imgui.BeginChild_2(1, 260, 150, true, "ImGuiWindowFlags_None");
-	-- if #player.inventory > 0 then
-	-- 	for id, item in pairs(player.inventory) do
-	-- 		imgui.Text((id + 3) .. ": " .. item.desc.name)
-	-- 		imgui.SameLine(190)
-	-- 		imgui.Text(item.desc.type)
-	-- 	end
-	-- else
-	-- 	for id = 1, 6 do
-	-- 		imgui.Text((id + 3) .. ': ')
-	-- 	end
-	-- end
-	-- imgui.EndChild()
-	-- imgui.EndGroup()
+	local menu = {}
 
+	for i = 1, 6 do
+		if player.inventory[i] then
+			local item = player.inventory[i]
+			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = item.desc.name .. ' ' .. item.desc.type })
+		else
+			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = '' })
+		end
+	end
+
+	hud.drawMenu(260, menu)
 	hud.finish(260)
 
 	-- local inventoryModalName = inventoryActions and inventoryActions.item.desc.name or ''

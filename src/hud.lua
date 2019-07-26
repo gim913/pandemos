@@ -29,7 +29,7 @@ end
 
 function hud.finish(width)
 	love.graphics.setColor(color.slategray)
-	love.graphics.rectangle('line', startX, startY, width, currentY)
+	love.graphics.rectangle('line', startX, startY, width, currentY - startY)
 end
 
 local hoveredUiEntId = nil
@@ -177,6 +177,28 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 
 	currentX = tempX + currentX
 	currentY = tempY + height
+end
+
+local function dashedLine(width)
+	for i = 0, width - 1, 10 do
+		love.graphics.line(currentX + i, currentY, currentX + i + 5, currentY)
+	end
+end
+
+function hud.drawMenu(width, items)
+	currentY = currentY + 4
+	love.graphics.setColor(color.slategray)
+	dashedLine(width)
+	currentY = currentY + 4
+
+	for _,item in pairs(items) do
+		love.graphics.setColor(color.ivory)
+		love.graphics.print(item.key .. ')', currentX + 6, currentY)
+		love.graphics.setColor(color.lightgray)
+		love.graphics.print(item.item, currentX + 30, currentY)
+
+		currentY = currentY + hud_lineHeight
+	end
 end
 
 return hud

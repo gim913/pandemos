@@ -19,6 +19,10 @@ local bindings = {
 	, ["x"] = Action.Examine
 	, ["l"] = Action.Examine
 
+	, ["escape"] = Action.Escape
+	, ["`"] = Action.Toggle_Console
+
+	-- advised not to change
 	, ["1"] = Action.Equip1
 	, ["2"] = Action.Equip2
 	, ["3"] = Action.Equip3
@@ -29,8 +33,6 @@ local bindings = {
 	, ["8"] = Action.Inventory5
 	, ["9"] = Action.Inventory6
 
-	, ["escape"] = Action.Escape
-	, ["`"] = Action.Toggle_Console
 	, ["tab"] = Action.Experimental_Camera_Switch
 	, ["lctrl+1"] = Action.Debug_Toggle_Vismap
 	, ["lctrl+2"] = Action.Debug_Toggle_Astar
