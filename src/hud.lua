@@ -11,6 +11,62 @@ local hud_font = fontManager.get('fonts/scp.otf', 16, 'light')
 
 local Box_Height = 66
 
+local hud_regions
+
+-- external events
+local hoveredUiEntId = nil
+
+function hud.update(dt)
+	hud_regions = {}
+end
+
+local lastMouseX = -1
+local lastMouseY = -1
+local lastMousePressedX = -1
+local lastMousePressedY = -1
+
+function hud.mousemoved(mouseX, mouseY)
+	lastMouseX = mouseX
+	lastMouseY = mouseY
+	return false
+end
+
+function hud.mousepressed(mouseX, mouseY, button)
+	lastMousePressedX = mouseX
+	lastMousePressedY = mouseY
+	return false
+end
+
+function hud.mousereleased(mouseX, mouseY, button)
+	lastMousePressedX = -1
+	lastMousePressedY = -1
+	return false
+end
+
+local scrollCollectedWheelY = 0
+function hud.wheelmoved(deltaX, deltaY)
+	scrollCollectedWheelY = scrollCollectedWheelY + deltaY
+	-- ugly, but ok for now
+	if lastMouseX > 31 * 25 then
+		return true
+	end
+	return false
+end
+
+local function is_between(val, lower, upper)
+	return val >= lower and val < upper
+end
+
+local function hud_hovered(x, y, width, height)
+	return is_between(lastMouseX, x, x + width) and is_between(lastMouseY, y, y + height)
+end
+
+local function hud_pressed(x, y, width, height)
+	return is_between(lastMousePressedX, x, x + width) and is_between(lastMousePressedY, y, y + height)
+end
+
+--
+
 local currentX
 local currentY
 
@@ -31,8 +87,6 @@ function hud.finish(width)
 	love.graphics.setColor(color.slategray)
 	love.graphics.rectangle('line', startX, startY, width, currentY - startY)
 end
-
-local hoveredUiEntId = nil
 
 function hud.hoveredEntId()
 	return hoveredUiEntId
@@ -82,6 +136,14 @@ function hud.drawPlayerInfo(ent, width, isMouseHovered)
 		, hp = { 0.3, 0.7, 1.0 }
 	}
 	local colorScheme = normal
+
+	if hud_hovered(currentX, currentY, width, Box_Height) then
+		hoveredUiEntId = ent.id
+	else
+		-- hack: player is drawn first, so we can set null here and later only check if any other entity is hovered
+		hoveredUiEntId = nil
+	end
+
 	if isMouseHovered(ent) or hoveredUiEntId == ent.id then
 		colorScheme = hovered
 	end
@@ -100,8 +162,16 @@ end
 
 local entsCanvas = nil
 local entsQuad = nil
-local lastSelected = -1
+local lastSelected = -2
 
+local originalScrollPos = 0
+local scrollPos = 0
+
+local function clamp(val, lower, upper)
+	return math.max(lower, math.min(val, upper))
+end
+
+-- dragons ahead :P
 function hud.drawVisible(ents, width, height, isMouseHovered)
 	local normal = {
 		text = color.lightgray
@@ -114,9 +184,12 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 		, hp = { 0.3, 0.7, 1.0 }
 	}
 
+	local Scroll_Padding = 3
+	height = height - Scroll_Padding
+
 	-- calculate size
 	local cnt = 0
-	local selected = 0
+	local selected = -1
 	for ent, _ in pairs(ents) do
 		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
 			selected = cnt
@@ -131,9 +204,21 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 	if not entsCanvas or newHeight > entsCanvas:getHeight() then
 		entsCanvas = love.graphics.newCanvas(width, newHeight)
 	end
+
+	local quadOffsetY
 	if selected ~= lastSelected then
-		local offsetY = selected * entryHeight -- math.max(0, math.min(selected * entryHeight, entsCanvas:getHeight() - height))
-		entsQuad = love.graphics.newQuad(0, offsetY, width, height, entsCanvas:getWidth(), entsCanvas:getHeight())
+		local ffsetY
+
+		-- calculate quad of canvas that we will show
+		-- 1. if entity selected on the map, calculate proper offset, and calculate scroll button position
+		-- 2. otherwise just use scroll button position
+		if selected ~= -1 then
+			quadOffsetY = clamp(selected * entryHeight, 0, entsCanvas:getHeight() - height)
+			scrollPos = math.floor((height - 20) * quadOffsetY / (entsCanvas:getHeight() - height))
+		else
+			quadOffsetY = math.floor((newHeight - height) * scrollPos / (height - 20))
+		end
+		entsQuad = love.graphics.newQuad(0, quadOffsetY, width, height, entsCanvas:getWidth(), entsCanvas:getHeight())
 	end
 
 	local scrollbarAwareWidth = width
@@ -149,6 +234,11 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 	currentY = 0
 	for ent,_ in pairs(ents) do
 		local colorScheme = normal
+
+		if hud_hovered(tempX, tempY + currentY - quadOffsetY, scrollbarAwareWidth, hud_lineHeight + 18 + 4) then
+			hoveredUiEntId = ent.id
+		end
+
 		if isMouseHovered(ent) or hoveredUiEntId == ent.id then
 			colorScheme = hovered
 		end
@@ -170,13 +260,38 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 		love.graphics.setColor(color.dimgray)
 		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY, 10, height, 5, 5)
 
-		love.graphics.setColor(color.gray)
-		local offsetY = math.floor((height - 20) * (selected / (cnt - 6)))
-		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY + offsetY, 10, 20, 5, 5)
+		-- if mouse button pressed in scrollbar button
+		--  => calculate mouse movement and alter
+		if lastMousePressedY ~= -1 then
+			if hud_pressed(tempX + scrollbarAwareWidth + 4, tempY + originalScrollPos, 10, 20) then
+				scrollPos = originalScrollPos + (lastMouseY - lastMousePressedY)
+				scrollPos = clamp(scrollPos, 0, height - 20)
+			end
+		else
+			originalScrollPos = scrollPos
+		end
+
+		if hud_hovered(tempX, tempY, width, height + Scroll_Padding) then
+			scrollPos = scrollPos - 4 * scrollCollectedWheelY
+			scrollPos = clamp(scrollPos, 0, height - 20)
+			scrollCollectedWheelY = 0
+		else
+			scrollCollectedWheelY = 0
+		end
+
+		-- scroll button
+		if hud_hovered(tempX + scrollbarAwareWidth + 4, tempY + scrollPos, 10, 20) then
+			love.graphics.setColor(color.lightgray)
+		else
+			love.graphics.setColor(color.gray)
+		end
+		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY + scrollPos, 10, 20, 5, 5)
 	end
 
 	currentX = tempX + currentX
-	currentY = tempY + height
+	currentY = tempY + height + Scroll_Padding
+
+	love.graphics.setColor(color.white)
 end
 
 local function dashedLine(width)
@@ -191,10 +306,28 @@ function hud.drawMenu(width, items)
 	dashedLine(width)
 	currentY = currentY + 4
 
+	local normal = {
+		bind = color.ivory
+		, text = color.lightgray
+	}
+	local hovered = {
+		bind = color.black
+		, text = color.black
+	}
+	local colorScheme
+
 	for _,item in pairs(items) do
-		love.graphics.setColor(color.ivory)
+		if hud_hovered(currentX, currentY, width, hud_lineHeight) then
+			love.graphics.setColor(color.ivory)
+			love.graphics.rectangle('fill', currentX + 2, currentY, width - 4, hud_lineHeight - 2)
+			colorScheme = hovered
+		else
+			colorScheme = normal
+		end
+
+		love.graphics.setColor(colorScheme.bind)
 		love.graphics.print(item.key .. ')', currentX + 6, currentY)
-		love.graphics.setColor(color.lightgray)
+		love.graphics.setColor(colorScheme.text)
 		love.graphics.print(item.item, currentX + 30, currentY)
 
 		currentY = currentY + hud_lineHeight

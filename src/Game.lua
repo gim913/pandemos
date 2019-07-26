@@ -294,6 +294,10 @@ local function logItems()
 end
 
 function Game:mousemoved(mouseX, mouseY)
+	if hud.mousemoved(mouseX, mouseY) then
+		return
+	end
+
 	-- TODO: limit to case where layer is generated
 
 	local vis = 2 * S.game.VIS_RADIUS + 1
@@ -314,12 +318,26 @@ function Game:mousemoved(mouseX, mouseY)
 end
 
 function Game:mousepressed(x, y, button)
+	if hud.mousepressed(x, y, button) then
+		return
+	end
+
 	if player.astar_path then
 		player.follow_path = 1
 	end
 end
 
+function Game:mousereleased(x, y, button)
+	if hud.mousereleased(x, y, button) then
+		return
+	end
+end
+
 function Game:wheelmoved(x, y)
+	if hud.wheelmoved(x, y) then
+		return
+	end
+
 	if love.keyboard.isDown('lctrl') then
 		if love.keyboard.isDown('lshift') then
 			console.nextFont()
@@ -692,6 +710,8 @@ function Game:handleGrabUpdate(dt)
 end
 
 function Game:doUpdate(dt)
+	hud.update(dt)
+
 	if self.ui.showGrabMenu then
 		-- if single item on the ground and there is a space in inventory, just grab it
 		-- if more items show menu
