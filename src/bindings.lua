@@ -18,6 +18,9 @@ local bindings = {
 	, ["d"] = Action.Drop
 	, ["x"] = Action.Examine
 	, ["l"] = Action.Examine
+	, ["t"] = Action.Throw
+	, ["r"] = Action.Swap_Ground
+	, ["e"] = Action.Swap_Equipment
 
 	, ["escape"] = Action.Escape
 	, ["`"] = Action.Toggle_Console

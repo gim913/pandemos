@@ -92,6 +92,10 @@ function hud.hoveredEntId()
 	return hoveredUiEntId
 end
 
+function hud.lineHeight()
+	return hud_lineHeight
+end
+
 local function hud_drawEnt(ent, width, colorScheme, displayHovered)
 	local locX = currentX
 	local locY = currentY
@@ -319,18 +323,27 @@ function hud.drawMenu(width, items)
 	for _,item in pairs(items) do
 		if hud_hovered(currentX, currentY, width, hud_lineHeight) then
 			love.graphics.setColor(color.ivory)
-			love.graphics.rectangle('fill', currentX + 2, currentY, width - 4, hud_lineHeight - 2)
+			love.graphics.rectangle('fill', currentX + 2, currentY, width - 4 - 6, hud_lineHeight - 2)
 			colorScheme = hovered
 		else
 			colorScheme = normal
 		end
 
-		love.graphics.setColor(colorScheme.bind)
-		love.graphics.print(item.key .. ')', currentX + 6, currentY)
-		love.graphics.setColor(colorScheme.text)
-		love.graphics.print(item.item, currentX + 30, currentY)
+		if item.key then
+			love.graphics.setColor(colorScheme.bind)
+			love.graphics.print(item.key .. ')', currentX + 6, currentY)
+			love.graphics.setColor(colorScheme.text)
+			love.graphics.print(item.item, currentX + math.max(30, 16 * #item.key), currentY)
 
-		currentY = currentY + hud_lineHeight
+			currentY = currentY + hud_lineHeight
+		else
+			local halfHeight = math.floor(hud_lineHeight / 2)
+			currentX = currentX + 10
+			currentY = currentY + halfHeight
+			dashedLine(width - 20)
+			currentX = currentX - 10
+			currentY = currentY + (hud_lineHeight - halfHeight)
+		end
 	end
 end
 

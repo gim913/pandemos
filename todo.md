@@ -7,3 +7,5 @@ random list of *things*
 
 tech issues:
  - drop dumb args from astar handlers
+
+ - modals + keyboard handling in modals

@@ -927,30 +927,38 @@ local function drawInterface(inventoryActions)
 	hud.drawMenu(260, menu)
 	hud.finish(260)
 
-	-- local inventoryModalName = inventoryActions and inventoryActions.item.desc.name or ''
-	-- if inventoryActions and inventoryActions.visible then
-	-- 	if imgui.IsKeyDown(15) then
-	-- 		inventoryActions.visible = false
-	-- 	else
-	-- 		imgui.OpenPopup(inventoryModalName)
-	-- 	end
-	-- end
+	local inventoryModalName = inventoryActions and inventoryActions.item.desc.name
+	if inventoryModalName then
+		menu = {
+			{ key = findKey(GameAction.Drop), item = 'drop' }
+			, { key = findKey(GameAction.Throw), item = 'throw' }
+			, { key = findKey(GameAction.Swap_Equipment),
+				item = 'replace ' .. inventoryActions.item.desc.type .. ' class in equipements' }
+			, { key = findKey(GameAction.Swap_Ground), item = 'swap with item(XXX) on the ground' }
+			, { separator = '' }
+			, { key = findKey(GameAction.Escape), item = 'close window' }
+		}
 
-	-- imgui.SetNextWindowPos(startX - 400, 260 + 20 + h + 50 + 80 + 60 - 100, 'ImGuiCond_Always')
-	-- local temp = inventoryActions and inventoryActions.visible
-	-- if imgui.BeginPopupModal(inventoryModalName, temp, 'ImGuiWindowFlags_AlwaysAutoResize') then
-	-- 	imgui.Text('drop')
+		local boardSize = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
+		local Size_X = 400
+		local Size_Y = hud.lineHeight() * (#menu  + 1) + 3 + 4 + 4
+		local centerX = math.floor((boardSize - Size_X) / 2)
+		local centerY = math.floor((boardSize - Size_Y) / 2) - 100
+
+		love.graphics.setColor(0.25, 0.25, 0.25, 0.5)
+		love.graphics.rectangle('fill', 0, 0, boardSize, boardSize)
+
+		love.graphics.setColor(0, 0, 0, 0.9)
+		love.graphics.rectangle('fill', centerX - 2, centerY - 1, Size_X + 3, Size_Y)
+
+		love.graphics.setColor(color.white)
+		hud.begin(inventoryModalName, centerX, centerY)
+		hud.drawMenu(Size_X, menu)
+		hud.finish(Size_X)
+	end
+
 	-- 	imgui.Text('eat/drink/consume')
-	-- 	imgui.Text('equip/replace ' .. inventoryActions.item.desc.type .. ' class in equipment')
-	-- 	imgui.Text('swap with item on the ground')
-	-- 	imgui.Text('throw')
 	-- 	imgui.Text('use')
-	-- 	imgui.Separator()
-	-- 	imgui.Text('close popup')
-	-- 	imgui.EndPopup()
-	-- end
-
-	-- imgui.Render();
 
 	return inventoryActions
 end
