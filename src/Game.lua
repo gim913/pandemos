@@ -446,18 +446,23 @@ function Game:grabItem(locationId, items, ordinalIndex)
 		if _ordinalIndex == ordinalIndex then
 			if not player.inventory:add(item) then
 				console.log('Inventory is full!')
-				break
+				return false
 			end
+
 			elements.del(locationId, itemId)
 
 			console.log({
 				{ 1, 1, 1, 1 }, 'Picked up ',
 				color.crimson, item.desc.blueprint.name
 			})
+
+			return true
 		end
 
 		_ordinalIndex = _ordinalIndex + 1
 	end
+
+	return false
 end
 
 function Game:actionGrab()
@@ -998,7 +1003,7 @@ function Game:grabActionClose()
 end
 
 function Game:grabActionGrab(locationId, items, ordinalIndex)
-	self:grabItem(locationId, items, ordinalIndex)
+	return self:grabItem(locationId, items, ordinalIndex)
 end
 
 local function calculateCenteredWindowPosition(width, height)
@@ -1212,6 +1217,16 @@ function Game:drawInterface()
 			local index = tonumber(key)
 			print(tostring(action) .. ' ' .. tostring(key) .. ' ' .. tostring(index))
 			self:grabActionGrab(locationId, items, index)
+		end
+		if key == 'a' then
+			while self:grabActionGrab(locationId, items, 1) do
+				items, itemCount = elements.getItems(locationId)
+				if 0 == itemCount then
+					break
+				end
+			end
+
+			self:grabActionClose()
 		end
 	end
 end
