@@ -96,22 +96,29 @@ end
 local currentX
 local currentY
 
-local startX
-local startY
+local startX = {}
+local startY = {}
 function hud.begin(name, x, y)
 	love.graphics.setFont(hud_font)
-	startX = x
-	startY = y
-	currentX = startX + 3
-	currentY = startY + 3
+	table.insert(startX, x)
+	table.insert(startY, y)
+	currentX = x + 3
+	currentY = y + 3
 	love.graphics.print(name, currentX, currentY)
 
 	currentY = currentY + hud_lineHeight
 end
 
-function hud.finish(width)
+function hud.finish(width, padding)
 	love.graphics.setColor(color.slategray)
-	graphics.rectangle('line', startX, startY, width, currentY - startY)
+	local luX = table.remove(startX)
+	local luY = table.remove(startY)
+	graphics.rectangle('line', luX, luY, width, currentY - luY)
+	currentX = luX
+
+	if padding then
+		currentY = currentY + padding
+	end
 end
 
 function hud.hoveredEntId()

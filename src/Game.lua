@@ -429,6 +429,7 @@ function Game:actionGrab()
 	if items then
 		if itemCount == 1 then
 			for itemId, item in pairs(items) do
+				print(utils.repr(item))
 				if not player.inventory:add(item) then
 					console.log('Inventory is full!')
 					break
@@ -733,11 +734,16 @@ function Game:updateGameLogic(dt)
 	end
 end
 
+local tempDropAnimate
 function Game:doUpdate(dt)
 	hud.update(dt)
+	if self.ui.showDropMenu then
+		tempDropAnimate = tempDropAnimate + dt
+	end
 
 	if not hud.captureInput()  then
 		self:updateGameLogic(dt)
+		tempDropAnimate = 0
 	end
 
 	console.update(dt)
@@ -931,6 +937,27 @@ function Game:itemActionDrop(item)
 	self:itemActionClose()
 end
 
+function Game:dropActionClose()
+	hud.grabInput(false)
+	self.ui.showDropMenu = nil
+end
+
+function Game:dropActionNum(uiAction)
+	if uiAction >= GameAction.Equip1 and uiAction <= GameAction.Equip3 then
+		-- TODO:
+		console.log('handle equipment drop')
+	end
+
+	if uiAction >= GameAction.Inventory1 and uiAction <= GameAction.Inventory6 then
+		local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
+		local item = player.inventory:get(inventoryIndex)
+		if item then
+			self:dropItem(item)
+			--self:dropActionClose()
+		end
+	end
+end
+
 local function calculateCenteredWindowPosition(width, height)
 	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
 	local posX = math.floor((Board_Size - width) / 2)
@@ -944,13 +971,19 @@ local function menuWindowHeight(numItems)
 	return (numItems + 1) * hud.lineHeight() + 8 + 3
 end
 
+local function interpolate(val1, val2, delta, maxDelta)
+	local u = math.min(delta, maxDelta) / maxDelta
+	local diff = val2 - val1
+	return val1 + u * diff
+end
+
 function Game:drawInterface()
 	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
 	-- dim map
-	if self.ui.itemActions or self.ui.showDropMenu or true then
+	if self.ui.itemActions or self.ui.showDropMenu then
 		love.graphics.setColor(0.25, 0.25, 0.25, 0.7)
 		graphics.rectangle('fill', 0, 0, Board_Size, Board_Size)
 	end
@@ -968,17 +1001,28 @@ function Game:drawInterface()
 
 	local equipmentPosX = startX
 	local equipmentPosY = 260 + 20 + h + 50
+	local equipmentPadding = 0
 
 	if self.ui.showDropMenu then
-		local Size_X = 260
-		local Size_Y = menuWindowHeight(3) + menuWindowHeight(6) + 20
+		local Size_X = 280
+		local headerHeight = hud.lineHeight() + 10
+		local additionalOptions = hud.lineHeight() + 8
+		local parentHeight = headerHeight + additionalOptions + 3
+		local Size_Y = menuWindowHeight(3) + menuWindowHeight(6) + 20 + parentHeight
 		local centerX, centerY = calculateCenteredWindowPosition(Size_X, Size_Y)
 
-		equipmentPosX = centerX
-		equipmentPosY = centerY
+		equipmentPosX = interpolate(startX, centerX, tempDropAnimate, 0.3)
+		equipmentPosY = interpolate(260 + 20 + h + 50, centerY, tempDropAnimate, 0.3)
+		equipmentPadding = 3
 
 		love.graphics.setColor(color.indigo)
-		love.graphics.rectangle('fill', centerX - 1, centerY - 1, Size_X + 2, Size_Y + 2)
+		love.graphics.rectangle('fill', equipmentPosX - 1, equipmentPosY - 1, Size_X + 2, Size_Y + 2)
+
+		love.graphics.setColor(color.white)
+		hud.begin('Drop item, select: ', equipmentPosX, equipmentPosY)
+
+		equipmentPosX = equipmentPosX + 10
+		equipmentPosY = equipmentPosY + headerHeight
 	end
 
 	love.graphics.setColor(color.white)
@@ -1008,7 +1052,36 @@ function Game:drawInterface()
 	end
 
 	hud.drawMenu(260, menu)
-	hud.finish(260)
+	hud.finish(260, equipmentPadding)
+
+	if self.ui.showDropMenu then
+		local menu = {
+			{ key = findKey(GameAction.Close_Modal), item = 'close window' }
+		}
+		hud.drawMenu(260, menu)
+
+		hud.finish(280)
+
+		local itemDispatcher = {
+			[GameAction.Close_Modal] = Game.dropActionClose
+			, [GameAction.Escape] = Game.dropActionClose
+
+			, [GameAction.Equip1] = Game.dropActionNum
+			, [GameAction.Equip2] = Game.dropActionNum
+			, [GameAction.Equip3] = Game.dropActionNum
+			, [GameAction.Inventory1] = Game.dropActionNum
+			, [GameAction.Inventory2] = Game.dropActionNum
+			, [GameAction.Inventory3] = Game.dropActionNum
+			, [GameAction.Inventory4] = Game.dropActionNum
+			, [GameAction.Inventory5] = Game.dropActionNum
+			, [GameAction.Inventory6] = Game.dropActionNum
+		}
+
+		local action = hud.getAction()
+		if action and itemDispatcher[action] then
+			itemDispatcher[action](self, action)
+		end
+	end
 
 	-- show item actions
 	if self.ui.itemActions then
