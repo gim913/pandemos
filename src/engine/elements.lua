@@ -50,7 +50,7 @@ end
 
 local function elements_del(location, index)
 	if elements_location[location] then
-		if id and #elements_location[location] > 1 then
+		if index and #elements_location[location] > 1 then
 			table.remove(elements_location[location], index)
 		else
 			elements_location[location] = nil
@@ -121,6 +121,7 @@ local function elements_getItems(idx)
 	if  elements_location[idx] then
 		local items = {}
 		local count = 0
+		-- TODO: this doesn't look good...
 		for k, object in pairs(elements_location[idx]) do
 			if object.item then
 				items[k] = object
