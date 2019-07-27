@@ -5,6 +5,7 @@ local color = require 'engine.color'
 local console = require 'engine.console'
 local elements = require 'engine.elements'
 local Entity = require 'engine.Entity'
+local Inventory = require 'engine.Inventory'
 local map = require 'engine.map'
 
 -- class
@@ -20,8 +21,7 @@ function Player:ctor(initPos)
 	self.losRadius = 15
 	self.seeDist = 15
 
-	self.capacity = 6
-	self.inventory = {}
+	self.inventory = Inventory:new(6)
 end
 
 function Player:onAdd()

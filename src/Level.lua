@@ -179,6 +179,7 @@ local items = {
 	{ symbol = '!', name = 'Goo', type = 'throwable', color = color.lime },
 }
 
+local itemUid = 1
 local function createTreesAsElements(grid)
 	local idx = 0
 	for y = 0, grid.h - 1 do
@@ -194,7 +195,8 @@ local function createTreesAsElements(grid)
 					local gobj = elements.create(idx)
 					gobj:setTileId(nil)
 					gobj:setPassable(true)
-					gobj:setItem(items[itemId])
+					gobj:setItem({ uid = itemUid, blueprint = items[itemId] })
+					itemUid = itemUid + 1
 				end
 			end
 

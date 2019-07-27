@@ -16,8 +16,33 @@ local hud_regions
 -- external events
 local hoveredUiEntId = nil
 
+-- returns true if takes over updates
+local hud_grabInput = false
+function hud.grabInput(value)
+	hud_grabInput = value
+end
+
+function hud.captureInput()
+	return hud_grabInput
+end
+
 function hud.update(dt)
 	hud_regions = {}
+
+	return hud_grabInput
+end
+
+local lastKeyPressed = nil
+local lastAction = nil
+function hud.input(key, action)
+	lastKeyPressed = key
+	lastAction = action
+end
+
+function hud.getAction()
+	local temp = lastAction
+	lastAction = nil
+	return temp
 end
 
 local lastMouseX = -1

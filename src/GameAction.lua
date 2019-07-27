@@ -26,7 +26,8 @@ local GameAction = {
 	, Inventory6 = 36
 
 	, Escape = 40
-	, Toggle_Console = 41
+	, Close_Modal = 41
+	, Toggle_Console = 42
 
 	, Experimental_Camera_Switch = 51
 	, Debug_Toggle_Vismap = 101

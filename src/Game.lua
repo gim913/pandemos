@@ -37,6 +37,10 @@ local function logError(message)
 	print('ERROR: ' .. message)
 end
 
+local function posToLocation(pos)
+	return pos.y * map.width() + pos.x
+end
+
 local f = math.floor
 local camera = nil
 local player
@@ -240,7 +244,7 @@ function Game:ctor(rng)
 	end
 
 	local elemPos = Vec(f(map.width() / 2 - 5), map.height() - 27)
-	local idx = elemPos.y * map.width() + elemPos.x
+	local idx = posToLocation(elemPos)
 	local go = elements.create(idx)
 	go:setTileId(3 * 16)
 
@@ -269,7 +273,7 @@ local cursorCell = nil
 
 local function logItems()
 	local pos = cursorCell + camera:lu()
-	local locationId = pos.y * map.width() + pos.x
+	local locationId = posToLocation(pos)
 	local items, itemCount = elements.getItems(locationId)
 	local vismap = player.vismap
 	if itemCount <= 0 then
@@ -281,7 +285,7 @@ local function logItems()
 			--('There is lying there')
 			console.log({
 				{ 1, 1, 1, 1 }, 'There is ',
-				color.crimson, items[1].desc.name,
+				color.crimson, items[1].desc.blueprint.name,
 				{ 1, 1, 1, 1 }, ' lying there'
 			})
 		else
@@ -298,7 +302,7 @@ function Game:mousemoved(mouseX, mouseY)
 		return
 	end
 
-	if self.ui.modal then
+	if hud.captureInput() then
 		return
 	end
 
@@ -326,7 +330,7 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
-	if self.ui.modal then
+	if hud.captureInput() then
 		return
 	end
 
@@ -346,7 +350,7 @@ function Game:wheelmoved(x, y)
 		return
 	end
 
-	if self.ui.modal then
+	if hud.captureInput() then
 		return
 	end
 
@@ -416,11 +420,33 @@ function Game:actionEscape()
 end
 
 function Game:actionGrab()
-	self.ui.showGrabMenu = true
+	-- if single item on the ground and there is a space in inventory, just grab it
+	-- if more items show menu
+
+	local locationId = posToLocation(player.pos)
+	local items, itemCount = elements.getItems(locationId)
+	if items then
+		if itemCount == 1 then
+			for itemId, item in pairs(items) do
+				if not player.inventory:add(item) then
+					console.log('Inventory is full!')
+					break
+				end
+				elements.del(locationId, itemId)
+
+				console.log(('Picked up %s'):format(item.desc.blueprint.name))
+			end
+			updateTiles()
+		else
+			console.log('Game:handleGrabUpdate() more items inside the cell')
+		end
+	else
+		console.log('There\'s nothing lying here')
+	end
 end
 
 function Game:actionDrop()
-	self.ui.showDropMenu = true
+	--self.ui.showDropMenu = true
 end
 
 function Game:actionExamine()
@@ -475,14 +501,12 @@ end
 
 function Game:actionInventory(uiAction)
 	local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
-	if player.inventory[inventoryIndex] then
-		self.ui.modal = true
-		self.ui.inventoryActions = {
-			item = player.inventory[inventoryIndex],
-			visible = true,
-		}
+	local item = player.inventory:get(inventoryIndex)
+	if item then
+		hud.grabInput(true)
+		self.ui.itemActions = { item = item, visible = true }
 	else
-		console.log({ color.lightcoral, 'Item no.' .. key .. ' not in inventory' })
+		console.log({ color.lightcoral, 'Item no.' .. (inventoryIndex + 3) .. ' not in inventory' })
 	end
 end
 
@@ -509,17 +533,20 @@ local function actionDebugToggleAstar()
 	S.game.debug.show_astar_paths = not S.game.debug.show_astar_paths
 end
 
+local function actionNone()
+end
 function Game:keypressed(key)
 	local hasLctrl = love.keyboard.isDown('lctrl')
 	local uiAction = keyToAction(hasLctrl, key)
 
-	-- unknown action
-	if not uiAction then
+	if hud.captureInput() then
+		hud.input(key, uiAction)
 		return
 	end
 
-	if self.ui.modal then
-		console.log('todo: pass keyboard to modal')
+	-- unknown action
+	if not uiAction then
+		return
 	end
 
 	-- general / UI
@@ -541,6 +568,7 @@ function Game:keypressed(key)
 		, [GameAction.Inventory5] = Game.actionInventory
 		, [GameAction.Inventory6] = Game.actionInventory
 
+		, [GameAction.Close_Modal] = Game.actionNone
 		, [GameAction.Toggle_Console] = console.toggle
 
 		-- TODO: XXX: TODO: devel: comment out before releasing ^^
@@ -700,40 +728,10 @@ function Game:updateGameLogic(dt)
 	end
 end
 
-function Game:handleGrabUpdate(dt)
-	local locationId = player.pos.y * map.width() + player.pos.x
-	local items, itemCount = elements.getItems(locationId)
-	if items then
-		if itemCount == 1 then
-			for itemId, item in pairs(items) do
-				if #player.inventory == player.capacity then
-					console.log('Inventory is full!')
-					break
-				end
-				table.insert(player.inventory, item)
-				elements.del(locationId, itemId)
-
-				console.log(('Picked up %s'):format(item.desc.name))
-			end
-			updateTiles()
-		else
-			console.log('Game:handleGrabUpdate() more items inside the cell')
-		end
-	else
-		console.log('There\'s nothing lying here')
-	end
-
-	self.ui.showGrabMenu = false
-end
-
 function Game:doUpdate(dt)
 	hud.update(dt)
 
-	if self.ui.showGrabMenu then
-		-- if single item on the ground and there is a space in inventory, just grab it
-		-- if more items show menu
-		self:handleGrabUpdate(dt)
-	else
+	if not hud.captureInput()  then
 		self:updateGameLogic(dt)
 	end
 
@@ -766,10 +764,10 @@ local function drawItems(ent, camLu)
 			if itemCount > 0 then
 				local vismap = ent.vismap
 				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-					local c = items[1].desc.color
+					local c = items[1].desc.blueprint.color
 					love.graphics.setColor(c[1], c[2], c[3], c[4])
 
-					local itemImg = Letters[items[1].desc.symbol]
+					local itemImg = Letters[items[1].desc.blueprint.symbol]
 					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
 				end
 			end
@@ -797,7 +795,7 @@ local function drawItems(ent, camLu)
 						love.graphics.setColor(0.9, 0.9, 0.9, 0.6)
 						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 32)
 						love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-						love.graphics.printf(items[1].desc.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
+						love.graphics.printf(items[1].desc.blueprint.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
 					end
 				end
 			end
@@ -900,11 +898,31 @@ local function findKey(uiAction)
 	return nil
 end
 
-local function drawInterface(inventoryActions)
+function Game:itemActionClose()
+	hud.grabInput(false)
+	self.ui.itemActions = nil
+end
+
+function Game:dropItem(item)
+	console.log('dropping ' .. utils.repr(item))
+
+	-- remove from inventory
+	player.inventory:del(item)
+
+	-- add to elements
+	local idx = posToLocation(player.pos)
+	local gobj = elements.create(idx)
+	gobj:setTileId(nil)
+	gobj:setPassable(true)
+	gobj:setItem(item.desc)
+
+	self:itemActionClose()
+end
+
+function Game:drawInterface()
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
-	--imgui.ShowDemoWindow(true)
 
 	love.graphics.setColor(color.white)
 	hud.begin('Entities', startX, 10)
@@ -933,9 +951,12 @@ local function drawInterface(inventoryActions)
 	local menu = {}
 
 	for i = 1, 6 do
-		if player.inventory[i] then
-			local item = player.inventory[i]
-			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = item.desc.name .. ' ' .. item.desc.type })
+		local item = player.inventory:get(i)
+		if item then
+			table.insert(menu, {
+				key = findKey(GameAction.Inventory1 + i - 1),
+				item = item.desc.blueprint.name .. ' ' .. item.desc.blueprint.type
+			})
 		else
 			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = '' })
 		end
@@ -944,16 +965,19 @@ local function drawInterface(inventoryActions)
 	hud.drawMenu(260, menu)
 	hud.finish(260)
 
-	local inventoryModalName = inventoryActions and inventoryActions.item.desc.name
-	if inventoryModalName then
+	-- show
+	if self.ui.itemActions then
+		local item = self.ui.itemActions.item
 		menu = {
 			{ key = findKey(GameAction.Drop), item = 'drop' }
 			, { key = findKey(GameAction.Throw), item = 'throw' }
 			, { key = findKey(GameAction.Swap_Equipment),
-				item = 'replace ' .. inventoryActions.item.desc.type .. ' class in equipements' }
+				item = 'replace ' .. item.desc.blueprint.type .. ' class in equipements' }
 			, { key = findKey(GameAction.Swap_Ground), item = 'swap with item(XXX) on the ground' }
+			-- 	imgui.Text('eat/drink/consume')
+			-- 	imgui.Text('use')
 			, { separator = '' }
-			, { key = findKey(GameAction.Escape), item = 'close window' }
+			, { key = findKey(GameAction.Close_Modal), item = 'close window' }
 		}
 
 		local boardSize = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
@@ -969,15 +993,21 @@ local function drawInterface(inventoryActions)
 		love.graphics.rectangle('fill', centerX - 2, centerY - 1, Size_X + 3, Size_Y)
 
 		love.graphics.setColor(color.white)
-		hud.begin(inventoryModalName, centerX, centerY)
+		hud.begin(item.desc.blueprint.name, centerX, centerY)
 		hud.drawMenu(Size_X, menu)
 		hud.finish(Size_X)
+
+		local itemDispatcher = {
+			[GameAction.Close_Modal] = Game.itemActionClose
+			, [GameAction.Escape] = Game.itemActionClose
+			, [GameAction.Drop] = Game.dropItem
+		}
+
+		local action = hud.getAction()
+		if action and itemDispatcher[action] then
+			itemDispatcher[action](self, item)
+		end
 	end
-
-	-- 	imgui.Text('eat/drink/consume')
-	-- 	imgui.Text('use')
-
-	return inventoryActions
 end
 
 function Game:show()
@@ -1016,7 +1046,7 @@ function Game:show()
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(messages.popups.getCanvas())
 	drawMinimap()
-	self.ui.inventoryActions = drawInterface(self.ui.inventoryActions)
+	self:drawInterface()
 	console.draw(0, 900 - console.height())
 end
 

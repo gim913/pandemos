@@ -21,6 +21,7 @@ local bindings = {
 	, ["t"] = Action.Throw
 	, ["r"] = Action.Swap_Ground
 	, ["e"] = Action.Swap_Equipment
+	, ["c"] = Action.Close_Modal
 
 	, ["escape"] = Action.Escape
 	, ["`"] = Action.Toggle_Console
