@@ -18,21 +18,6 @@ local hud_regions
 local hoveredUiEntId = nil
 
 -- returns true if takes over updates
-local hud_grabInput = false
-function hud.grabInput(value)
-	hud_grabInput = value
-end
-
-function hud.captureInput()
-	return hud_grabInput
-end
-
-function hud.update(dt)
-	hud_regions = {}
-
-	return hud_grabInput
-end
-
 local lastKeyPressed = nil
 local lastAction = nil
 function hud.input(key, action)
@@ -44,6 +29,31 @@ function hud.getAction()
 	local temp = lastAction
 	lastAction = nil
 	return temp
+end
+
+function hud.getKey()
+	local temp = lastKeyPressed
+	lastKeyPressed = nil
+	return temp
+end
+
+local hud_grabInput = false
+function hud.grabInput(value)
+	if value then
+		lastKeyPressed = nil
+		lastAction = nil
+	end
+	hud_grabInput = value
+end
+
+function hud.captureInput()
+	return hud_grabInput
+end
+
+function hud.update(dt)
+	hud_regions = {}
+
+	return hud_grabInput
 end
 
 local lastMouseX = -1
@@ -362,11 +372,15 @@ function hud.drawMenu(width, items)
 			colorScheme = normal
 		end
 
-		if item.key then
+		if item.item then
 			love.graphics.setColor(colorScheme.bind)
-			love.graphics.print(item.key .. ')', currentX + 6, currentY)
+			local keyNameWidth = 1
+			if item.key then
+				love.graphics.print(item.key .. ')', currentX + 6, currentY)
+				keyNameWidth = #item.key
+			end
 			love.graphics.setColor(colorScheme.text)
-			love.graphics.print(item.item, currentX + math.max(30, 16 * #item.key), currentY)
+			love.graphics.print(item.item, currentX + math.max(30, 16 * keyNameWidth), currentY)
 
 			currentY = currentY + hud_lineHeight
 		else

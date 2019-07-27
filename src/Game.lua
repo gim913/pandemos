@@ -272,6 +272,13 @@ local Tile_Size_Adj = Tile_Size + Tile_Border
 
 local cursorCell = nil
 
+local function getFirstItemIndex(items)
+	for index, item in pairs(items) do
+		return index
+	end
+	return nil
+end
+
 local function logItems()
 	local pos = cursorCell + camera:lu()
 	local locationId = posToLocation(pos)
@@ -283,14 +290,27 @@ local function logItems()
 
 	if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
 		if 1 == itemCount then
-			--('There is lying there')
 			console.log({
 				{ 1, 1, 1, 1 }, 'There is ',
-				color.crimson, items[1].desc.blueprint.name,
+				color.crimson, items[getFirstItemIndex(items)].desc.blueprint.name,
 				{ 1, 1, 1, 1 }, ' lying there'
 			})
 		else
-			console.log('There are multiple items lying here')
+			local messages = {}
+			table.insert(messages, color.white)
+			table.insert(messages, 'There are multiple items lying here: ')
+			local skipFirst = true
+			for k, item in pairs(items) do
+				if not skipFirst then
+					table.insert(messages, color.white)
+					table.insert(messages, ', ')
+				end
+				table.insert(messages, color.crimson)
+				table.insert(messages, item.desc.blueprint.name)
+
+				skipFirst = false
+			end
+			console.log(messages)
 		end
 		-- for _, item in ipairs(items) do
 		-- 	items[1].desc.name
@@ -420,6 +440,26 @@ function Game:actionEscape()
 	end
 end
 
+function Game:grabItem(locationId, items, ordinalIndex)
+	local _ordinalIndex = 1
+	for itemId, item in pairs(items) do
+		if _ordinalIndex == ordinalIndex then
+			if not player.inventory:add(item) then
+				console.log('Inventory is full!')
+				break
+			end
+			elements.del(locationId, itemId)
+
+			console.log({
+				{ 1, 1, 1, 1 }, 'Picked up ',
+				color.crimson, item.desc.blueprint.name
+			})
+		end
+
+		_ordinalIndex = _ordinalIndex + 1
+	end
+end
+
 function Game:actionGrab()
 	-- if single item on the ground and there is a space in inventory, just grab it
 	-- if more items show menu
@@ -428,21 +468,11 @@ function Game:actionGrab()
 	local items, itemCount = elements.getItems(locationId)
 	if items then
 		if itemCount == 1 then
-			for itemId, item in pairs(items) do
-				print(utils.repr(item))
-				if not player.inventory:add(item) then
-					console.log('Inventory is full!')
-					break
-				end
-				elements.del(locationId, itemId)
-
-				console.log({
-					{ 1, 1, 1, 1 }, 'Picked up ',
-					color.crimson, item.desc.blueprint.name
-				})
-			end
+			self:grabItem(locationId, items, 1)
 			updateTiles()
 		else
+			hud.grabInput(true)
+			self.ui.showGrabMenu = true
 			console.log('Game:handleGrabUpdate() more items inside the cell')
 		end
 	else
@@ -775,10 +805,11 @@ local function drawItems(ent, camLu)
 			if itemCount > 0 then
 				local vismap = ent.vismap
 				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-					local c = items[1].desc.blueprint.color
+					local firstItemIndex = getFirstItemIndex(items)
+					local c = items[firstItemIndex].desc.blueprint.color
 					love.graphics.setColor(c[1], c[2], c[3], c[4])
 
-					local itemImg = Letters[items[1].desc.blueprint.symbol]
+					local itemImg = Letters[items[firstItemIndex].desc.blueprint.symbol]
 					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
 				end
 			end
@@ -806,7 +837,10 @@ local function drawItems(ent, camLu)
 						love.graphics.setColor(0.9, 0.9, 0.9, 0.6)
 						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 32)
 						love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-						love.graphics.printf(items[1].desc.blueprint.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
+						local firstItemIndex = getFirstItemIndex(items)
+						love.graphics.printf(
+							items[firstItemIndex].desc.blueprint.name,
+							(cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
 					end
 				end
 			end
@@ -956,6 +990,15 @@ function Game:dropActionNum(uiAction)
 			--self:dropActionClose()
 		end
 	end
+end
+
+function Game:grabActionClose()
+	hud.grabInput(false)
+	self.ui.showGrabMenu = nil
+end
+
+function Game:grabActionGrab(locationId, items, ordinalIndex)
+	self:grabItem(locationId, items, ordinalIndex)
 end
 
 local function calculateCenteredWindowPosition(width, height)
@@ -1119,6 +1162,56 @@ function Game:drawInterface()
 		local action = hud.getAction()
 		if action and itemDispatcher[action] then
 			itemDispatcher[action](self, item)
+		end
+	end
+
+	if self.ui.showGrabMenu then
+		local locationId = posToLocation(player.pos)
+		local items, itemCount = elements.getItems(locationId)
+
+		menu = {}
+		local ordinalIndex = 1
+		for k, item in pairs(items) do
+			if k < 10 then
+				table.insert(menu, { key = tostring(ordinalIndex), item = item.desc.blueprint.name })
+			else
+				table.insert(menu, { key = nil, item = item.desc.blueprint.name })
+			end
+
+			ordinalIndex = ordinalIndex + 1
+		end
+		table.insert(menu, { separator = '' })
+		table.insert(menu, { key = 'a', item = 'Grab ALL' })
+		table.insert(menu, { key = findKey(GameAction.Close_Modal), item = 'close window' })
+
+		local Size_X = 400
+		local Size_Y = menuWindowHeight(#menu)
+		local centerX, centerY = calculateCenteredWindowPosition(Size_X, Size_Y)
+
+		love.graphics.setColor(color.indigo)
+		love.graphics.rectangle('fill', centerX - 1, centerY - 1, Size_X + 2, Size_Y + 2)
+
+		love.graphics.setColor(color.white)
+		hud.begin('Grab item(s): ', centerX, centerY)
+		hud.drawMenu(Size_X, menu)
+		hud.finish(Size_X)
+
+		local itemDispatcher = {
+			[GameAction.Close_Modal] = Game.itemActionClose
+			, [GameAction.Escape] = Game.itemActionClose
+			, [GameAction.Drop] = Game.itemActionDrop
+		}
+
+		local action = hud.getAction()
+		local key = hud.getKey()
+		if GameAction.Escape == action or GameAction.Close_Modal == action then
+			self:grabActionClose()
+		end
+
+		if key and key >= '1' and key <= '9' then
+			local index = tonumber(key)
+			print(tostring(action) .. ' ' .. tostring(key) .. ' ' .. tostring(index))
+			self:grabActionGrab(locationId, items, index)
 		end
 	end
 end

@@ -20,6 +20,12 @@ end
 
 local function utils_repr(t)
 	local r=""
+
+	local tv = type(t)
+	if tv ~= "table" then
+		return tostring(t)
+	end
+
 	for k,v in pairs(t) do
 		local tv = type(v)
 		if tv ~= "table" then
