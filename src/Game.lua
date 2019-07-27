@@ -298,6 +298,10 @@ function Game:mousemoved(mouseX, mouseY)
 		return
 	end
 
+	if self.ui.modal then
+		return
+	end
+
 	-- TODO: limit to case where layer is generated
 
 	local vis = 2 * S.game.VIS_RADIUS + 1
@@ -322,6 +326,10 @@ function Game:mousepressed(x, y, button)
 		return
 	end
 
+	if self.ui.modal then
+		return
+	end
+
 	if player.astar_path then
 		player.follow_path = 1
 	end
@@ -335,6 +343,10 @@ end
 
 function Game:wheelmoved(x, y)
 	if hud.wheelmoved(x, y) then
+		return
+	end
+
+	if self.ui.modal then
 		return
 	end
 
@@ -464,6 +476,7 @@ end
 function Game:actionInventory(uiAction)
 	local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
 	if player.inventory[inventoryIndex] then
+		self.ui.modal = true
 		self.ui.inventoryActions = {
 			item = player.inventory[inventoryIndex],
 			visible = true,
@@ -503,6 +516,10 @@ function Game:keypressed(key)
 	-- unknown action
 	if not uiAction then
 		return
+	end
+
+	if self.ui.modal then
+		console.log('todo: pass keyboard to modal')
 	end
 
 	-- general / UI
@@ -948,7 +965,7 @@ local function drawInterface(inventoryActions)
 		love.graphics.setColor(0.25, 0.25, 0.25, 0.5)
 		love.graphics.rectangle('fill', 0, 0, boardSize, boardSize)
 
-		love.graphics.setColor(0, 0, 0, 0.9)
+		love.graphics.setColor(color.indigo)
 		love.graphics.rectangle('fill', centerX - 2, centerY - 1, Size_X + 3, Size_Y)
 
 		love.graphics.setColor(color.white)
