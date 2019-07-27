@@ -11,7 +11,6 @@ function Inventory:ctor(capacity)
 end
 
 function Inventory:add(item)
-	print(item.desc.uid)
 	if #self.inventory == self.capacity then
 		return false
 	end

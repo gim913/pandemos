@@ -19,6 +19,7 @@ local console = require 'engine.console'
 local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local fontManager = require 'engine.fontManager'
+local graphics = require 'engine.graphics'
 local map = require 'engine.map'
 local utils = require 'engine.utils'
 local Entity = require 'engine.Entity'
@@ -434,7 +435,10 @@ function Game:actionGrab()
 				end
 				elements.del(locationId, itemId)
 
-				console.log(('Picked up %s'):format(item.desc.blueprint.name))
+				console.log({
+					{ 1, 1, 1, 1 }, 'Picked up ',
+					color.crimson, item.desc.blueprint.name
+				})
 			end
 			updateTiles()
 		else
@@ -446,7 +450,8 @@ function Game:actionGrab()
 end
 
 function Game:actionDrop()
-	--self.ui.showDropMenu = true
+	hud.grabInput(true)
+	self.ui.showDropMenu = true
 end
 
 function Game:actionExamine()
@@ -898,14 +903,8 @@ local function findKey(uiAction)
 	return nil
 end
 
-function Game:itemActionClose()
-	hud.grabInput(false)
-	self.ui.itemActions = nil
-end
-
+-- helper
 function Game:dropItem(item)
-	console.log('dropping ' .. utils.repr(item))
-
 	-- remove from inventory
 	player.inventory:del(item)
 
@@ -916,13 +915,45 @@ function Game:dropItem(item)
 	gobj:setPassable(true)
 	gobj:setItem(item.desc)
 
+	console.log({
+		{ 1, 1, 1, 1 }, 'Dropped ',
+		color.crimson, item.desc.blueprint.name
+	})
+end
+
+function Game:itemActionClose()
+	hud.grabInput(false)
+	self.ui.itemActions = nil
+end
+
+function Game:itemActionDrop(item)
+	self:dropItem(item)
 	self:itemActionClose()
 end
 
+local function calculateCenteredWindowPosition(width, height)
+	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
+	local posX = math.floor((Board_Size - width) / 2)
+	-- '- 100' cause it feels bit nicer
+	local posY = math.floor((Board_Size - height) / 2) - 100
+
+	return posX, posY
+end
+
+local function menuWindowHeight(numItems)
+	return (numItems + 1) * hud.lineHeight() + 8 + 3
+end
+
 function Game:drawInterface()
+	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
 	local camLu = camera:lu()
 
+	-- dim map
+	if self.ui.itemActions or self.ui.showDropMenu or true then
+		love.graphics.setColor(0.25, 0.25, 0.25, 0.7)
+		graphics.rectangle('fill', 0, 0, Board_Size, Board_Size)
+	end
 
 	love.graphics.setColor(color.white)
 	hud.begin('Entities', startX, 10)
@@ -935,18 +966,32 @@ function Game:drawInterface()
 	end)
 	hud.finish(266)
 
+	local equipmentPosX = startX
+	local equipmentPosY = 260 + 20 + h + 50
+
+	if self.ui.showDropMenu then
+		local Size_X = 260
+		local Size_Y = menuWindowHeight(3) + menuWindowHeight(6) + 20
+		local centerX, centerY = calculateCenteredWindowPosition(Size_X, Size_Y)
+
+		equipmentPosX = centerX
+		equipmentPosY = centerY
+
+		love.graphics.setColor(color.indigo)
+		love.graphics.rectangle('fill', centerX - 1, centerY - 1, Size_X + 2, Size_Y + 2)
+	end
+
 	love.graphics.setColor(color.white)
-	hud.begin('Equipment', startX, 260 + 20 + h + 50)
+	hud.begin('Equipment', equipmentPosX, equipmentPosY)
 	hud.drawMenu(260, {
 		{ key = findKey(GameAction.Equip1),  item = '(melee)' }
 		, { key = findKey(GameAction.Equip2), item = '(light)' }
 		, { key = findKey(GameAction.Equip3), item = '(heavy)' }
 	})
-
-	hud.finish(266)
+	hud.finish(260)
 
 	love.graphics.setColor(color.white)
-	hud.begin('Inventory', startX, 260 + h + 50 + 80 + 60)
+	hud.begin('Inventory', equipmentPosX, equipmentPosY + menuWindowHeight(3) + 20)
 
 	local menu = {}
 
@@ -965,7 +1010,7 @@ function Game:drawInterface()
 	hud.drawMenu(260, menu)
 	hud.finish(260)
 
-	-- show
+	-- show item actions
 	if self.ui.itemActions then
 		local item = self.ui.itemActions.item
 		menu = {
@@ -980,17 +1025,12 @@ function Game:drawInterface()
 			, { key = findKey(GameAction.Close_Modal), item = 'close window' }
 		}
 
-		local boardSize = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
 		local Size_X = 400
-		local Size_Y = hud.lineHeight() * (#menu  + 1) + 3 + 4 + 4
-		local centerX = math.floor((boardSize - Size_X) / 2)
-		local centerY = math.floor((boardSize - Size_Y) / 2) - 100
-
-		love.graphics.setColor(0.25, 0.25, 0.25, 0.5)
-		love.graphics.rectangle('fill', 0, 0, boardSize, boardSize)
+		local Size_Y = menuWindowHeight(#menu)
+		local centerX, centerY = calculateCenteredWindowPosition(Size_X, Size_Y)
 
 		love.graphics.setColor(color.indigo)
-		love.graphics.rectangle('fill', centerX - 2, centerY - 1, Size_X + 3, Size_Y)
+		love.graphics.rectangle('fill', centerX - 1, centerY - 1, Size_X + 2, Size_Y + 2)
 
 		love.graphics.setColor(color.white)
 		hud.begin(item.desc.blueprint.name, centerX, centerY)
@@ -1000,7 +1040,7 @@ function Game:drawInterface()
 		local itemDispatcher = {
 			[GameAction.Close_Modal] = Game.itemActionClose
 			, [GameAction.Escape] = Game.itemActionClose
-			, [GameAction.Drop] = Game.dropItem
+			, [GameAction.Drop] = Game.itemActionDrop
 		}
 
 		local action = hud.getAction()

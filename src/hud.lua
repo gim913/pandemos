@@ -2,6 +2,7 @@
 local color = require 'engine.color'
 local console = require 'engine.console'
 local fontManager = require 'engine.fontManager'
+local graphics = require 'engine.graphics'
 
 -- module
 local hud = {}
@@ -103,14 +104,14 @@ function hud.begin(name, x, y)
 	startY = y
 	currentX = startX + 3
 	currentY = startY + 3
-	love.graphics.print(name, startX, startY)
+	love.graphics.print(name, currentX, currentY)
 
-	currentY = startY + hud_lineHeight
+	currentY = currentY + hud_lineHeight
 end
 
 function hud.finish(width)
 	love.graphics.setColor(color.slategray)
-	love.graphics.rectangle('line', startX, startY, width, currentY - startY)
+	graphics.rectangle('line', startX, startY, width, currentY - startY)
 end
 
 function hud.hoveredEntId()
@@ -137,7 +138,7 @@ local function hud_drawEnt(ent, width, colorScheme, displayHovered)
 	local r,g,b,a = color.hsvToRgb(hpHue, unpack(colorScheme.hp))
 
 	love.graphics.setColor(r, g, b, a)
-	love.graphics.rectangle('fill', locX, locY, hpWidth, 14)
+	graphics.rectangle('fill', locX, locY, hpWidth, 14)
 
 	currentY = locY + 18
 
@@ -178,7 +179,7 @@ function hud.drawPlayerInfo(ent, width, isMouseHovered)
 	end
 
 	love.graphics.setColor(colorScheme.border)
-	love.graphics.rectangle('line', currentX, currentY, width, Box_Height)
+	graphics.rectangle('line', currentX, currentY, width, Box_Height)
 
 	currentX = currentX + 3
 	local savedY = currentY
@@ -287,7 +288,7 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 
 	if newHeight > height then
 		love.graphics.setColor(color.dimgray)
-		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY, 10, height, 5, 5)
+		graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY, 10, height, 5, 5)
 
 		-- if mouse button pressed in scrollbar button
 		--  => calculate mouse movement and alter
@@ -314,7 +315,7 @@ function hud.drawVisible(ents, width, height, isMouseHovered)
 		else
 			love.graphics.setColor(color.gray)
 		end
-		love.graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY + scrollPos, 10, 20, 5, 5)
+		graphics.rectangle('fill', tempX + scrollbarAwareWidth + 4, tempY + scrollPos, 10, 20, 5, 5)
 	end
 
 	currentX = tempX + currentX
@@ -348,7 +349,7 @@ function hud.drawMenu(width, items)
 	for _,item in pairs(items) do
 		if hud_hovered(currentX, currentY, width, hud_lineHeight) then
 			love.graphics.setColor(color.ivory)
-			love.graphics.rectangle('fill', currentX + 2, currentY, width - 4 - 6, hud_lineHeight - 2)
+			graphics.rectangle('fill', currentX + 2, currentY, width - 4 - 6, hud_lineHeight - 2)
 			colorScheme = hovered
 		else
 			colorScheme = normal

@@ -36,7 +36,7 @@ function Infected:analyze(player)
 		if self.astar_path then
 			local dir = self.astar_path[self.astar_index] - self.pos
 			nextAct, nPos = self:wantGo(dir)
-			console.log(('%s analyze() nextAct: %s -> %s'):format(self, action.name(nextAct), nPos))
+			--console.log(('%s analyze() nextAct: %s -> %s'):format(self, action.name(nextAct), nPos))
 			if nextAct ~= action.Action.Blocked then
 				if nextAct == action.Action.Attack then
 					--print(self.name .. 'queued action attack(0,0)')
