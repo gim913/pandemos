@@ -545,7 +545,7 @@ function Game:actionInventory(uiAction)
 	local item = player.inventory:get(inventoryIndex)
 	if item then
 		hud.grabInput(true)
-		self.ui.itemActions = { item = item, visible = true }
+		self.ui.itemActions = { item = item, inventoryIndex = inventoryIndex, visible = true }
 	else
 		console.log({ color.lightcoral, 'Item no.' .. (inventoryIndex + 3) .. ' not in inventory' })
 	end
@@ -978,7 +978,7 @@ end
 
 local Inventory_Types = { ["melee"] = true, ["light"] = true, ["heavy"] = true}
 
-function Game:itemActionSwapEquipment(item)
+function Game:itemActionSwapEquipment(item, itemIndex)
 	if not Inventory_Types[item.desc.blueprint.type] then
 		return
 	end
@@ -986,9 +986,10 @@ function Game:itemActionSwapEquipment(item)
 	local itemType = item.desc.blueprint.type
 	if player.equipment:get(itemType).desc then
 		-- swap
+		player.inventory:set(itemIndex, player.equipment:get(itemType))
+		player.equipment:add(item)
 	else
 		-- move
-		print('swap')
 		player.inventory:del(item)
 		player.equipment:add(item)
 	end
@@ -1206,7 +1207,7 @@ function Game:drawInterface()
 
 		local action = hud.getAction()
 		if action and itemDispatcher[action] then
-			itemDispatcher[action](self, item)
+			itemDispatcher[action](self, item, self.ui.itemActions.inventoryIndex)
 		end
 	end
 

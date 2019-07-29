@@ -23,6 +23,10 @@ function Inventory:get(index)
 	return self.inventory[index]
 end
 
+function Inventory:set(index, item)
+	self.inventory[index] = item
+end
+
 function Inventory:del(item)
 	for k, curItem in pairs(self.inventory) do
 		if item.desc.uid == curItem.desc.uid then
