@@ -356,6 +356,7 @@ function hud.drawMenu(width, items)
 	local normal = {
 		bind = color.ivory
 		, text = color.lightgray
+		, disabled = color.gray
 	}
 	local hovered = {
 		bind = color.black
@@ -364,7 +365,7 @@ function hud.drawMenu(width, items)
 	local colorScheme
 
 	for _,item in pairs(items) do
-		if hud_hovered(currentX, currentY, width, hud_lineHeight) then
+		if not item.disabled and hud_hovered(currentX, currentY, width, hud_lineHeight) then
 			love.graphics.setColor(color.ivory)
 			graphics.rectangle('fill', currentX + 2, currentY, width - 4 - 6, hud_lineHeight - 2)
 			colorScheme = hovered
@@ -379,7 +380,12 @@ function hud.drawMenu(width, items)
 				love.graphics.print(item.key .. ')', currentX + 6, currentY)
 				keyNameWidth = #item.key
 			end
-			love.graphics.setColor(colorScheme.text)
+
+			if item.disabled then
+				love.graphics.setColor(colorScheme.disabled)
+			else
+				love.graphics.setColor(colorScheme.text)
+			end
 			love.graphics.print(item.item, currentX + math.max(30, 16 * keyNameWidth), currentY)
 
 			currentY = currentY + hud_lineHeight

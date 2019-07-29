@@ -976,6 +976,32 @@ function Game:itemActionDrop(item)
 	self:itemActionClose()
 end
 
+local Inventory_Types = { ["melee"] = true, ["light"] = true, ["heavy"] = true}
+
+function Game:itemActionSwapEquipment(item)
+	if not Inventory_Types[item.desc.blueprint.type] then
+		return
+	end
+
+	local itemType = item.desc.blueprint.type
+	if player.equipment:get(itemType).desc then
+		-- swap
+	else
+		-- move
+		print('swap')
+		player.inventory:del(item)
+		player.equipment:add(item)
+	end
+
+	console.log({
+		{ 1, 1, 1, 1 }, 'Moved ',
+		color.crimson, item.desc.blueprint.name,
+		{ 1, 1, 1, 1 }, ' into equipment'
+	})
+
+	self:itemActionClose()
+end
+
 function Game:dropActionClose()
 	hud.grabInput(false)
 	self.ui.showDropMenu = nil
@@ -1023,6 +1049,15 @@ local function interpolate(val1, val2, delta, maxDelta)
 	local u = math.min(delta, maxDelta) / maxDelta
 	local diff = val2 - val1
 	return val1 + u * diff
+end
+
+local function createEquipmentEntry(gameAction, name)
+	local item = player.equipment:get(name)
+	if item.desc then
+		return { key = findKey(gameAction),  item = item.desc.blueprint.name }
+	else
+		return { key = findKey(gameAction),  item = '(' .. name .. ')', disabled = true }
+	end
 end
 
 function Game:drawInterface()
@@ -1075,18 +1110,17 @@ function Game:drawInterface()
 
 	love.graphics.setColor(color.white)
 	hud.begin('Equipment', equipmentPosX, equipmentPosY)
-	hud.drawMenu(260, {
-		{ key = findKey(GameAction.Equip1),  item = '(melee)' }
-		, { key = findKey(GameAction.Equip2), item = '(light)' }
-		, { key = findKey(GameAction.Equip3), item = '(heavy)' }
-	})
+	local menu = {
+		createEquipmentEntry(GameAction.Equip1, 'melee'),
+		createEquipmentEntry(GameAction.Equip2, 'light'),
+		createEquipmentEntry(GameAction.Equip3, 'heavy')
+	}
+	hud.drawMenu(260, menu)
 	hud.finish(260)
 
 	love.graphics.setColor(color.white)
 	hud.begin('Inventory', equipmentPosX, equipmentPosY + menuWindowHeight(3) + 20)
-
-	local menu = {}
-
+	menu = {}
 	for i = 1, 6 do
 		local item = player.inventory:get(i)
 		if item then
@@ -1098,7 +1132,6 @@ function Game:drawInterface()
 			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = '' })
 		end
 	end
-
 	hud.drawMenu(260, menu)
 	hud.finish(260, equipmentPadding)
 
@@ -1134,17 +1167,23 @@ function Game:drawInterface()
 	-- show item actions
 	if self.ui.itemActions then
 		local item = self.ui.itemActions.item
-		menu = {
-			{ key = findKey(GameAction.Drop), item = 'drop' }
-			, { key = findKey(GameAction.Throw), item = 'throw' }
-			, { key = findKey(GameAction.Swap_Equipment),
-				item = 'replace ' .. item.desc.blueprint.type .. ' class in equipements' }
-			, { key = findKey(GameAction.Swap_Ground), item = 'swap with item(XXX) on the ground' }
-			-- 	imgui.Text('eat/drink/consume')
-			-- 	imgui.Text('use')
-			, { separator = '' }
-			, { key = findKey(GameAction.Close_Modal), item = 'close window' }
-		}
+
+		local replacable = Inventory_Types[item.desc.blueprint.type]
+		menu = {}
+		table.insert(menu, { key = findKey(GameAction.Drop), item = 'drop' })
+		table.insert(menu, { key = findKey(GameAction.Throw), item = 'throw' })
+
+		table.insert(menu, {
+				key = findKey(GameAction.Swap_Equipment),
+				item = 'replace ' .. item.desc.blueprint.type .. ' class in equipements',
+				disabled = not replacable
+		})
+		-- TODO: display item name
+		table.insert(menu, { key = findKey(GameAction.Swap_Ground), item = 'swap with item(XXX) on the ground' })
+		-- 	imgui.Text('eat/drink/consume')
+		-- 	imgui.Text('use')
+		table.insert(menu, { separator = '' })
+		table.insert(menu, { key = findKey(GameAction.Close_Modal), item = 'close window' })
 
 		local Size_X = 400
 		local Size_Y = menuWindowHeight(#menu)
@@ -1162,6 +1201,7 @@ function Game:drawInterface()
 			[GameAction.Close_Modal] = Game.itemActionClose
 			, [GameAction.Escape] = Game.itemActionClose
 			, [GameAction.Drop] = Game.itemActionDrop
+			, [GameAction.Swap_Equipment] = Game.itemActionSwapEquipment
 		}
 
 		local action = hud.getAction()
