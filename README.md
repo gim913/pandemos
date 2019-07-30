@@ -17,6 +17,7 @@ If you forgot to pass `--recursive`:
    * [Week 4](#week-4)
    * [Week 5](#week-5)
    * [Week 6](#week-6)
+   * [Week 7](#week-7)
 
 ### Week 1
 
@@ -113,4 +114,19 @@ Due to lack of time, I'm a bit behind.
 
 Still want to do bit more around Part 8 and Part 9 of tutorial.
 
-Need to modify keyboard handling but can postpone it till later
+Need to modify keyboard handling but can postpone it till later.
+
+### Week 7
+
+Last week had to throw away whole imgui, it wasn't wisest decision to use it.
+I also changed a lot regarding keyboard handling.
+
+I have some crude inventory / equipment management:
+ * grab
+ * move from inv to equipment
+ * drop
+ * select active weapon - there's UI hint, but doesn't actually change anything yet
+
+Added some 'modals'.
+
+Working on throwing items, so I think I'm somewhere around part 9.

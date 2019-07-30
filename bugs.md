@@ -1,0 +1,1 @@
+ - need to reset mouse-based astar-path after player move
