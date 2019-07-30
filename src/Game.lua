@@ -396,6 +396,10 @@ function Game:examineOnEnter(callback)
 	self.ui.examineOnEnterCallback = callback
 end
 
+function Game:examineMaxDistance(maxDistance)
+	self.ui.examineMaxDistance = maxDistance
+end
+
 function Game:examineOn()
 	self.ui.examine = true
 
@@ -406,6 +410,8 @@ end
 
 function Game:examineOff()
 	self.ui.examine = false
+	self.ui.examineMaxDistance = nil
+	self.ui.examineOnEnterCallback = nil
 	cursorCell = nil
 end
 
@@ -445,19 +451,25 @@ function Game:examineActionEscape()
 	self:examineOff()
 end
 
-local function moveExamine(moveVec)
+local function moveExamine(moveVec, maxDistance)
 	local newCursorCell = cursorCell + moveVec
 	local vis = 2 * S.game.VIS_RADIUS + 1
+
+	--
 	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
-		cursorCell = newCursorCell
-		logItems()
+		local pos = newCursorCell + camera:lu() - player.pos
+
+		if not maxDistance or pos:len() < maxDistance then
+			cursorCell = newCursorCell
+			logItems()
+		end
 	end
 end
 
 function Game:examineActionMovement(uiAction)
 	local moveVec = movementActionToVector(uiAction)
 	if moveVec then
-		moveExamine(moveVec)
+		moveExamine(moveVec, self.ui.examineMaxDistance)
 	end
 end
 
@@ -907,6 +919,31 @@ local function drawItems(ent, camLu)
 	end
 end
 
+local function drawWeaponDistanceOverlay(maxDistance)
+	if not maxDistance then
+		return
+	end
+
+	local lu = camera:lu()
+	local ya = lu.y
+	local xa = lu.x
+	local tc = 2 * S.game.VIS_RADIUS + 1
+
+	love.graphics.setColor(1.0, 0.0, 0.0, 0.5)
+	for y = 0, tc - 1 do
+		if ya + y > map.height() then
+			break
+		end
+		local circ = (player.pos - lu) - Vec(0, y)
+		for x = 0, tc - 1 do
+			if circ:len() < maxDistance then
+				love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
+			end
+			circ.x = circ.x - 1
+		end
+	end
+end
+
 local function drawEntityPath(ent, camLu)
 	if ent ~= player and S.game.debug and not S.game.debug.show_astar_paths then
 		return
@@ -1059,8 +1096,8 @@ function Game:itemActionSwapEquipment(item, itemIndex)
 end
 
 local function playerThrowOnEnter(gameSelf, nPos, itemIndex)
-	--action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
 	console.log('throw!')
+	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, nPos)
 	gameSelf:examineOnEnter()
 end
 
@@ -1069,6 +1106,7 @@ function Game:itemActionThrow(item, itemIndex)
 	self:itemActionClose()
 
 	self:examineOnEnter({ playerThrowOnEnter, itemIndex })
+	self:examineMaxDistance(5)
 	self:examineOn()
 end
 
@@ -1376,6 +1414,8 @@ function Game:show()
 
 	-- ^^
 	drawEntities(camLu)
+
+	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
 
 	if cursorCell then
 		love.graphics.setColor(0.5, 0.9, 0.5, 0.9)

@@ -4,6 +4,7 @@ local Action = {
 	, Blocked = 2
 	, Move = 3
 	, Attack = 4
+	, Throw = 5
 }
 
 local Action_rev = nil
