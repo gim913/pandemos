@@ -12,7 +12,7 @@ local GameAction = {
 	, Examine = 8
 	, Throw = 9
 	, Swap_Ground = 10
-	, Swap_Equipment = 11
+	, Equip_or_Swap = 11
 
 	, Equip1 = 21
 	, Equip2 = 22

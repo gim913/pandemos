@@ -24,6 +24,7 @@ function Player:ctor(initPos)
 
 	self.inventory = Inventory:new(6)
 	self.equipment = Equipment:new({ 'melee', 'light', 'heavy' })
+	self.equipmentActive = 0
 end
 
 function Player:onAdd()

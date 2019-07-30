@@ -20,7 +20,7 @@ local bindings = {
 	, ["l"] = Action.Examine
 	, ["t"] = Action.Throw
 	, ["r"] = Action.Swap_Ground
-	, ["e"] = Action.Swap_Equipment
+	, ["e"] = Action.Equip_or_Swap
 	, ["c"] = Action.Close_Modal
 
 	, ["escape"] = Action.Escape

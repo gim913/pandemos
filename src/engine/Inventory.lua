@@ -10,6 +10,10 @@ function Inventory:ctor(capacity)
 	self.inventory = {}
 end
 
+function Inventory:empty()
+	return 0 == #self.inventory
+end
+
 function Inventory:add(item)
 	if #self.inventory == self.capacity then
 		return false

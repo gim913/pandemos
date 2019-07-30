@@ -540,6 +540,24 @@ function Game:actionMovement(uiAction)
 	end
 end
 
+local Inventory_Types = { ["melee"] = 1, ["light"] = 2, ["heavy"] = 3 }
+local Index_To_InventoryType = { "melee", "light", "heavy" }
+
+function Game:activateEquipment(equipmentIndex)
+	player.equipmentActive = equipmentIndex
+
+	local item = player.equipment:get(Index_To_InventoryType[equipmentIndex])
+	console.log({
+		color.white, 'Yielding ',
+		color.crimson, item.desc.blueprint.name
+	})
+end
+
+function Game:actionActivate(uiAction)
+	local equipmentIndex = uiAction  - GameAction.Equip1 + 1
+	self:activateEquipment(equipmentIndex)
+end
+
 function Game:actionInventory(uiAction)
 	local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
 	local item = player.inventory:get(inventoryIndex)
@@ -602,6 +620,9 @@ function Game:keypressed(key)
 		, [GameAction.Drop] = Game.actionDrop
 		, [GameAction.Examine] = Game.actionExamine
 
+		, [GameAction.Equip1] = Game.actionActivate
+		, [GameAction.Equip2] = Game.actionActivate
+		, [GameAction.Equip3] = Game.actionActivate
 		, [GameAction.Inventory1] = Game.actionInventory
 		, [GameAction.Inventory2] = Game.actionInventory
 		, [GameAction.Inventory3] = Game.actionInventory
@@ -976,8 +997,6 @@ function Game:itemActionDrop(item)
 	self:itemActionClose()
 end
 
-local Inventory_Types = { ["melee"] = true, ["light"] = true, ["heavy"] = true}
-
 function Game:itemActionSwapEquipment(item, itemIndex)
 	if not Inventory_Types[item.desc.blueprint.type] then
 		return
@@ -1000,6 +1019,10 @@ function Game:itemActionSwapEquipment(item, itemIndex)
 		{ 1, 1, 1, 1 }, ' into equipment'
 	})
 
+	if 0 == player.equipmentActive then
+		self:activateEquipment(Inventory_Types[item.desc.blueprint.type])
+	end
+
 	self:itemActionClose()
 end
 
@@ -1019,7 +1042,9 @@ function Game:dropActionNum(uiAction)
 		local item = player.inventory:get(inventoryIndex)
 		if item then
 			self:dropItem(item)
-			--self:dropActionClose()
+			if player.inventory:empty() then
+				self:dropActionClose()
+			end
 		end
 	end
 end
@@ -1052,15 +1077,16 @@ local function interpolate(val1, val2, delta, maxDelta)
 	return val1 + u * diff
 end
 
-local function createEquipmentEntry(gameAction, name)
+local function createEquipmentEntry(gameAction, name, active)
 	local item = player.equipment:get(name)
 	if item.desc then
-		return { key = findKey(gameAction),  item = item.desc.blueprint.name }
+		return { key = findKey(gameAction),  item = item.desc.blueprint.name, active = active }
 	else
 		return { key = findKey(gameAction),  item = '(' .. name .. ')', disabled = true }
 	end
 end
 
+-- this is some serious mess, don't look
 function Game:drawInterface()
 	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
 	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
@@ -1111,10 +1137,11 @@ function Game:drawInterface()
 
 	love.graphics.setColor(color.white)
 	hud.begin('Equipment', equipmentPosX, equipmentPosY)
+	local active = player.equipmentActive
 	local menu = {
-		createEquipmentEntry(GameAction.Equip1, 'melee'),
-		createEquipmentEntry(GameAction.Equip2, 'light'),
-		createEquipmentEntry(GameAction.Equip3, 'heavy')
+		createEquipmentEntry(GameAction.Equip1, 'melee', 1 == active),
+		createEquipmentEntry(GameAction.Equip2, 'light', 2 == active),
+		createEquipmentEntry(GameAction.Equip3, 'heavy', 3 == active)
 	}
 	hud.drawMenu(260, menu)
 	hud.finish(260)
@@ -1125,10 +1152,12 @@ function Game:drawInterface()
 	for i = 1, 6 do
 		local item = player.inventory:get(i)
 		if item then
-			table.insert(menu, {
-				key = findKey(GameAction.Inventory1 + i - 1),
-				item = item.desc.blueprint.name .. ' ' .. item.desc.blueprint.type
-			})
+			local itemLine = item.desc.blueprint.name
+			if item.desc.blueprint.type then
+				itemLine = itemLine .. ' ' .. item.desc.blueprint.type
+			end
+
+			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item =  itemLine })
 		else
 			table.insert(menu, { key = findKey(GameAction.Inventory1 + i - 1), item = '' })
 		end
@@ -1168,15 +1197,16 @@ function Game:drawInterface()
 	-- show item actions
 	if self.ui.itemActions then
 		local item = self.ui.itemActions.item
-
-		local replacable = Inventory_Types[item.desc.blueprint.type]
 		menu = {}
 		table.insert(menu, { key = findKey(GameAction.Drop), item = 'drop' })
-		table.insert(menu, { key = findKey(GameAction.Throw), item = 'throw' })
+		local throwable = item.desc.blueprint.flags and item.desc.blueprint.flags.throwable
+		table.insert(menu, { key = findKey(GameAction.Throw), item = 'throw', disabled = not throwable })
 
+		local replacable = Inventory_Types[item.desc.blueprint.type]
+		local className = item.desc.blueprint.type and (item.desc.blueprint.type .. ' class ') or ''
 		table.insert(menu, {
-				key = findKey(GameAction.Swap_Equipment),
-				item = 'replace ' .. item.desc.blueprint.type .. ' class in equipements',
+				key = findKey(GameAction.Equip_or_Swap),
+				item = 'replace ' .. className .. 'in equipement',
 				disabled = not replacable
 		})
 		-- TODO: display item name
@@ -1202,7 +1232,7 @@ function Game:drawInterface()
 			[GameAction.Close_Modal] = Game.itemActionClose
 			, [GameAction.Escape] = Game.itemActionClose
 			, [GameAction.Drop] = Game.itemActionDrop
-			, [GameAction.Swap_Equipment] = Game.itemActionSwapEquipment
+			, [GameAction.Equip_or_Swap] = Game.itemActionSwapEquipment
 		}
 
 		local action = hud.getAction()

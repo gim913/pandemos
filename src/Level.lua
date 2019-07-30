@@ -168,15 +168,22 @@ function Level:fixupWallsAndCreateAsElements(grid, sx, sy)
 end
 
 local items = {
-	{ symbol = '[', name = 'Bo', type = 'melee', color = { color.hsvToRgb(0.058, 0.67, 0.60, 1.0) } },
-	{ symbol = '[', name = 'Baseball bat', type = 'melee', color = { color.hsvToRgb(0.1, 0.36, 0.55, 1.0) } },
-	{ symbol = '[', name = 'Crowbar', type = 'melee', color = { color.hsvToRgb(0.0, 1.0, 0.38, 1.0) } },
-	{ symbol = '[', name = 'Machete', type = 'melee', color = { color.hsvToRgb(0.56, 0.24, 0.72, 1.0) } },
+	{ symbol = '[', name = 'Bo', type = 'melee'
+		, flags = { ['throwable'] = true }, color = { color.hsvToRgb(0.058, 0.67, 0.60, 1.0) } },
+	{ symbol = '[', name = 'Baseball bat', type = 'melee'
+		, flags = { ['throwable'] = true }, color = { color.hsvToRgb(0.1, 0.36, 0.55, 1.0) } },
+	{ symbol = '[', name = 'Crowbar', type = 'melee'
+		, flags = { ['throwable'] = true }, color = { color.hsvToRgb(0.0, 1.0, 0.38, 1.0) } },
+	{ symbol = '[', name = 'Machete', type = 'melee'
+		, flags = { ['throwable'] = true }, color = { color.hsvToRgb(0.56, 0.24, 0.72, 1.0) } },
 
-	{ symbol = '[', name = 'Beretta M9', type = 'light', color = color.dimgray },
-	{ symbol = '[', name = 'Grand Power K100', type = 'light', color = { color.gray } },
+	{ symbol = '[', name = 'Beretta M9', type = 'light'
+		, flags = { ['throwable'] = true }, color = color.dimgray },
+	{ symbol = '[', name = 'Grand Power K100', type = 'light'
+		, flags = { ['throwable'] = true }, color = { color.gray } },
 
-	{ symbol = '!', name = 'Goo', type = 'throwable', color = color.lime },
+	{ symbol = '!', name = 'Goo'
+		, flags = { ['throwable'] = true }, color = color.lime },
 }
 
 local itemUid = 1
