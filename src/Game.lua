@@ -443,7 +443,7 @@ end
 function Game:examineActionConfirm()
 	if self.ui.examineOnEnterCallback then
 		local cb = self.ui.examineOnEnterCallback[1]
-		cb(self, select(2, unpack(self.ui.examineOnEnterCallback)))
+		cb(self, cursorCell:clone(), select(2, unpack(self.ui.examineOnEnterCallback)))
 	end
 end
 
@@ -702,32 +702,11 @@ end
 local updateTilesAfterMove = false
 -- returns true when there was any move
 -- will require some recalculations later
-local function processMoves()
+local function executeActions(attribute, expectedAction, cb)
 	local ret = false
-	for _,e in pairs(entities.with(entities.Attr.Has_Move)) do
-		if e.actionState == action.Action.Move then
-			e:move()
-			e.actionState = action.Action.Idle
-
-			-- fire up ai to queue next action item
-			e:analyze(player)
-
-			if camera:isFollowing(e) then
-				updateTilesAfterMove = true
-			end
-
-			ret = true
-		end
-	end
-	return ret
-end
-
-local function processAttacks()
-	local ret = false
-	for _,e in pairs(entities.with(entities.Attr.Has_Attack)) do
-		if e.actionState == action.Action.Attack then
-			print('processing attack')
-			e:attack()
+	for _,e in pairs(entities.with(attribute)) do
+		if e.actionState == expectedAction then
+			cb(e)
 			e.actionState = action.Action.Idle
 
 			-- fire up ai to queue next action item
@@ -810,8 +789,9 @@ function Game:updateGameLogic(dt)
 
 	if self.doActions then
 		self.doActions = entities.processActions(player)
-		local movementDone = processMoves()
-		processAttacks()
+		local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e) e:move() end)
+		executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e) e:attack() end)
+		executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e) e:throw() end)
 
 		elements.process()
 
@@ -1095,10 +1075,11 @@ function Game:itemActionSwapEquipment(item, itemIndex)
 	self:itemActionClose()
 end
 
-local function playerThrowOnEnter(gameSelf, nPos, itemIndex)
-	console.log('throw!')
-	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, nPos)
-	gameSelf:examineOnEnter()
+local function playerThrowOnEnter(gameSelf, destPos, itemIndex)
+	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, { destPos = destPos, itemIndex = itemIndex })
+
+	gameSelf.doActions = true
+	gameSelf:examineOff()
 end
 
 function Game:itemActionThrow(item, itemIndex)
