@@ -23,6 +23,7 @@ local bindings = {
 	, ["e"] = Action.Equip_or_Swap
 	, ["c"] = Action.Close_Modal
 
+	, ["return"] = Action.Confirm
 	, ["escape"] = Action.Escape
 	, ["`"] = Action.Toggle_Console
 

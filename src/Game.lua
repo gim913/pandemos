@@ -217,7 +217,7 @@ function Game:ctor(rng)
 
 	Letters = prepareLetters('@iBCSTM[!')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2), map.height() - 59))
+	player = Player:new(Vec(f(map.width() / 2) + 10, map.height() - 49))
 	player.img = Letters['@']
 	player.class = classes.Player
 
@@ -392,6 +392,10 @@ function Game:wheelmoved(x, y)
 	end
 end
 
+function Game:examineOnEnter(callback)
+	self.ui.examineOnEnterCallback = callback
+end
+
 function Game:examineOn()
 	self.ui.examine = true
 
@@ -412,7 +416,6 @@ local function keyToAction(lctrl, key)
 	end
 
 	bindingName = bindingName .. key
-
 	return bindings[bindingName]
 end
 
@@ -431,13 +434,39 @@ local function movementActionToVector(uiAction)
 	return nil
 end
 
-function Game:actionEscape()
-	if self.ui.examine then
-		self:examineOff()
-	else
-		-- in game menu
-		gamestate.push(GameMenu:new())
+function Game:examineActionConfirm()
+	if self.ui.examineOnEnterCallback then
+		local cb = self.ui.examineOnEnterCallback[1]
+		cb(self, select(2, unpack(self.ui.examineOnEnterCallback)))
 	end
+end
+
+function Game:examineActionEscape()
+	self:examineOff()
+end
+
+local function moveExamine(moveVec)
+	local newCursorCell = cursorCell + moveVec
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
+		cursorCell = newCursorCell
+		logItems()
+	end
+end
+
+function Game:examineActionMovement(uiAction)
+	local moveVec = movementActionToVector(uiAction)
+	if moveVec then
+		moveExamine(moveVec)
+	end
+end
+
+function Game:actionConfirm()
+end
+
+function Game:actionEscape()
+	-- in game menu
+	gamestate.push(GameMenu:new())
 end
 
 function Game:grabItem(locationId, items, ordinalIndex)
@@ -491,11 +520,7 @@ function Game:actionDrop()
 end
 
 function Game:actionExamine()
-	if self.ui.examine then
-		self:examineOff()
-	else
-		self:examineOn()
-	end
+	self:examineOn()
 end
 
 local function playerMoveAction(moveVec)
@@ -513,29 +538,14 @@ local function playerMoveAction(moveVec)
 	return false
 end
 
-local function moveExamine(moveVec)
-	local newCursorCell = cursorCell + moveVec
-	local vis = 2 * S.game.VIS_RADIUS + 1
-	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
-		cursorCell = newCursorCell
-		logItems()
-	end
-end
-
 function Game:actionMovement(uiAction)
 	local moveVec = movementActionToVector(uiAction)
 
-	if self.ui.examine then
-		if moveVec then
-			moveExamine(moveVec)
-		end
-	else
-		-- ignore keyboard controls if following the path
-		if #(player.actions) == 0 and not player.follow_path then
-			-- if move and move or attack allowed
-			if moveVec and playerMoveAction(moveVec) then
-				self.doActions = true
-			end
+	-- ignore keyboard controls if following the path
+	if #(player.actions) == 0 and not player.follow_path then
+		-- if move and move or attack allowed
+		if moveVec and playerMoveAction(moveVec) then
+			self.doActions = true
 		end
 	end
 end
@@ -608,41 +618,63 @@ function Game:keypressed(key)
 		return
 	end
 
-	-- general / UI
-	local actionDispatcher = {
-		[GameAction.Up] = Game.actionMovement
-		, [GameAction.Down] = Game.actionMovement
-		, [GameAction.Left] = Game.actionMovement
-		, [GameAction.Right] = Game.actionMovement
-		, [GameAction.Rest] = Game.actionMovement
-		, [GameAction.Escape] = Game.actionEscape
-		, [GameAction.Grab] = Game.actionGrab
-		, [GameAction.Drop] = Game.actionDrop
-		, [GameAction.Examine] = Game.actionExamine
+	local actionDispatcher
+	local logOnError = true
 
-		, [GameAction.Equip1] = Game.actionActivate
-		, [GameAction.Equip2] = Game.actionActivate
-		, [GameAction.Equip3] = Game.actionActivate
-		, [GameAction.Inventory1] = Game.actionInventory
-		, [GameAction.Inventory2] = Game.actionInventory
-		, [GameAction.Inventory3] = Game.actionInventory
-		, [GameAction.Inventory4] = Game.actionInventory
-		, [GameAction.Inventory5] = Game.actionInventory
-		, [GameAction.Inventory6] = Game.actionInventory
+	if self.ui.examine then
+		logOnError = false
+		actionDispatcher = {
+			[GameAction.Up] = Game.examineActionMovement
+			, [GameAction.Down] = Game.examineActionMovement
+			, [GameAction.Left] = Game.examineActionMovement
+			, [GameAction.Right] = Game.examineActionMovement
 
-		, [GameAction.Close_Modal] = Game.actionNone
-		, [GameAction.Toggle_Console] = console.toggle
+			, [GameAction.Confirm] = Game.examineActionConfirm
+			, [GameAction.Escape] = Game.examineActionEscape
+			, [GameAction.Examine] = Game.examineActionEscape
 
-		-- TODO: XXX: TODO: devel: comment out before releasing ^^
-		, [GameAction.Experimental_Camera_Switch] = actionExperimentalCameraSwitch
-		, [GameAction.Debug_Toggle_Vismap] = actionDebugToggleVismap
-		, [GameAction.Debug_Toggle_Astar] = actionDebugToggleAstar
-	}
+			, [GameAction.Toggle_Console] = console.toggle
+		}
+	else
+		-- general / UI
+		actionDispatcher = {
+			[GameAction.Up] = Game.actionMovement
+			, [GameAction.Down] = Game.actionMovement
+			, [GameAction.Left] = Game.actionMovement
+			, [GameAction.Right] = Game.actionMovement
+			, [GameAction.Rest] = Game.actionMovement
+			, [GameAction.Confirm] = Game.actionConfirm
+			, [GameAction.Escape] = Game.actionEscape
+			, [GameAction.Grab] = Game.actionGrab
+			, [GameAction.Drop] = Game.actionDrop
+			, [GameAction.Examine] = Game.actionExamine
+
+			, [GameAction.Equip1] = Game.actionActivate
+			, [GameAction.Equip2] = Game.actionActivate
+			, [GameAction.Equip3] = Game.actionActivate
+			, [GameAction.Inventory1] = Game.actionInventory
+			, [GameAction.Inventory2] = Game.actionInventory
+			, [GameAction.Inventory3] = Game.actionInventory
+			, [GameAction.Inventory4] = Game.actionInventory
+			, [GameAction.Inventory5] = Game.actionInventory
+			, [GameAction.Inventory6] = Game.actionInventory
+
+			, [GameAction.Close_Modal] = Game.actionNone
+			, [GameAction.Toggle_Console] = console.toggle
+
+			-- TODO: XXX: TODO: devel: comment out before releasing ^^
+			, [GameAction.Experimental_Camera_Switch] = actionExperimentalCameraSwitch
+			, [GameAction.Debug_Toggle_Vismap] = actionDebugToggleVismap
+			, [GameAction.Debug_Toggle_Astar] = actionDebugToggleAstar
+		}
+	end
 
 	if actionDispatcher[uiAction] then
 		actionDispatcher[uiAction](self, uiAction)
 	else
-		logError('no handler for action ' .. uiAction)
+		if logOnError then
+			logError('no handler for action ' .. uiAction)
+		end
 	end
 end
 
@@ -1026,6 +1058,20 @@ function Game:itemActionSwapEquipment(item, itemIndex)
 	self:itemActionClose()
 end
 
+local function playerThrowOnEnter(gameSelf, nPos, itemIndex)
+	--action.queue(player.actions, Player.Bash_Speed, action.Action.Attack, nPos)
+	console.log('throw!')
+	gameSelf:examineOnEnter()
+end
+
+function Game:itemActionThrow(item, itemIndex)
+	console.log('Select target')
+	self:itemActionClose()
+
+	self:examineOnEnter({ playerThrowOnEnter, itemIndex })
+	self:examineOn()
+end
+
 function Game:dropActionClose()
 	hud.grabInput(false)
 	self.ui.showDropMenu = nil
@@ -1233,6 +1279,7 @@ function Game:drawInterface()
 			, [GameAction.Escape] = Game.itemActionClose
 			, [GameAction.Drop] = Game.itemActionDrop
 			, [GameAction.Equip_or_Swap] = Game.itemActionSwapEquipment
+			, [GameAction.Throw] = Game.itemActionThrow
 		}
 
 		local action = hud.getAction()
