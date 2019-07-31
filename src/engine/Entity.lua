@@ -84,7 +84,7 @@ function Entity:getDamage()
 end
 
 function Entity:takeHit(dmg)
-	print(self.name .. ' is taking '..dmg..' damage')
+	--print(self.name .. ' is taking '..dmg..' damage')
 	self.hp = self.hp - dmg
 
 	messages.popups.queue({
@@ -94,7 +94,10 @@ function Entity:takeHit(dmg)
 
 	if self.hp <= 0 then
 		self:die()
+		return false
 	end
+
+	return true
 end
 
 function Entity:die()

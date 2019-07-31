@@ -6,8 +6,13 @@ local utils = require 'engine.utils'
 
 -- module
 
+--  n -> entity
 local entities_data = {}
+
+--  position -> entId
 local entities_location = {}
+
+-- attribute -> entId -> ent
 local entities_with_attrs = {}
 
 local function entities_addAttr(ent, attr)
@@ -31,12 +36,13 @@ local function entities_add(ent)
 end
 
 local function entities_del(ent)
-	for k, e in pairs(entities_location) do
-		if e == ent then
+	for k, entId in pairs(entities_location) do
+		if entId == ent.id then
 			entities_location[k] = nil
 			break
 		end
 	end
+
 	entities_data[ent.id] = nil
 	entities_clearAttrs(ent)
 	--ent:onDel()
@@ -89,7 +95,11 @@ local function entities_attack(who, whom)
 		' damage'
 	})
 
-	whom:takeHit(who:getDamage())
+	local alive = whom:takeHit(who:getDamage())
+	if not alive then
+		-- TODO: ugly
+		who.seemap[whom] = nil
+	end
 end
 
 local g_gameTime = 0

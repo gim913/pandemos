@@ -699,7 +699,7 @@ function Game:startLevel()
 	end
 end
 
-local updateTilesAfterMove = false
+local updateTilesAfterAction = false
 -- returns true when there was any move
 -- will require some recalculations later
 local function executeActions(attribute, expectedAction, cb)
@@ -713,7 +713,7 @@ local function executeActions(attribute, expectedAction, cb)
 			e:analyze(player)
 
 			if camera:isFollowing(e) then
-				updateTilesAfterMove = true
+				updateTilesAfterAction = true
 			end
 
 			ret = true
@@ -799,7 +799,7 @@ function Game:updateGameLogic(dt)
 		-- 	elements.refresh()
 		-- end
 
-		if updateTilesAfterMove then
+		if updateTilesAfterAction then
 			camera:update()
 
 			-- not needed here anymore
@@ -809,7 +809,7 @@ function Game:updateGameLogic(dt)
 			processEntitiesFov()
 
 			updateTiles()
-			updateTilesAfterMove = false
+			updateTilesAfterAction = false
 		end
 	end
 end
