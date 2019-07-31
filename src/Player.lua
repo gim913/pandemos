@@ -63,7 +63,8 @@ function Player:throw()
 	local desc = self.actionData
 	self.actionData = nil
 
-	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
+	self.doRecalc = true
+	return desc
 end
 
 return Player

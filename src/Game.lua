@@ -255,6 +255,55 @@ function Game:ctor(rng)
 
 	cameraIdx = 0
 	--updateTiles()
+
+	---
+
+	self.canvas = love.graphics.newCanvas()
+	self.noisetex = love.image.newImageData(100,100)
+	self.noisetex:mapPixel(function(x, y)
+		local l = love.math.noise(x, y)
+		return l,l,l,l
+	end)
+	self.noisetex = love.graphics.newImage(self.noisetex)
+	self.shader = love.graphics.newShader[[
+		extern number opacity;
+		extern number offset;
+		float rand(vec2 co)
+		{
+			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453123);
+		}
+
+		float noisef(vec2 st) {
+			vec2 i = floor(st);
+			vec2 f = fract(st);
+
+			// Four corners in 2D of a tile
+			float a = rand(i);
+			float b = rand(i + vec2(1.0, 0.0));
+			float c = rand(i + vec2(0.0, 1.0));
+			float d = rand(i + vec2(1.0, 1.0));
+
+			// Smooth Interpolation
+
+			// Cubic Hermine Curve.  Same as SmoothStep()
+			vec2 u = f*f*(3.0-2.0*f);
+			// u = smoothstep(0.,1.,f);
+
+			// Mix 4 coorners percentages
+			return mix(a, b, u.x) +
+					(c - a)* u.y * (1.0 - u.x) +
+					(d - b) * u.x * u.y;
+		}
+
+		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _)
+		{
+			return color * Texel(texture, tc) * mix(1.0, noisef(vec2((tc.x ) * 144, (tc.y - offset) * 90 )), opacity);
+
+		}
+	]]
+
+	self.shader:send("opacity", .5)
+	self.shader:send("offset", 0)
 end
 
 -- semi constants
@@ -770,8 +819,35 @@ function Game:doUpdateLevel(dt)
 	end
 end
 
+function Game:throw(desc)
+	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
+	local locationId =  posToLocation(desc.destPos + camera:lu())
+	local elem = elements.create(locationId)
+	--elem:set
+	elem:setTileId(nil)
+	elem:setPassable(true)
+	elem:setItem({
+		uid = 12345,
+		blueprint = { symbol = '!', name = 'GOO', type = 'gas'
+			, flags = { }, color = { color.hsvToRgb(0.08, 0.58, 0.0, 1.0) } }
+	})
+	elem:setOpaque(true)
+
+	print(' created object at location ' .. locationId .. ' ' .. utils.repr(elem))
+end
+
 local initializeAi = true
+local shaderDt = 0
+local shaderTotalDt = 0
 function Game:updateGameLogic(dt)
+	shaderDt = shaderDt + dt
+	shaderTotalDt = shaderTotalDt + dt
+	if shaderDt > 1 / 60.0 then
+		self.shader:send("offset", shaderTotalDt / 40.0)
+		shaderDt = shaderDt - 1 / 60.0
+	end
+
+
 	-- at this point map should be ready, fire up AI once,
 	-- afterwards it should be fired after finishing actions
 	if initializeAi then
@@ -791,7 +867,11 @@ function Game:updateGameLogic(dt)
 		self.doActions = entities.processActions(player)
 		local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e) e:move() end)
 		executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e) e:attack() end)
-		executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e) e:throw() end)
+		executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
+			local desc = e:throw()
+			self:throw(desc)
+		end)
+		print(updateTilesAfterAction)
 
 		elements.process()
 
@@ -1390,11 +1470,34 @@ function Game:show()
 	love.graphics.print("self.ui: " .. uiElements, S.resolution.x - 200 - 10, 110)
 
 	-- draw map
+
+		-- begin part 1
+		local s = love.graphics.getShader()
+		local co = {love.graphics.getColor()}
+
+		local old_canvas = love.graphics.getCanvas()
+		love.graphics.setCanvas(self.canvas)
+		love.graphics.clear()
+		-- end part 1
+
 	batch.draw()
 	drawItems(camera.followedEnt, camLu)
 
 	-- ^^
 	drawEntities(camLu)
+
+		-- begin part 2
+		love.graphics.setCanvas(old_canvas)
+
+		-- apply shader to canvas
+		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+		love.graphics.setShader(self.shader)
+		local b = love.graphics.getBlendMode()
+		love.graphics.setBlendMode('alpha', 'premultiplied')
+		love.graphics.draw(self.canvas, 0, 0)
+		love.graphics.setBlendMode(b)
+		love.graphics.setShader(s)
+		-- end part 2
 
 	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
 
