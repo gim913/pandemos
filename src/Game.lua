@@ -290,18 +290,68 @@ function Game:ctor(rng)
 					(d - b) * u.x * u.y;
 		}
 
-		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _)
-		{
-			vec2 pos = vec2((tc.x + offsetx / 5) * 144 * 3, (tc.y - offsety / 5) * 90 * 3);
-			return color * Texel(texture, tc)
-				* mix(0.0, pow(noisef(pos) + 0.2, 3), opacity);
+		float fbm(vec2 st) {
+			float v = 0.0;
+			float a = 0.5;
+			vec2 shift = vec2(100.0);
+			mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+			for (int i = 0; i < 5; ++i) {
+				v += a * noisef(st);
+				st = rot * st * 2.0 + shift;
+				a *= 0.5;
+			}
+			return v;
+		}
 
+		vec4 effect(vec4 color, Image texture, vec2 _tc, vec2 _)
+		{
+			vec2 tc = vec2((_tc.x) * 14.4, (_tc.y) * 9.0);
+
+			vec2 q = vec2(0);
+    		q.x = fbm(tc + 3.00*offsetx);
+			q.y = fbm(tc + vec2(1.0));
+
+			vec2 r = vec2(0);
+    		r.x = fbm(tc + q + vec2(1.7,9.2)+ 0.15*offsety*100);
+			r.y = fbm(tc + q + vec2(8.3,2.8)+ 0.126*offsety*100);
+
+			float f = fbm(tc + r);
+
+			float l = f*f*4.0 * clamp(length(q),0.0,1.0) * clamp(length(r.x),0.0,1.0);
+			l = (f*f*f+0.6*f*f+0.5*f) * l;
+			float val = pow(l, 1);
+			return Texel(texture, _tc) * color * mix(0.0, val, opacity);
 		}
 	]]
 
-	self.shader:send("opacity", .9)
+	-- return Texel(texture, tc) * color * vec4((f*f*f+0.6*f*f+0.5*f)*col, opacity);
+
+	-- return color *
+	-- * mix(0.0, pow(noisef(pos) + 0.1, 3), opacity);
+
+	self.shader:send("opacity", 1.0)
 	self.shader:send("offsetx", 0)
 	self.shader:send("offsety", 0)
+
+	self.canvas_b = love.graphics.newCanvas()
+	self.shader_b = love.graphics.newShader[[
+		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _)
+		{
+			vec4 col = vec4(0.0);
+
+			vec2 off1 = vec2(1.411764705882353) * vec2(1, 1);
+			vec2 off2 = vec2(3.2941176470588234) * vec2(1, -1);
+			vec2 off3 = vec2(5.176470588235294) * vec2(1, 1);
+			col += Texel(texture, tc) * 0.1964825501511404;
+			col += Texel(texture, tc + (off1 / 720)) * 0.2969069646728344;
+			col += Texel(texture, tc - (off1 / 720)) * 0.2969069646728344;
+			col += Texel(texture, tc + (off2 / 720)) * 0.09447039785044732;
+			col += Texel(texture, tc - (off2 / 720)) * 0.09447039785044732;
+			col += Texel(texture, tc + (off3 / 720)) * 0.010381362401148057;
+			col += Texel(texture, tc - (off3 / 720)) * 0.010381362401148057;
+			return col;
+		}
+	]]
 end
 
 -- semi constants
@@ -817,21 +867,25 @@ function Game:doUpdateLevel(dt)
 	end
 end
 
-function Game:throw(desc)
-	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
-	local locationId =  posToLocation(desc.destPos + camera:lu())
+local function makeGas(pos)
+	local locationId =  posToLocation(pos)
 	local elem = elements.create(locationId)
-	--elem:set
 	elem:setTileId(nil)
 	elem:setPassable(true)
-	elem:setItem({
-		uid = 12345,
-		blueprint = { symbol = '!', name = 'GOO', type = 'gas'
-			, flags = { }, color = { color.hsvToRgb(0.08, 0.58, 0.0, 1.0) } }
-	})
-	elem:setOpaque(true)
+	elem:setGas()
 
-	print(' created object at location ' .. locationId .. ' ' .. utils.repr(elem))
+	elem:setOpaque(true)
+end
+
+function Game:throw(desc)
+	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
+	local main = desc.destPos + camera:lu()
+
+	makeGas(main)
+	makeGas(main - Vec(-1, 0))
+	makeGas(main - Vec(1, 0))
+	makeGas(main - Vec(0, -1))
+	makeGas(main - Vec(0, 1))
 end
 
 local initializeAi = true
@@ -1002,9 +1056,31 @@ local function drawWeaponDistanceOverlay(maxDistance)
 	end
 end
 
-local function drawGas()
-	love.graphics.setColor(color.lime)
-	love.graphics.rectangle('fill', 10 * Tile_Size_Adj, 10 * Tile_Size_Adj, Tile_Size, Tile_Size)
+local function drawGas(camLu)
+	local half = Tile_Size_Adj / 2
+
+	local scaleFactor = Tile_Size / Entity_Tile_Size
+	local ya = camLu.y
+	local xa = camLu.x
+
+	local tc = 2 * S.game.VIS_RADIUS + 1
+	for y = 0, tc - 1 do
+		if ya + y > map.height() then
+			break
+		end
+
+		local locationId = (ya + y) * map.width() + xa
+		for x = 0, tc - 1 do
+			local gases, count = elements.getGases(locationId)
+			if count > 0 then
+				love.graphics.setColor(color.lime)
+				love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
+			end
+
+			locationId = locationId + 1
+		end
+	end
+
 end
 
 local function drawEntityPath(ent, camLu)
@@ -1481,21 +1557,35 @@ function Game:show()
 	-- ^^
 	drawEntities(camLu)
 
-		-- begin part 1
+		-- begin shader 1 part 1
 		local s = love.graphics.getShader()
-		local co = {love.graphics.getColor()}
-
 		local old_canvas = love.graphics.getCanvas()
 		love.graphics.setCanvas(self.canvas)
 		love.graphics.clear()
-		-- end part 1
+		-- end shader 1 part 1
 
-		drawGas()
+		-- begin shader 2 part 1
+		local s_b = love.graphics.getShader()
+		local old_canvas_b = love.graphics.getCanvas()
+		love.graphics.setCanvas(self.canvas_b)
+		love.graphics.clear()
+		-- end shader 2 part 1
 
-		-- begin part 2
+		drawGas(camLu)
+
+		-- begin shader 2 part 2
+		love.graphics.setCanvas(old_canvas_b)
+		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+		love.graphics.setShader(self.shader_b)
+		local b = love.graphics.getBlendMode()
+		love.graphics.setBlendMode('alpha', 'premultiplied')
+		love.graphics.draw(self.canvas_b, 0, 0)
+		love.graphics.setBlendMode(b)
+		love.graphics.setShader(s)
+		-- end shader 2 part 2
+
+		-- begin shader 1 part 2
 		love.graphics.setCanvas(old_canvas)
-
-		-- apply shader to canvas
 		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
 		love.graphics.setShader(self.shader)
 		local b = love.graphics.getBlendMode()
@@ -1503,7 +1593,7 @@ function Game:show()
 		love.graphics.draw(self.canvas, 0, 0)
 		love.graphics.setBlendMode(b)
 		love.graphics.setShader(s)
-		-- end part 2
+		-- end shader 1 part 2
 
 	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
 

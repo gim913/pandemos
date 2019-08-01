@@ -17,6 +17,10 @@ function Gobject:setTileId(id)
 	self.tileId = id
 end
 
+function Gobject:setEffect(desc)
+	self.effectId = desc.id
+end
+
 function Gobject:setOpaque(b)
 	self.opaque = b
 end
@@ -33,6 +37,11 @@ end
 function Gobject:setItem(itemDescriptor)
 	self.item = true
 	self.desc = itemDescriptor
+end
+
+function Gobject:setGas(descriptor)
+	self.gas = true
+	self.gasDesc = descriptor
 end
 
 -- -- -- -- --
@@ -133,6 +142,22 @@ local function elements_getItems(idx)
 	return nil, 0
 end
 
+local function elements_getGases(idx)
+	if  elements_location[idx] then
+		local gases = {}
+		local count = 0
+		-- TODO: this doesn't look good...
+		for k, object in pairs(elements_location[idx]) do
+			if object.gas then
+				gases[k] = object
+				count = count + 1
+			end
+		end
+		return gases, count
+	end
+	return nil, 0
+end
+
 local elements = {
 	create = elements_create
 	, del = elements_del
@@ -143,6 +168,7 @@ local elements = {
 
 	, notPassLight = elements_notPassLight
 	, getItems = elements_getItems
+	, getGases = elements_getGases
 }
 
 return elements
