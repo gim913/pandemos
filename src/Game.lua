@@ -259,15 +259,10 @@ function Game:ctor(rng)
 	---
 
 	self.canvas = love.graphics.newCanvas()
-	self.noisetex = love.image.newImageData(100,100)
-	self.noisetex:mapPixel(function(x, y)
-		local l = love.math.noise(x, y)
-		return l,l,l,l
-	end)
-	self.noisetex = love.graphics.newImage(self.noisetex)
 	self.shader = love.graphics.newShader[[
 		extern number opacity;
-		extern number offset;
+		extern number offsetx;
+		extern number offsety;
 		float rand(vec2 co)
 		{
 			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453123);
@@ -297,13 +292,16 @@ function Game:ctor(rng)
 
 		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _)
 		{
-			return color * Texel(texture, tc) * mix(1.0, noisef(vec2((tc.x ) * 144, (tc.y - offset) * 90 )), opacity);
+			vec2 pos = vec2((tc.x + offsetx / 5) * 144 * 3, (tc.y - offsety / 5) * 90 * 3);
+			return color * Texel(texture, tc)
+				* mix(0.0, pow(noisef(pos) + 0.2, 3), opacity);
 
 		}
 	]]
 
-	self.shader:send("opacity", .5)
-	self.shader:send("offset", 0)
+	self.shader:send("opacity", .9)
+	self.shader:send("offsetx", 0)
+	self.shader:send("offsety", 0)
 end
 
 -- semi constants
@@ -843,7 +841,8 @@ function Game:updateGameLogic(dt)
 	shaderDt = shaderDt + dt
 	shaderTotalDt = shaderTotalDt + dt
 	if shaderDt > 1 / 60.0 then
-		self.shader:send("offset", shaderTotalDt / 40.0)
+		self.shader:send("offsetx", math.sin(shaderTotalDt / 10.0) / 5.0)
+		self.shader:send("offsety", shaderTotalDt / 40.0)
 		shaderDt = shaderDt - 1 / 60.0
 	end
 
@@ -871,7 +870,6 @@ function Game:updateGameLogic(dt)
 			local desc = e:throw()
 			self:throw(desc)
 		end)
-		print(updateTilesAfterAction)
 
 		elements.process()
 
@@ -1002,6 +1000,11 @@ local function drawWeaponDistanceOverlay(maxDistance)
 			circ.x = circ.x - 1
 		end
 	end
+end
+
+local function drawGas()
+	love.graphics.setColor(color.lime)
+	love.graphics.rectangle('fill', 10 * Tile_Size_Adj, 10 * Tile_Size_Adj, Tile_Size, Tile_Size)
 end
 
 local function drawEntityPath(ent, camLu)
@@ -1471,6 +1474,13 @@ function Game:show()
 
 	-- draw map
 
+	batch.draw()
+
+	drawItems(camera.followedEnt, camLu)
+
+	-- ^^
+	drawEntities(camLu)
+
 		-- begin part 1
 		local s = love.graphics.getShader()
 		local co = {love.graphics.getColor()}
@@ -1480,11 +1490,7 @@ function Game:show()
 		love.graphics.clear()
 		-- end part 1
 
-	batch.draw()
-	drawItems(camera.followedEnt, camLu)
-
-	-- ^^
-	drawEntities(camLu)
+		drawGas()
 
 		-- begin part 2
 		love.graphics.setCanvas(old_canvas)
