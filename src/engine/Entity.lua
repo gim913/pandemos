@@ -26,6 +26,7 @@ local sqrt = math.sqrt
 
 function Entity:ctor(initPos)
 	self.pos = initPos
+	self.anim = Vec.zero
 	self.attrs = {}
 
 	self.doRecalc = true
