@@ -2,7 +2,14 @@ local fog = require 'shaders.fog'
 local blur = require 'shaders.blur'
 
 local shaders = {}
+shaders.__index = shaders
+
 setmetatable(fog, shaders)
+setmetatable(blur, shaders)
+
+function shaders.foo()
+	print('foo')
+end
 
 function shaders.fog()
 	local instance = {}

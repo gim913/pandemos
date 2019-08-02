@@ -74,6 +74,8 @@ vec4 effect(vec4 color, Image texture, vec2 _tc, vec2 _)
 	end,
 
 	render = function(self, func)
+		self:foo()
+
 		-- begin shader 1 part 1
 		local s = love.graphics.getShader()
 		local old_canvas = love.graphics.getCanvas()
