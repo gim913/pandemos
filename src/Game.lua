@@ -12,6 +12,8 @@ local Player = require 'Player'
 local S = require 'settings'
 local Tiles = require 'Tiles'
 
+local shaders = require 'shaders'
+
 local action = require 'engine.action'
 local class = require 'engine.oop'
 local color = require 'engine.color'
@@ -185,6 +187,8 @@ local classes = {
 }
 
 local Letters
+local fog
+local blur
 
 function Game:ctor(rng)
 	self.rng = rng
@@ -258,100 +262,8 @@ function Game:ctor(rng)
 
 	---
 
-	self.canvas = love.graphics.newCanvas()
-	self.shader = love.graphics.newShader[[
-		extern number opacity;
-		extern number offsetx;
-		extern number offsety;
-		float rand(vec2 co)
-		{
-			return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453123);
-		}
-
-		float noisef(vec2 st) {
-			vec2 i = floor(st);
-			vec2 f = fract(st);
-
-			// Four corners in 2D of a tile
-			float a = rand(i);
-			float b = rand(i + vec2(1.0, 0.0));
-			float c = rand(i + vec2(0.0, 1.0));
-			float d = rand(i + vec2(1.0, 1.0));
-
-			// Smooth Interpolation
-
-			// Cubic Hermine Curve.  Same as SmoothStep()
-			vec2 u = f*f*(3.0-2.0*f);
-			// u = smoothstep(0.,1.,f);
-
-			// Mix 4 coorners percentages
-			return mix(a, b, u.x) +
-					(c - a)* u.y * (1.0 - u.x) +
-					(d - b) * u.x * u.y;
-		}
-
-		float fbm(vec2 st) {
-			float v = 0.0;
-			float a = 0.5;
-			vec2 shift = vec2(100.0);
-			mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
-			for (int i = 0; i < 5; ++i) {
-				v += a * noisef(st);
-				st = rot * st * 2.0 + shift;
-				a *= 0.5;
-			}
-			return v;
-		}
-
-		vec4 effect(vec4 color, Image texture, vec2 _tc, vec2 _)
-		{
-			vec2 tc = vec2((_tc.x) * 14.4, (_tc.y) * 9.0);
-
-			vec2 q = vec2(0);
-    		q.x = fbm(tc + 3.00*offsetx);
-			q.y = fbm(tc + vec2(1.0));
-
-			vec2 r = vec2(0);
-    		r.x = fbm(tc + q + vec2(1.7,9.2)+ 0.15*offsety*100);
-			r.y = fbm(tc + q + vec2(8.3,2.8)+ 0.126*offsety*100);
-
-			float f = fbm(tc + r);
-
-			float l = f*f*4.0 * clamp(length(q),0.0,1.0) * clamp(length(r.x),0.0,1.0);
-			l = (f*f*f+0.6*f*f+0.5*f) * l;
-			float val = pow(l, 1);
-			return Texel(texture, _tc) * color * mix(0.0, val, opacity);
-		}
-	]]
-
-	-- return Texel(texture, tc) * color * vec4((f*f*f+0.6*f*f+0.5*f)*col, opacity);
-
-	-- return color *
-	-- * mix(0.0, pow(noisef(pos) + 0.1, 3), opacity);
-
-	self.shader:send("opacity", 1.0)
-	self.shader:send("offsetx", 0)
-	self.shader:send("offsety", 0)
-
-	self.canvas_b = love.graphics.newCanvas()
-	self.shader_b = love.graphics.newShader[[
-		vec4 effect(vec4 color, Image texture, vec2 tc, vec2 _)
-		{
-			vec4 col = vec4(0.0);
-
-			vec2 off1 = vec2(1.411764705882353) * vec2(1, 1);
-			vec2 off2 = vec2(3.2941176470588234) * vec2(1, -1);
-			vec2 off3 = vec2(5.176470588235294) * vec2(1, 1);
-			col += Texel(texture, tc) * 0.1964825501511404;
-			col += Texel(texture, tc + (off1 / 720)) * 0.2969069646728344;
-			col += Texel(texture, tc - (off1 / 720)) * 0.2969069646728344;
-			col += Texel(texture, tc + (off2 / 720)) * 0.09447039785044732;
-			col += Texel(texture, tc - (off2 / 720)) * 0.09447039785044732;
-			col += Texel(texture, tc + (off3 / 720)) * 0.010381362401148057;
-			col += Texel(texture, tc - (off3 / 720)) * 0.010381362401148057;
-			return col;
-		}
-	]]
+	fog = shaders.fog()
+	blur = shaders.blur()
 end
 
 -- semi constants
@@ -889,14 +801,14 @@ function Game:throw(desc)
 end
 
 local initializeAi = true
+
 local shaderDt = 0
 local shaderTotalDt = 0
 function Game:updateGameLogic(dt)
 	shaderDt = shaderDt + dt
 	shaderTotalDt = shaderTotalDt + dt
 	if shaderDt > 1 / 60.0 then
-		self.shader:send("offsetx", math.sin(shaderTotalDt / 10.0) / 5.0)
-		self.shader:send("offsety", shaderTotalDt / 40.0)
+		fog:set('time', shaderTotalDt)
 		shaderDt = shaderDt - 1 / 60.0
 	end
 
@@ -1557,43 +1469,11 @@ function Game:show()
 	-- ^^
 	drawEntities(camLu)
 
-		-- begin shader 1 part 1
-		local s = love.graphics.getShader()
-		local old_canvas = love.graphics.getCanvas()
-		love.graphics.setCanvas(self.canvas)
-		love.graphics.clear()
-		-- end shader 1 part 1
-
-		-- begin shader 2 part 1
-		local s_b = love.graphics.getShader()
-		local old_canvas_b = love.graphics.getCanvas()
-		love.graphics.setCanvas(self.canvas_b)
-		love.graphics.clear()
-		-- end shader 2 part 1
-
-		drawGas(camLu)
-
-		-- begin shader 2 part 2
-		love.graphics.setCanvas(old_canvas_b)
-		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-		love.graphics.setShader(self.shader_b)
-		local b = love.graphics.getBlendMode()
-		love.graphics.setBlendMode('alpha', 'premultiplied')
-		love.graphics.draw(self.canvas_b, 0, 0)
-		love.graphics.setBlendMode(b)
-		love.graphics.setShader(s)
-		-- end shader 2 part 2
-
-		-- begin shader 1 part 2
-		love.graphics.setCanvas(old_canvas)
-		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-		love.graphics.setShader(self.shader)
-		local b = love.graphics.getBlendMode()
-		love.graphics.setBlendMode('alpha', 'premultiplied')
-		love.graphics.draw(self.canvas, 0, 0)
-		love.graphics.setBlendMode(b)
-		love.graphics.setShader(s)
-		-- end shader 1 part 2
+	fog:render(function()
+		blur:render(function()
+			drawGas(camLu)
+		end)
+	end)
 
 	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
 
