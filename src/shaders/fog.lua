@@ -74,27 +74,8 @@ vec4 effect(vec4 color, Image texture, vec2 _tc, vec2 _)
 	end,
 
 	render = function(self, func)
-		self:foo()
-
-		-- begin shader 1 part 1
-		local s = love.graphics.getShader()
-		local old_canvas = love.graphics.getCanvas()
-		love.graphics.setCanvas(self.canvas)
-		love.graphics.clear()
-		-- end shader 1 part 1
-
-		func()
-
-		-- begin shader 1 part 2
-		love.graphics.setCanvas(old_canvas)
-		love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-		love.graphics.setShader(self.shader)
-		local b = love.graphics.getBlendMode()
-		love.graphics.setBlendMode('alpha', 'premultiplied')
-		love.graphics.draw(self.canvas, 0, 0)
-		love.graphics.setBlendMode(b)
-		love.graphics.setShader(s)
-		-- end shader 1 part 2
+		-- call without instance
+		self.renderShader(self.shader, self.canvas, func)
 	end,
 
 	set = function(self, key, value)
