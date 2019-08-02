@@ -715,7 +715,10 @@ local function executeActions(attribute, expectedAction, cb)
 	local ret = false
 	for _,e in pairs(entities.with(attribute)) do
 		if e.actionState == expectedAction then
-			cb(e)
+			-- break execution
+			if not cb(e) then
+				return
+			end
 			e.actionState = action.Action.Idle
 
 			-- fire up ai to queue next action item
@@ -812,7 +815,6 @@ function Game:updateGameLogic(dt)
 		shaderDt = shaderDt - 1 / 60.0
 	end
 
-
 	-- at this point map should be ready, fire up AI once,
 	-- afterwards it should be fired after finishing actions
 	if initializeAi then
@@ -830,11 +832,18 @@ function Game:updateGameLogic(dt)
 
 	if self.doActions then
 		self.doActions = entities.processActions(player)
-		local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e) e:move() end)
-		executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e) e:attack() end)
+		local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
+			e:move()
+			return true
+		end)
+		executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
+			e:attack()
+			return true
+		end)
 		executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
 			local desc = e:throw()
 			self:throw(desc)
+			return true
 		end)
 
 		elements.process()
@@ -845,9 +854,6 @@ function Game:updateGameLogic(dt)
 
 		if updateTilesAfterAction then
 			camera:update()
-
-			-- not needed here anymore
-			--processAi()
 
 			-- TODO: probably wrong location
 			processEntitiesFov()
