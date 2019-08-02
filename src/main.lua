@@ -12,6 +12,7 @@ function love.load()
 	love.keyboard.setKeyRepeat(true)
 	love.window.setMode(S.resolution.x, S.resolution.y, { vsync=S.vsync })
 	love.window.setTitle("Pandemos")
+	love.audio.setVolume(0.3)
 
 	-- create objects
 	mainMenu = MainMenu:new()

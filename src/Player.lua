@@ -7,6 +7,7 @@ local elements = require 'engine.elements'
 local Entity = require 'engine.Entity'
 local Equipment = require 'engine.Equipment'
 local Inventory = require 'engine.Inventory'
+local soundManager = require 'engine.soundManager'
 local map = require 'engine.map'
 
 -- class
@@ -26,6 +27,21 @@ function Player:ctor(initPos)
 	self.inventory = Inventory:new(6)
 	self.equipment = Equipment:new({ 'melee', 'light', 'heavy' })
 	self.equipmentActive = 0
+
+	self.rng = love.math.newRandomGenerator()
+	self.sounds = {
+		walk = {
+			soundManager.get('sounds/stepdirt_1.wav', 'static')
+			, soundManager.get('sounds/stepdirt_2.wav', 'static')
+			, soundManager.get('sounds/stepdirt_3.wav', 'static')
+			, soundManager.get('sounds/stepdirt_4.wav', 'static')
+			, soundManager.get('sounds/stepdirt_5.wav', 'static')
+			, soundManager.get('sounds/stepdirt_6.wav', 'static')
+			, soundManager.get('sounds/stepdirt_7.wav', 'static')
+			, soundManager.get('sounds/stepdirt_8.wav', 'static')
+		}
+	}
+
 end
 
 function Player:onAdd()
@@ -57,6 +73,16 @@ function Player:checkEntVis(oth, dist)
 		-- 	})
 		-- end
 	end
+end
+
+function Player:move()
+	self.base.move(self)
+
+	local rnd = self.rng:random(#self.sounds.walk)
+	if self.sounds.walk[rnd]:isPlaying() then
+		self.sounds.walk[rnd]:stop()
+	end
+	self.sounds.walk[rnd]:play()
 end
 
 function Player:throw()
