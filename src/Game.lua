@@ -228,7 +228,8 @@ function Game:ctor(rng)
 
 	self.ui = {}
 	-- self.ui.showGrabMenu
-	-- self.ui.showDropMenu
+	-- self.ui.showInventoryMenu
+	-- self.ui.inventoryMenuDesc
 	-- self.ui.examine
 	-- self.ui.inventoryActions
 
@@ -547,7 +548,14 @@ end
 
 function Game:actionDrop()
 	hud.grabInput(true)
-	self.ui.showDropMenu = true
+	self.ui.showInventoryMenu = true
+	self.ui.inventoryMenuDesc = { type = 'drop', title = 'Drop item, select: ', cb = Game.dropActionNum }
+end
+
+function Game:actionThrow()
+	hud.grabInput(true)
+	self.ui.showInventoryMenu = true
+	self.ui.inventoryMenuDesc = { type = 'throw', title = 'Throw item, select: ', cb = Game.throwActionNum }
 end
 
 function Game:actionExamine()
@@ -678,6 +686,7 @@ function Game:keypressed(key)
 			, [GameAction.Escape] = Game.actionEscape
 			, [GameAction.Grab] = Game.actionGrab
 			, [GameAction.Drop] = Game.actionDrop
+			, [GameAction.Throw] = Game.actionThrow
 			, [GameAction.Examine] = Game.actionExamine
 
 			, [GameAction.Equip1] = Game.actionActivate
@@ -904,7 +913,7 @@ function Game:updateGameLogic(dt)
 				return
 			end
 			if GameLogicState.Skip_Process == self.gameLogicState then
-				console.log('[+] entity anim finished')
+				--console.log('[+] entity anim finished')
 				self.gameLogicState = GameLogicState.Normal
 			end
 
@@ -942,7 +951,7 @@ function Game:updateGameLogic(dt)
 			end
 
 			camera:update()
-			console.log('[+] camera anim finished')
+			--console.log('[+] camera anim finished')
 
 			self.gameLogicState = GameLogicState.Normal
 
@@ -958,7 +967,7 @@ end
 local tempDropAnimate
 function Game:doUpdate(dt)
 	hud.update(dt)
-	if self.ui.showDropMenu then
+	if self.ui.showInventoryMenu then
 		tempDropAnimate = tempDropAnimate + dt
 	end
 
@@ -1248,9 +1257,9 @@ function Game:itemActionThrow(item, itemIndex)
 	self:examineOn()
 end
 
-function Game:dropActionClose()
+function Game:inventoryMenuClose()
 	hud.grabInput(false)
-	self.ui.showDropMenu = nil
+	self.ui.showInventoryMenu = nil
 end
 
 function Game:dropActionNum(uiAction)
@@ -1265,8 +1274,24 @@ function Game:dropActionNum(uiAction)
 		if item then
 			self:dropItem(item)
 			if player.inventory:empty() then
-				self:dropActionClose()
+				self:inventoryMenuClose()
 			end
+		end
+	end
+end
+
+function Game:throwActionNum(uiAction)
+	if uiAction >= GameAction.Equip1 and uiAction <= GameAction.Equip3 then
+		-- TODO:
+		console.log('handle equipment throw')
+	end
+
+	if uiAction >= GameAction.Inventory1 and uiAction <= GameAction.Inventory6 then
+		local inventoryIndex = uiAction  - GameAction.Inventory1 + 1
+		local item = player.inventory:get(inventoryIndex)
+		if item then
+			self:inventoryMenuClose()
+			self:itemActionThrow(item, inventoryIndex)
 		end
 	end
 end
@@ -1315,7 +1340,7 @@ function Game:drawInterface()
 	local camLu = camera:lu()
 
 	-- dim map
-	if self.ui.itemActions or self.ui.showDropMenu then
+	if self.ui.itemActions or self.ui.showInventoryMenu then
 		love.graphics.setColor(0.25, 0.25, 0.25, 0.7)
 		graphics.rectangle('fill', 0, 0, Board_Size, Board_Size)
 	end
@@ -1335,7 +1360,7 @@ function Game:drawInterface()
 	local equipmentPosY = 260 + 20 + h + 50
 	local equipmentPadding = 0
 
-	if self.ui.showDropMenu then
+	if self.ui.showInventoryMenu then
 		local Size_X = 280
 		local headerHeight = hud.lineHeight() + 10
 		local additionalOptions = hud.lineHeight() + 8
@@ -1351,7 +1376,7 @@ function Game:drawInterface()
 		love.graphics.rectangle('fill', equipmentPosX - 1, equipmentPosY - 1, Size_X + 2, Size_Y + 2)
 
 		love.graphics.setColor(color.white)
-		hud.begin('Drop item, select: ', equipmentPosX, equipmentPosY)
+		hud.begin(self.ui.inventoryMenuDesc.title, equipmentPosX, equipmentPosY)
 
 		equipmentPosX = equipmentPosX + 10
 		equipmentPosY = equipmentPosY + headerHeight
@@ -1387,7 +1412,7 @@ function Game:drawInterface()
 	hud.drawMenu(260, menu)
 	hud.finish(260, equipmentPadding)
 
-	if self.ui.showDropMenu then
+	if self.ui.showInventoryMenu then
 		local menu = {
 			{ key = findKey(GameAction.Close_Modal), item = 'close window' }
 		}
@@ -1396,18 +1421,18 @@ function Game:drawInterface()
 		hud.finish(280)
 
 		local itemDispatcher = {
-			[GameAction.Close_Modal] = Game.dropActionClose
-			, [GameAction.Escape] = Game.dropActionClose
+			[GameAction.Close_Modal] = Game.inventoryMenuClose
+			, [GameAction.Escape] = Game.inventoryMenuClose
 
-			, [GameAction.Equip1] = Game.dropActionNum
-			, [GameAction.Equip2] = Game.dropActionNum
-			, [GameAction.Equip3] = Game.dropActionNum
-			, [GameAction.Inventory1] = Game.dropActionNum
-			, [GameAction.Inventory2] = Game.dropActionNum
-			, [GameAction.Inventory3] = Game.dropActionNum
-			, [GameAction.Inventory4] = Game.dropActionNum
-			, [GameAction.Inventory5] = Game.dropActionNum
-			, [GameAction.Inventory6] = Game.dropActionNum
+			, [GameAction.Equip1] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Equip2] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Equip3] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory1] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory2] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory3] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory4] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory5] = self.ui.inventoryMenuDesc.cb
+			, [GameAction.Inventory6] = self.ui.inventoryMenuDesc.cb
 		}
 
 		local action = hud.getAction()

@@ -8,6 +8,7 @@ local Entity = require 'engine.Entity'
 local Equipment = require 'engine.Equipment'
 local Inventory = require 'engine.Inventory'
 local soundManager = require 'engine.soundManager'
+local utils = require 'engine.utils'
 local map = require 'engine.map'
 
 -- class
@@ -88,6 +89,9 @@ end
 function Player:throw()
 	local desc = self.actionData
 	self.actionData = nil
+
+	local item = self.inventory:get(desc.itemIndex)
+	self.inventory:del(item)
 
 	self.doRecalc = true
 	return desc

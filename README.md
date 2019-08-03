@@ -130,3 +130,6 @@ I have some crude inventory / equipment management:
 Added some 'modals'.
 
 Working on throwing items, so I think I'm somewhere around part 9.
+
+Got throwing and movement animation
+
