@@ -244,7 +244,7 @@ function Game:ctor(rng)
 
 	Letters = prepareLetters('@iBCSTM[!')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2) + 10, map.height() - 49))
+	player = Player:new(Vec(f(map.width() / 2) - 5, map.height() - 45)) --- 39))
 	player.img = Letters['@']
 	player.class = classes.Player
 
@@ -814,7 +814,7 @@ local function executeActions(attribute, expectedAction, cb)
 	return ret
 end
 
-local Animation_Speed = 0.1
+local Animation_Speed = 0.05
 
 local AnimateToFinished = {
 	[GameLogicState.Animate] = GameLogicState.Skip_Process
@@ -979,65 +979,63 @@ function Game:update(dt)
 	end
 end
 
+local function loopMap(xa, ya, cb)
+	local tc = 2 * S.game.VIS_RADIUS + 1
+	for y = -1, tc do
+		if ya + y >= 0 and ya + y < map.height() then
+			local idx = (ya + y) * map.width() + xa - 1
+			for x = -1, tc do
+				if xa + x >= 0 and xa + x < map.width() then
+					cb(idx, x, y)
+				end
+				idx = idx + 1
+			end
+		end
+	end
+end
+
 local function drawItems(ent, camLu)
 	local scaleFactor = Tile_Size / Entity_Tile_Size
 	local ya = camLu.y
 	local xa = camLu.x
 
-	local tc = 2 * S.game.VIS_RADIUS + 1
-	for y = -1, tc do
-		if ya + y < 0 or ya + y > map.height() then
-			break
-		end
+	loopMap(xa, ya, function(locationId, x, y)
+		local items, itemCount = elements.getItems(locationId)
+		if itemCount > 0 then
+			local vismap = ent.vismap
+			if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
+				local firstItemIndex = getFirstItemIndex(items)
+				local c = items[firstItemIndex].desc.blueprint.color
+				love.graphics.setColor(c[1], c[2], c[3], c[4])
 
-		local locationId = (ya + y) * map.width() + xa
-		for x = -1, tc do
-			local items, itemCount = elements.getItems(locationId)
-			if itemCount > 0 then
-				local vismap = ent.vismap
-				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-					local firstItemIndex = getFirstItemIndex(items)
-					local c = items[firstItemIndex].desc.blueprint.color
-					love.graphics.setColor(c[1], c[2], c[3], c[4])
-
-					local itemImg = Letters[items[firstItemIndex].desc.blueprint.symbol]
-					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
-				end
+				local itemImg = Letters[items[firstItemIndex].desc.blueprint.symbol]
+				love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
 			end
-			locationId = locationId + 1
 		end
-	end
+	end)
 
 	-- description
 	if not cursorCell then
 		return
 	end
 
-	for y = -1, tc do
-		if ya + y < 0 or ya + y > map.height() then
-			break
-		end
-
-		local locationId = (ya + y) * map.width() + xa
-		for x = -1, tc do
-			local items, itemCount = elements.getItems(locationId)
-			if itemCount > 0 then
-				local vismap = ent.vismap
-				if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-					if cursorCell and Vec(x, y) == cursorCell then
-						love.graphics.setColor(0.9, 0.9, 0.9, 0.6)
-						love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 32)
-						love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-						local firstItemIndex = getFirstItemIndex(items)
-						love.graphics.printf(
-							items[firstItemIndex].desc.blueprint.name,
-							(cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
-					end
+	loopMap(xa, ya, function(locationId, x, y)
+		local items, itemCount = elements.getItems(locationId)
+		if itemCount > 0 then
+			local vismap = ent.vismap
+			if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
+				if cursorCell and Vec(x, y) == cursorCell then
+					love.graphics.setColor(0.9, 0.9, 0.9, 0.6)
+					love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 32)
+					love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
+					local firstItemIndex = getFirstItemIndex(items)
+					love.graphics.printf(
+						items[firstItemIndex].desc.blueprint.name,
+						(cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1)
 				end
 			end
-			locationId = locationId + 1
 		end
-	end
+	end)
 end
 
 local function drawWeaponDistanceOverlay(maxDistance)
@@ -1073,23 +1071,13 @@ local function drawGas(camLu)
 	local xa = camLu.x
 
 	local tc = 2 * S.game.VIS_RADIUS + 1
-	for y = -1, tc do
-		if ya + y < 0 or ya + y > map.height() then
-			break
+	loopMap(xa, ya, function(locationId, x, y)
+		local gases, count = elements.getGases(locationId)
+		if count > 0 then
+			love.graphics.setColor(color.lime)
+			love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
 		end
-
-		local locationId = (ya + y) * map.width() + xa
-		for x = -1, tc do
-			local gases, count = elements.getGases(locationId)
-			if count > 0 then
-				love.graphics.setColor(color.lime)
-				love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
-			end
-
-			locationId = locationId + 1
-		end
-	end
-
+	end)
 end
 
 local function drawEntityPath(ent, camLu)
@@ -1542,10 +1530,12 @@ function Game:show()
 	local camLu = camera:lu()
 	love.graphics.print("radius: "..S.game.VIS_RADIUS, S.resolution.x - 200 - 10, 30)
 	love.graphics.print("player: " .. player.pos.x .. "," .. player.pos.y, S.resolution.x - 200 - 10, 50)
-	love.graphics.print("camera: " .. cameraIdx, S.resolution.x - 200 - 10, 70)
+	love.graphics.print("camera: " .. cameraIdx .. tostring(camera:lu()), S.resolution.x - 200 - 10, 70)
+	love.graphics.print("camera: " .. tostring(cameraAnimationOffset), S.resolution.x - 200 - 10, 90)
+
 	if cursorCell then
 		local mapCoords = camLu + cursorCell
-		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 90)
+		love.graphics.print("mouse: " .. tostring(mapCoords), S.resolution.x - 200 - 10, 110)
 	end
 
 	local uiElements = '{ '
@@ -1556,28 +1546,44 @@ function Game:show()
 	end
 	uiElements = uiElements .. '}'
 
-	love.graphics.print("self.ui: " .. uiElements, S.resolution.x - 200 - 10, 110)
+	love.graphics.print("self.ui: " .. uiElements, S.resolution.x - 200 - 10, 130)
 
 	-- draw map
 
 	love.graphics.setCanvas(self.canvasMap)
 	love.graphics.clear()
+
 	love.graphics.push()
-	love.graphics.translate(31, 31)
+	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
 
-	batch.draw()
+		love.graphics.setColor(color.white)
+		batch.draw()
 
-	drawItems(camera.followedEnt, camLu)
+		drawItems(camera.followedEnt, camLu)
 
-	drawEntities(camLu)
+		drawEntities(camLu)
+
+	love.graphics.pop()
 
 	fog:render(function()
 		blur:render(function()
+			love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
 			drawGas(camLu)
+			love.graphics.translate(-Tile_Size_Adj, -Tile_Size_Adj)
 		end)
 	end)
 
+	love.graphics.push()
+	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
+		drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
+
+		if cursorCell then
+			love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
+			love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
+		end
 	love.graphics.pop()
+	love.graphics.setColor(color.white)
+
 	love.graphics.setCanvas()
 	local b = love.graphics.getBlendMode()
 	love.graphics.setBlendMode('alpha', 'premultiplied')
@@ -1593,13 +1599,6 @@ function Game:show()
 
 	love.graphics.draw(self.canvasMap, off, 0, 0)
 	love.graphics.setBlendMode(b)
-
-	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
-
-	if cursorCell then
-		love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-		love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
-	end
 
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(messages.popups.getCanvas())

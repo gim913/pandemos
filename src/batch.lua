@@ -48,47 +48,48 @@ local function batch_prepare()
 	batchData = love.graphics.newSpriteBatch(tilesetImage, (tilesCount.x + 2) * (tilesCount.y + 2) * 2)
 end
 
-local function batch_update(ent, cam)
-	local cx, cy = cam.x, cam.y
-	local scale = tileSize / Tile_Real_Size
-	batchData:clear()
-
-	local xa = cx
-	local ya = cy
-	--print("==========" .. tostring(cam))
-
-	batchData:setColor(1.0, 1.0, 1.0)
-
+local function loopMap(xa, ya, cb)
 	for y = -1, tilesCount.y do
-		-- this might happen when zooming out
-		if ya + y < 0 or ya + y > map.height() then
-			break
-		end
-
-		-- relative
-		local idx = (ya + y) * map.width() + xa
-		for x = -1, tilesCount.x do
-			if not debug.disableVismap then
-				local vismap = ent.vismap
-				if vismap[idx] and vismap[idx] > 0 then
-					batchData:setColor(1.0, 1.0, 1.0)
-				elseif map.isKnown(idx) then
-					batchData:setColor(0.5, 0.5, 0.5)
-				else
-					batchData:setColor(0, 0, 0)
+		if ya + y >= 0 and ya + y < map.height() then
+			local idx = (ya + y) * map.width() + xa - 1
+			for x = -1, tilesCount.x do
+				if xa + x >= 0 and xa + x < map.width() then
+					cb(idx, x, y)
 				end
+				idx = idx + 1
 			end
-
-			batchData:add(tileQuads[map.getTileId(xa + x, ya + y)], x * (tileSize + tileBorder), y * (tileSize + tileBorder), 0, scale, scale)
-
-			-- mind that these is accessing ONLY elements that are visible
-			local e = elements.getTileId(idx)
-			if e ~= nil then
-				batchData:add(tileQuads[e], x * (tileSize + tileBorder), y * (tileSize + tileBorder), 0, scale, scale)
-			end
-			idx = idx + 1
 		end
 	end
+end
+
+local function batch_update(ent, cam)
+	local xa, ya = cam.x, cam.y
+	local scale = tileSize / Tile_Real_Size
+	local tileSizeAdj = tileSize + tileBorder
+	batchData:clear()
+
+	batchData:setColor(1.0, 1.0, 1.0)
+	loopMap(xa, ya, function(idx, x, y)
+		if not debug.disableVismap then
+			local vismap = ent.vismap
+			if vismap[idx] and vismap[idx] > 0 then
+				batchData:setColor(1.0, 1.0, 1.0)
+			elseif map.isKnown(idx) then
+				batchData:setColor(0.5, 0.5, 0.5)
+			else
+				batchData:setColor(0, 0, 0)
+			end
+		end
+
+		--print('drawing tile ' .. (xa + x) ..",".. (ya + y) .. " at pos " .. x .. ",".. y)
+		batchData:add(tileQuads[map.getTileId(xa + x, ya + y)], x * tileSizeAdj, y * tileSizeAdj, 0, scale, scale)
+
+		-- mind that these is accessing ONLY elements that are visible
+		local e = elements.getTileId(idx)
+		if e ~= nil then
+			batchData:add(tileQuads[e], x * tileSizeAdj, y * tileSizeAdj, 0, scale, scale)
+		end
+	end)
 end
 
 local function batch_draw()
