@@ -1,6 +1,7 @@
 return {
 	resolution = { x = 1440, y=900 }
 	, vsync = false
+	, disable_animation = false
 
 	-- not meant to be modified
 	, game = {

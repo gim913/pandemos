@@ -45,28 +45,29 @@ local function batch_prepare()
 	end
 
 	-- * 2 cause we need to include elements and maybe later some other stuff
-	batchData = love.graphics.newSpriteBatch(tilesetImage, tilesCount.x * tilesCount.y * 2)
+	batchData = love.graphics.newSpriteBatch(tilesetImage, (tilesCount.x + 2) * (tilesCount.y + 2) * 2)
 end
 
-local function batch_update(ent, cx, cy)
+local function batch_update(ent, cam)
+	local cx, cy = cam.x, cam.y
 	local scale = tileSize / Tile_Real_Size
 	batchData:clear()
 
 	local xa = cx
 	local ya = cy
-	--print("==========" .. xa .. " / " .. ya)
+	--print("==========" .. tostring(cam))
 
 	batchData:setColor(1.0, 1.0, 1.0)
 
-	for y=0, tilesCount.y - 1 do
+	for y = -1, tilesCount.y do
 		-- this might happen when zooming out
-		if ya + y > map.height() then
+		if ya + y < 0 or ya + y > map.height() then
 			break
 		end
 
 		-- relative
 		local idx = (ya + y) * map.width() + xa
-		for x=0, tilesCount.x - 1 do
+		for x = -1, tilesCount.x do
 			if not debug.disableVismap then
 				local vismap = ent.vismap
 				if vismap[idx] and vismap[idx] > 0 then

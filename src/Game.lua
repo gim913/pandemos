@@ -106,9 +106,11 @@ local function processEntitiesFov()
 	updateMinimap()
 end
 
+local cameraAnimationOffset = Vec.zero
+
 local function updateTiles()
 	local camLu = camera:lu()
-	batch.update(camera.followedEnt, camLu.x, camLu.y)
+	batch.update(camera.followedEnt, camLu)
 end
 
 local Entity_Tile_Size = 64
@@ -186,6 +188,24 @@ local classes = {
 	Infected = 2
 }
 
+local GameLogicState = {
+	Normal = 1
+	, Animate = 2
+	, Skip_Process = 3
+	, Animate_Camera = 4
+	, After_Camera = 5
+}
+
+-- semi constants
+local Tile_Size = 30
+local Tile_Border = 1
+local Tile_Size_Adj = Tile_Size + Tile_Border
+
+function Game:createMapCanvas()
+	local vis = 2 * S.game.VIS_RADIUS + 3
+	self.canvasMap = love.graphics.newCanvas(Tile_Size_Adj * vis, Tile_Size_Adj * vis)
+end
+
 local Letters
 local fog
 local blur
@@ -200,9 +220,12 @@ function Game:ctor(rng)
 		addLevel(self.levels, self.rng, depth)
 	end
 
+	self:createMapCanvas()
 	self.depthLevel = 1
 	self.updateLevel = false
 	self.doActions = false
+	self.gameLogicState = GameLogicState.Normal
+
 	self.ui = {}
 	-- self.ui.showGrabMenu
 	-- self.ui.showDropMenu
@@ -265,19 +288,6 @@ function Game:ctor(rng)
 	fog = shaders.fog()
 	blur = shaders.blur()
 end
-
--- semi constants
-local Tile_Size = 30
-local Tile_Border = 1
-local Tile_Size_Adj = Tile_Size + Tile_Border
-
-
--- function love.textinput(t)
---     imgui.TextInput(t)
---     if not imgui.GetWantCaptureKeyboard() then
---         -- Pass event to the game
---     end
--- end
 
 local cursorCell = nil
 
@@ -709,30 +719,6 @@ function Game:startLevel()
 end
 
 local updateTilesAfterAction = false
--- returns true when there was any move
--- will require some recalculations later
-local function executeActions(attribute, expectedAction, cb)
-	local ret = false
-	for _,e in pairs(entities.with(attribute)) do
-		if e.actionState == expectedAction then
-			-- break execution
-			if not cb(e) then
-				return
-			end
-			e.actionState = action.Action.Idle
-
-			-- fire up ai to queue next action item
-			e:analyze(player)
-
-			if camera:isFollowing(e) then
-				updateTilesAfterAction = true
-			end
-
-			ret = true
-		end
-	end
-	return ret
-end
 
 local function processAi()
 	local ret = false
@@ -803,6 +789,58 @@ function Game:throw(desc)
 	makeGas(main - Vec(0, 1))
 end
 
+-- returns true when there was any move
+-- will require some recalculations later
+local function executeActions(attribute, expectedAction, cb)
+	local ret = false
+	for _,e in pairs(entities.with(attribute)) do
+		if e.actionState == expectedAction then
+			-- break execution
+			if not cb(e) then
+				return
+			end
+			e.actionState = action.Action.Idle
+
+			-- fire up ai to queue next action item
+			e:analyze(player)
+
+			if camera:isFollowing(e) then
+				updateTilesAfterAction = true
+			end
+
+			ret = true
+		end
+	end
+	return ret
+end
+
+local Animation_Speed = 0.1
+
+local AnimateToFinished = {
+	[GameLogicState.Animate] = GameLogicState.Skip_Process
+	, [GameLogicState.Animate_Camera] = GameLogicState.After_Camera
+}
+function Game:updateAnimation(dt)
+	self.animateDt = self.animateDt + dt
+	if self.animateDt > Animation_Speed then
+		self.gameLogicState = AnimateToFinished[self.gameLogicState]
+		return
+	end
+
+	if GameLogicState.Animate == self.gameLogicState then
+		if action.Action.Move == self.animateAction then
+			local ent = self.animateEntity
+			local direction = ent.actionData - ent.pos
+			ent.anim = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
+		end
+	else
+		local prevCamera = self.animateEntity
+		local direction = prevCamera:lu() - camera:lu()
+		cameraAnimationOffset = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
+		updateTiles()
+	end
+end
+
 local initializeAi = true
 
 local shaderDt = 0
@@ -823,37 +861,90 @@ function Game:updateGameLogic(dt)
 	end
 
 	-- 'execute' planned path
-	if #(player.actions) == 0 then
-		self.doActions = pathPlayerMovement()
+	if GameLogicState.Normal == self.gameLogicState then
+		if #(player.actions) == 0 then
+			self.doActions = pathPlayerMovement()
+		end
 	end
 
 	-- not yet sure if it should be here
 	messages.update(dt, camera:lu(), Tile_Size_Adj)
 
-	if self.doActions then
-		self.doActions = entities.processActions(player)
-		local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
-			e:move()
-			return true
-		end)
-		executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
-			e:attack()
-			return true
-		end)
-		executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
-			local desc = e:throw()
-			self:throw(desc)
-			return true
-		end)
+	if GameLogicState.Animate == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
+		self:updateAnimation(dt)
+		return
+	end
 
-		elements.process()
+	if self.doActions then
+		if GameLogicState.After_Camera ~=  self.gameLogicState then
+			-- reset
+			if GameLogicState.Skip_Process ~= self.gameLogicState then
+				self.doActions = entities.processActions(player)
+			end
+
+			local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
+				if e == self.animateEntity then
+					self.animateEntity.anim = Vec.zero
+					self.animateEntity = nil
+				else
+					if not S.disable_animation and (player == e or player.seemap[e]) then
+						self.gameLogicState = GameLogicState.Animate
+						self.animateAction = action.Action.Move
+						self.animateEntity = e
+						self.animateDt = 0
+						self.doActions = true
+						return false
+					end
+				end
+
+				e:move()
+				return true
+			end)
+			if GameLogicState.Animate == self.gameLogicState then
+				return
+			end
+			if GameLogicState.Skip_Process == self.gameLogicState then
+				console.log('[+] entity anim finished')
+				self.gameLogicState = GameLogicState.Normal
+			end
+
+			executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
+				e:attack()
+				return true
+			end)
+			executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
+				local desc = e:throw()
+				self:throw(desc)
+				return true
+			end)
+
+			elements.process()
+		end
 
 		-- if movementDone then
 		-- 	elements.refresh()
 		-- end
 
 		if updateTilesAfterAction then
+			local prevCamera = camera:clone()
+			if GameLogicState.After_Camera ~= self.gameLogicState then
+				prevCamera:update()
+				if prevCamera:lu() ~= camera:lu() then
+					self.gameLogicState = GameLogicState.Animate_Camera
+					self.animateAction = action.Action.Invalid
+					self.animateEntity = prevCamera
+					self.animateDt = 0
+					self.doActions = true
+					return
+				end
+			else
+				cameraAnimationOffset = Vec.zero
+			end
+
 			camera:update()
+			console.log('[+] camera anim finished')
+
+			self.gameLogicState = GameLogicState.Normal
 
 			-- TODO: probably wrong location
 			processEntitiesFov()
@@ -894,13 +985,13 @@ local function drawItems(ent, camLu)
 	local xa = camLu.x
 
 	local tc = 2 * S.game.VIS_RADIUS + 1
-	for y = 0, tc - 1 do
-		if ya + y > map.height() then
+	for y = -1, tc do
+		if ya + y < 0 or ya + y > map.height() then
 			break
 		end
 
 		local locationId = (ya + y) * map.width() + xa
-		for x = 0, tc - 1 do
+		for x = -1, tc do
 			local items, itemCount = elements.getItems(locationId)
 			if itemCount > 0 then
 				local vismap = ent.vismap
@@ -922,13 +1013,13 @@ local function drawItems(ent, camLu)
 		return
 	end
 
-	for y = 0, tc - 1 do
-		if ya + y > map.height() then
+	for y = -1, tc do
+		if ya + y < 0 or ya + y > map.height() then
 			break
 		end
 
 		local locationId = (ya + y) * map.width() + xa
-		for x = 0, tc - 1 do
+		for x = -1, tc do
 			local items, itemCount = elements.getItems(locationId)
 			if itemCount > 0 then
 				local vismap = ent.vismap
@@ -982,13 +1073,13 @@ local function drawGas(camLu)
 	local xa = camLu.x
 
 	local tc = 2 * S.game.VIS_RADIUS + 1
-	for y = 0, tc - 1 do
-		if ya + y > map.height() then
+	for y = -1, tc do
+		if ya + y < 0 or ya + y > map.height() then
 			break
 		end
 
 		local locationId = (ya + y) * map.width() + xa
-		for x = 0, tc - 1 do
+		for x = -1, tc do
 			local gases, count = elements.getGases(locationId)
 			if count > 0 then
 				love.graphics.setColor(color.lime)
@@ -1045,8 +1136,9 @@ local function drawEntities(camLu)
 		end
 
 		-- drawEntity
+		-- this won't work nicely with animation, but since entity will show up after seemap update, I will ignore it
 		if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
-			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj + ent.anim.x, relPos.y * Tile_Size_Adj + ent.anim.y, 0, scaleFactor, scaleFactor)
 
 			-- show entity name on hover -- TODO: remove
 			if cursorCell and relPos == cursorCell then
@@ -1468,11 +1560,15 @@ function Game:show()
 
 	-- draw map
 
+	love.graphics.setCanvas(self.canvasMap)
+	love.graphics.clear()
+	love.graphics.push()
+	love.graphics.translate(31, 31)
+
 	batch.draw()
 
 	drawItems(camera.followedEnt, camLu)
 
-	-- ^^
 	drawEntities(camLu)
 
 	fog:render(function()
@@ -1480,6 +1576,23 @@ function Game:show()
 			drawGas(camLu)
 		end)
 	end)
+
+	love.graphics.pop()
+	love.graphics.setCanvas()
+	local b = love.graphics.getBlendMode()
+	love.graphics.setBlendMode('alpha', 'premultiplied')
+
+	local vis = 2 * S.game.VIS_RADIUS + 1
+	local off = love.graphics.newQuad(
+		Tile_Size_Adj + cameraAnimationOffset.x,
+		Tile_Size_Adj + cameraAnimationOffset.y,
+		Tile_Size_Adj * vis,
+		Tile_Size_Adj * vis,
+		self.canvasMap:getWidth(),
+		self.canvasMap:getHeight())
+
+	love.graphics.draw(self.canvasMap, off, 0, 0)
+	love.graphics.setBlendMode(b)
 
 	drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
 

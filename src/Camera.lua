@@ -16,6 +16,14 @@ function Camera:ctor()
 	self.followedEnt = {}
 end
 
+function Camera:clone()
+	local copy = Camera:new()
+	copy.pos = self.pos:clone()
+	copy.rel = self.rel:clone()
+	copy.followedEnt = self.followedEnt
+	return copy
+end
+
 function Camera:lu()
 	return self.pos - self.rel
 end
@@ -86,7 +94,7 @@ function Camera:update()
 		end
 	end
 	self.pos = e.pos:clone()
-	--print("> REL AND camera POS" .. self.rel.x .. "," .. self.rel.y .. " ; " .. self.pos.x .. "," .. self.pos.y)
+	--print("> [lu, pos, rel] " .. tostring(self:lu()) .. tostring(self.pos) .. tostring(self.rel))
 end
 
 return Camera
