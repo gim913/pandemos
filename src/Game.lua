@@ -223,7 +223,7 @@ function Game:ctor(rng)
 	self:createMapCanvas()
 	self.depthLevel = 1
 	self.updateLevel = false
-	self.doActions = false
+	self.processActionQueue = false
 	self.gameLogicState = GameLogicState.Normal
 
 	self.ui = {}
@@ -584,7 +584,25 @@ function Game:actionMovement(uiAction)
 	if #(player.actions) == 0 and not player.follow_path then
 		-- if move and move or attack allowed
 		if moveVec and playerMoveAction(moveVec) then
-			self.doActions = true
+			self.processActionQueue = true
+		end
+	end
+end
+
+function Game:actionPathMovement()
+	if player.astar_path and player.follow_path and player.follow_path > 0 then
+		local moveVec = player.astar_path[player.follow_path] - player.pos
+		local ret, nextAction = playerMoveAction(moveVec)
+		if ret then
+			self.processActionQueue = true
+
+			if action.Action.Move == nextAction then
+				player.follow_path = player.follow_path + 1
+				if player.follow_path > #player.astar_path then
+					player.follow_path = nil
+					player.astar_path = nil
+				end
+			end
 		end
 	end
 end
@@ -742,26 +760,6 @@ local function processAi()
 	return ret
 end
 
-local function pathPlayerMovement()
-	local ret = false
-
-	if player.astar_path and player.follow_path and player.follow_path > 0 then
-		local moveVec = player.astar_path[player.follow_path] - player.pos
-		local nextAction
-
-		ret, nextAction = playerMoveAction(moveVec)
-		if ret and action.Action.Move == nextAction then
-			player.follow_path = player.follow_path + 1
-			if player.follow_path > #player.astar_path then
-				player.follow_path = nil
-				player.astar_path = nil
-			end
-		end
-	end
-
-	return ret
-end
-
 function Game:doUpdateLevel(dt)
 	local level = self.levels[self.depthLevel]
 	self.updateLevel = level:update(dt)
@@ -869,26 +867,27 @@ function Game:updateGameLogic(dt)
 		initializeAi = false
 	end
 
+	-- not yet sure if it should be here
+	messages.update(dt, camera:lu(), Tile_Size_Adj)
+
 	-- 'execute' planned path
 	if GameLogicState.Normal == self.gameLogicState then
 		if #(player.actions) == 0 then
-			self.doActions = pathPlayerMovement()
+			self.processActionQueue = false
+			self:actionPathMovement()
 		end
 	end
-
-	-- not yet sure if it should be here
-	messages.update(dt, camera:lu(), Tile_Size_Adj)
 
 	if GameLogicState.Animate == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
 		self:updateAnimation(dt)
 		return
 	end
 
-	if self.doActions then
+	if self.processActionQueue then
 		if GameLogicState.After_Camera ~=  self.gameLogicState then
 			-- reset
 			if GameLogicState.Skip_Process ~= self.gameLogicState then
-				self.doActions = entities.processActions(player)
+				self.processActionQueue = entities.processActions(player)
 			end
 
 			local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
@@ -901,7 +900,7 @@ function Game:updateGameLogic(dt)
 						self.animateAction = action.Action.Move
 						self.animateEntity = e
 						self.animateDt = 0
-						self.doActions = true
+						self.processActionQueue = true
 						return false
 					end
 				end
@@ -943,7 +942,7 @@ function Game:updateGameLogic(dt)
 					self.animateAction = action.Action.Invalid
 					self.animateEntity = prevCamera
 					self.animateDt = 0
-					self.doActions = true
+					self.processActionQueue = true
 					return
 				end
 			else
@@ -1244,7 +1243,7 @@ end
 local function playerThrowOnEnter(gameSelf, destPos, itemIndex)
 	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, { destPos = destPos, itemIndex = itemIndex })
 
-	gameSelf.doActions = true
+	gameSelf.processActionQueue = true
 	gameSelf:examineOff()
 end
 
