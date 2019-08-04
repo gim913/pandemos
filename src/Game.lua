@@ -848,8 +848,86 @@ function Game:updateAnimation(dt)
 	end
 end
 
-local initializeAi = true
+function Game:updateGameLogic_updateTiles()
+	if updateTilesAfterAction then
+		local prevCamera = camera:clone()
+		if GameLogicState.After_Camera ~= self.gameLogicState then
+			prevCamera:update()
+			if prevCamera:lu() ~= camera:lu() then
+				self.gameLogicState = GameLogicState.Animate_Camera
+				self.animateAction = action.Action.Invalid
+				self.animateEntity = prevCamera
+				self.animateDt = 0
+				self.processActionQueue = true
+				return
+			end
+		else
+			cameraAnimationOffset = Vec.zero
+		end
 
+		camera:update()
+		--console.log('[+] camera anim finished')
+
+		self.gameLogicState = GameLogicState.Normal
+
+		-- TODO: probably wrong location
+		processEntitiesFov()
+
+		updateTiles()
+		updateTilesAfterAction = false
+	end
+end
+
+function Game:updateGameLogic_actionQueue()
+	-- reset
+	if GameLogicState.Skip_Process ~= self.gameLogicState then
+		self.processActionQueue = entities.processActions(player)
+	end
+
+	local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
+		if e == self.animateEntity then
+			self.animateEntity.anim = Vec.zero
+			self.animateEntity = nil
+		else
+			if not S.disable_animation and (player == e or player.seemap[e]) then
+				self.gameLogicState = GameLogicState.Animate
+				self.animateAction = action.Action.Move
+				self.animateEntity = e
+				self.animateDt = 0
+				self.processActionQueue = true
+				return false
+			end
+		end
+
+		e:move()
+		return true
+	end)
+	if GameLogicState.Animate == self.gameLogicState then
+		return
+	end
+	if GameLogicState.Skip_Process == self.gameLogicState then
+		--console.log('[+] entity anim finished')
+		self.gameLogicState = GameLogicState.Normal
+	end
+
+	executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
+		e:attack()
+		return true
+	end)
+	executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
+		local desc = e:throw()
+		self:throw(desc)
+		return true
+	end)
+
+	elements.process()
+
+	-- if movementDone then
+	-- 	elements.refresh()
+	-- end
+end
+
+local initializeAi = true
 local shaderDt = 0
 local shaderTotalDt = 0
 function Game:updateGameLogic(dt)
@@ -884,81 +962,11 @@ function Game:updateGameLogic(dt)
 	end
 
 	if self.processActionQueue then
-		if GameLogicState.After_Camera ~=  self.gameLogicState then
-			-- reset
-			if GameLogicState.Skip_Process ~= self.gameLogicState then
-				self.processActionQueue = entities.processActions(player)
-			end
-
-			local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
-				if e == self.animateEntity then
-					self.animateEntity.anim = Vec.zero
-					self.animateEntity = nil
-				else
-					if not S.disable_animation and (player == e or player.seemap[e]) then
-						self.gameLogicState = GameLogicState.Animate
-						self.animateAction = action.Action.Move
-						self.animateEntity = e
-						self.animateDt = 0
-						self.processActionQueue = true
-						return false
-					end
-				end
-
-				e:move()
-				return true
-			end)
-			if GameLogicState.Animate == self.gameLogicState then
-				return
-			end
-			if GameLogicState.Skip_Process == self.gameLogicState then
-				--console.log('[+] entity anim finished')
-				self.gameLogicState = GameLogicState.Normal
-			end
-
-			executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
-				e:attack()
-				return true
-			end)
-			executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
-				local desc = e:throw()
-				self:throw(desc)
-				return true
-			end)
-
-			elements.process()
-		end
-
-		-- if movementDone then
-		-- 	elements.refresh()
-		-- end
-
-		if updateTilesAfterAction then
-			local prevCamera = camera:clone()
-			if GameLogicState.After_Camera ~= self.gameLogicState then
-				prevCamera:update()
-				if prevCamera:lu() ~= camera:lu() then
-					self.gameLogicState = GameLogicState.Animate_Camera
-					self.animateAction = action.Action.Invalid
-					self.animateEntity = prevCamera
-					self.animateDt = 0
-					self.processActionQueue = true
-					return
-				end
-			else
-				cameraAnimationOffset = Vec.zero
-			end
-
-			camera:update()
-			--console.log('[+] camera anim finished')
-
-			self.gameLogicState = GameLogicState.Normal
-
-			-- TODO: probably wrong location
-			processEntitiesFov()
-
-			updateTiles()
-			updateTilesAfterAction = false
+		if GameLogicState.After_Camera == self.gameLogicState then
+			self:updateGameLogic_updateTiles()
+		else
+			self:updateGameLogic_actionQueue()
+			self:updateGameLogic_updateTiles()
 		end
 	end
 end
