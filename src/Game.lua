@@ -190,10 +190,10 @@ local classes = {
 
 local GameLogicState = {
 	Normal = 1
-	, Animate = 2
-	, Skip_Process = 3
+	, Animate_Action = 2
+	, Action_Animation_Finished = 3
 	, Animate_Camera = 4
-	, After_Camera = 5
+	, Camera_Animation_Finished = 5
 }
 
 -- semi constants
@@ -824,8 +824,8 @@ end
 local Animation_Speed = 0.05
 
 local AnimateToFinished = {
-	[GameLogicState.Animate] = GameLogicState.Skip_Process
-	, [GameLogicState.Animate_Camera] = GameLogicState.After_Camera
+	[GameLogicState.Animate_Action] = GameLogicState.Action_Animation_Finished
+	, [GameLogicState.Animate_Camera] = GameLogicState.Camera_Animation_Finished
 }
 function Game:updateAnimation(dt)
 	self.animateDt = self.animateDt + dt
@@ -834,7 +834,7 @@ function Game:updateAnimation(dt)
 		return
 	end
 
-	if GameLogicState.Animate == self.gameLogicState then
+	if GameLogicState.Animate_Action == self.gameLogicState then
 		if action.Action.Move == self.animateAction then
 			local ent = self.animateEntity
 			local direction = ent.actionData - ent.pos
@@ -851,7 +851,7 @@ end
 function Game:updateGameLogic_updateTiles()
 	if updateTilesAfterAction then
 		local prevCamera = camera:clone()
-		if GameLogicState.After_Camera ~= self.gameLogicState then
+		if GameLogicState.Camera_Animation_Finished ~= self.gameLogicState then
 			prevCamera:update()
 			if prevCamera:lu() ~= camera:lu() then
 				self.gameLogicState = GameLogicState.Animate_Camera
@@ -880,7 +880,7 @@ end
 
 function Game:updateGameLogic_actionQueue()
 	-- reset
-	if GameLogicState.Skip_Process ~= self.gameLogicState then
+	if GameLogicState.Action_Animation_Finished ~= self.gameLogicState then
 		self.processActionQueue = entities.processActions(player)
 	end
 
@@ -890,7 +890,7 @@ function Game:updateGameLogic_actionQueue()
 			self.animateEntity = nil
 		else
 			if not S.disable_animation and (player == e or player.seemap[e]) then
-				self.gameLogicState = GameLogicState.Animate
+				self.gameLogicState = GameLogicState.Animate_Action
 				self.animateAction = action.Action.Move
 				self.animateEntity = e
 				self.animateDt = 0
@@ -902,10 +902,10 @@ function Game:updateGameLogic_actionQueue()
 		e:move()
 		return true
 	end)
-	if GameLogicState.Animate == self.gameLogicState then
+	if GameLogicState.Animate_Action == self.gameLogicState then
 		return
 	end
-	if GameLogicState.Skip_Process == self.gameLogicState then
+	if GameLogicState.Action_Animation_Finished == self.gameLogicState then
 		--console.log('[+] entity anim finished')
 		self.gameLogicState = GameLogicState.Normal
 	end
@@ -956,13 +956,13 @@ function Game:updateGameLogic(dt)
 		end
 	end
 
-	if GameLogicState.Animate == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
-		self:updateAnimation(dt)
-		return
-	end
-
 	if self.processActionQueue then
-		if GameLogicState.After_Camera == self.gameLogicState then
+		if GameLogicState.Animate_Action == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
+			self:updateAnimation(dt)
+			return
+		end
+
+		if GameLogicState.Camera_Animation_Finished == self.gameLogicState then
 			self:updateGameLogic_updateTiles()
 		else
 			self:updateGameLogic_actionQueue()
