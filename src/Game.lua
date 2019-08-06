@@ -811,7 +811,11 @@ local function executeActions(attribute, expectedAction, cb)
 			-- fire up ai to queue next action item
 			e:analyze(player)
 
-			if camera:isFollowing(e) then
+			-- player moved or visible enemy moved
+			-- TODO: updateTilesAfterAction probably shouln nod be set when
+			-- there was action of visible entity, but in this case gameLogicState
+			-- should change and processEntitiesFov() should be done...
+			if camera:isFollowing(e) or player.seemap[e] then
 				updateTilesAfterAction = true
 			end
 
@@ -821,7 +825,7 @@ local function executeActions(attribute, expectedAction, cb)
 	return ret
 end
 
-local Animation_Speed = 0.05
+local Animation_Speed = 0.04
 
 local AnimateToFinished = {
 	[GameLogicState.Animate_Action] = GameLogicState.Action_Animation_Finished
@@ -867,7 +871,6 @@ function Game:updateGameLogic_updateTiles()
 
 		camera:update()
 		--console.log('[+] camera anim finished')
-
 		self.gameLogicState = GameLogicState.Normal
 
 		-- TODO: probably wrong location
@@ -880,10 +883,6 @@ end
 
 function Game:updateGameLogic_actionQueue()
 	-- reset
-	if GameLogicState.Action_Animation_Finished ~= self.gameLogicState then
-		self.processActionQueue = entities.processActions(player)
-	end
-
 	local movementDone = executeActions(entities.Attr.Has_Move, action.Action.Move, function(e)
 		if e == self.animateEntity then
 			self.animateEntity.anim = Vec.zero
@@ -904,10 +903,6 @@ function Game:updateGameLogic_actionQueue()
 	end)
 	if GameLogicState.Animate_Action == self.gameLogicState then
 		return
-	end
-	if GameLogicState.Action_Animation_Finished == self.gameLogicState then
-		--console.log('[+] entity anim finished')
-		self.gameLogicState = GameLogicState.Normal
 	end
 
 	executeActions(entities.Attr.Has_Attack, action.Action.Attack, function(e)
@@ -951,21 +946,36 @@ function Game:updateGameLogic(dt)
 	-- 'execute' planned path
 	if GameLogicState.Normal == self.gameLogicState then
 		if #(player.actions) == 0 then
-			self.processActionQueue = false
+			self.processActionQueue = false -- !!!
 			self:actionPathMovement()
 		end
 	end
 
 	if self.processActionQueue then
+		--console.log('state: ' .. self.gameLogicState)
 		if GameLogicState.Animate_Action == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
 			self:updateAnimation(dt)
 			return
 		end
 
-		if GameLogicState.Camera_Animation_Finished == self.gameLogicState then
-			self:updateGameLogic_updateTiles()
-		else
+		if GameLogicState.Normal == self.gameLogicState then
+			self.processActionQueue = entities.processActions(player)
 			self:updateGameLogic_actionQueue()
+			if GameLogicState.Animate_Action == self.gameLogicState then
+				return
+			end
+			self:updateGameLogic_updateTiles()
+
+		elseif GameLogicState.Action_Animation_Finished == self.gameLogicState then
+			--console.log('GameLogicState.Action_Animation_Finished')
+			self:updateGameLogic_actionQueue()
+			if GameLogicState.Animate_Action == self.gameLogicState then
+				return
+			end
+			--console.log('update? ' .. tostring(updateTilesAfterAction))
+			self:updateGameLogic_updateTiles()
+
+		elseif GameLogicState.Camera_Animation_Finished == self.gameLogicState then
 			self:updateGameLogic_updateTiles()
 		end
 	end
