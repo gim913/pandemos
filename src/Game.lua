@@ -925,6 +925,7 @@ end
 local initializeAi = true
 local shaderDt = 0
 local shaderTotalDt = 0
+
 function Game:updateGameLogic(dt)
 	shaderDt = shaderDt + dt
 	shaderTotalDt = shaderTotalDt + dt
@@ -959,15 +960,26 @@ function Game:updateGameLogic(dt)
 		end
 
 		if GameLogicState.Normal == self.gameLogicState then
-			self.processActionQueue = entities.processActions(player)
-			self:updateGameLogic_actionQueue()
-			if GameLogicState.Animate_Action == self.gameLogicState then
-				return
+
+			local loopCount = 0
+			while true do
+				self.processActionQueue = entities.processActions(player)
+				self:updateGameLogic_actionQueue()
+				loopCount = loopCount + 1
+
+				if GameLogicState.Animate_Action == self.gameLogicState then
+					--console.log('loops done ' .. loopCount .. ' break caused by ' .. tostring(self.animateEntity))
+					return
+				end
+
+				if not self.processActionQueue then
+					break
+				end
 			end
+
 			self:updateGameLogic_updateTiles()
 
 		elseif GameLogicState.Action_Animation_Finished == self.gameLogicState then
-			--console.log('GameLogicState.Action_Animation_Finished')
 			self:updateGameLogic_actionQueue()
 			if GameLogicState.Animate_Action == self.gameLogicState then
 				return
