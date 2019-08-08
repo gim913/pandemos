@@ -889,6 +889,9 @@ function Game:updateGameLogic_actionQueue()
 			self.animateEntity = nil
 		else
 			if not S.disable_animation and (player == e or player.seemap[e]) then
+
+				e:sound(action.Action.Move)
+
 				self.gameLogicState = GameLogicState.Animate_Action
 				self.animateAction = action.Action.Move
 				self.animateEntity = e

@@ -9,6 +9,7 @@ local elements = require 'engine.elements'
 local entities = require 'engine.entities'
 local los = require 'engine.los'
 local map = require 'engine.map'
+local soundManager = require 'engine.soundManager'
 
 local Vec = require 'hump.vector'
 
@@ -45,6 +46,16 @@ function Entity:ctor(initPos)
 	self.damage = 5
 
 	self:resetActions()
+
+	self.rng = love.math.newRandomGenerator(self.pos.x + self.pos.y)
+
+	self.sounds = {
+		walk = {
+			soundManager.get('sounds/zombie-19.wav', 'static')
+			, soundManager.get('sounds/zombie-20.wav', 'static')
+			, soundManager.get('sounds/zombie-21.wav', 'static')
+		}
+	}
 end
 
 function Entity:resetActions()
@@ -152,6 +163,23 @@ function Entity:wantGo(dir)
 	end
 
 	return self:_checkElements(nPos, location)
+end
+
+function Entity:sound(_actionId)
+
+	local rnd = self.rng:random(#self.sounds.walk)
+	if self.sounds.walk[rnd]:isPlaying() then
+		--self.sounds.walk[rnd]:stop()
+		return
+	end
+
+	self.sounds.walk[rnd]:setVolume(0.2 + self.rng:random()*0.3 )
+	if self.rng:random() > 0.3 then
+		self.sounds.walk[rnd]:setPitch(1.0 + self.rng:random())
+	end
+
+	self.sounds.walk[rnd]:play()
+	--console.log('playing ' .. rnd .. ' with pitch ' .. self.sounds.walk[rnd]:getPitch() .. ' and volume ' .. self.sounds.walk[rnd]:getVolume())
 end
 
 function Entity:move()

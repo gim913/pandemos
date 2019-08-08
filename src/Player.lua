@@ -29,7 +29,6 @@ function Player:ctor(initPos)
 	self.equipment = Equipment:new({ 'melee', 'light', 'heavy' })
 	self.equipmentActive = 0
 
-	self.rng = love.math.newRandomGenerator()
 	self.sounds = {
 		walk = {
 			soundManager.get('sounds/stepdirt_1.wav', 'static')
@@ -78,11 +77,14 @@ end
 
 function Player:move()
 	self.base.move(self)
+end
 
+function Player:sound(_actionId)
 	local rnd = self.rng:random(#self.sounds.walk)
 	if self.sounds.walk[rnd]:isPlaying() then
 		self.sounds.walk[rnd]:stop()
 	end
+
 	self.sounds.walk[rnd]:play()
 end
 
