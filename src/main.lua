@@ -10,6 +10,7 @@ local mainMenu = nil
 
 function love.load()
 	love.keyboard.setKeyRepeat(true)
+	love.window.setIcon(love.image.newImageData('bio.png'))
 	love.window.setMode(S.resolution.x, S.resolution.y, { vsync=S.vsync })
 	love.window.setTitle("Pandemos")
 	love.audio.setVolume(0.3)

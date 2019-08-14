@@ -41,6 +41,8 @@ local bindings = {
 	, ["tab"] = Action.Experimental_Camera_Switch
 	, ["lctrl+1"] = Action.Debug_Toggle_Vismap
 	, ["lctrl+2"] = Action.Debug_Toggle_Astar
+
+	, ["lctrl+tab"] = Action.Toggle_Window_Size
 }
 
 return bindings

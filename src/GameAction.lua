@@ -33,6 +33,8 @@ local GameAction = {
 	, Experimental_Camera_Switch = 51
 	, Debug_Toggle_Vismap = 101
 	, Debug_Toggle_Astar = 102
+
+	, Toggle_Window_Size = 201
 }
 
 return GameAction

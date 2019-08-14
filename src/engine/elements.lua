@@ -160,6 +160,7 @@ end
 
 local elements = {
 	create = elements_create
+	, _add = elements_add -- '_' prefix, cause not sure yet if it should be visible outside
 	, del = elements_del
 	, smash = elements_smash
 	, check = elements_check

@@ -96,7 +96,7 @@ function Player:throw()
 	self.inventory:del(item)
 
 	self.doRecalc = true
-	return desc
+	return desc, item
 end
 
 return Player

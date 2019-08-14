@@ -115,6 +115,7 @@ end
 
 local Entity_Tile_Size = 64
 
+-- dumb outline for "char" sprites
 local function createOutlineB(imgData)
 	for x = 0, imgData:getWidth() - 1 do
 		for y = 0, imgData:getHeight() - 1 do
@@ -163,6 +164,7 @@ local function createOutline(imgData)
 	return createOutlineB(imgData)
 end
 
+-- preapre "char" sprites
 local function prepareLetters(letters)
 	local font = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 	love.graphics.setFont(font)
@@ -636,6 +638,15 @@ function Game:actionInventory(uiAction)
 	end
 end
 
+local function actionToggleWindowSize()
+	local w, h = love.window.getMode()
+	if S.resolution.x == w then
+		love.window.setMode(w - 230, S.resolution.y, { vsync=S.vsync })
+	else
+		love.window.setMode(w + 230, S.resolution.y, { vsync=S.vsync })
+	end
+end
+
 local function actionExperimentalCameraSwitch()
 	if cameraIdx == Max_Dummies then
 		camera:follow(player)
@@ -724,6 +735,7 @@ function Game:keypressed(key)
 			, [GameAction.Experimental_Camera_Switch] = actionExperimentalCameraSwitch
 			, [GameAction.Debug_Toggle_Vismap] = actionDebugToggleVismap
 			, [GameAction.Debug_Toggle_Astar] = actionDebugToggleAstar
+			, [GameAction.Toggle_Window_Size] = actionToggleWindowSize
 		}
 	end
 
@@ -785,7 +797,12 @@ local function makeGas(pos)
 	elem:setOpaque(true)
 end
 
-function Game:throw(desc)
+function Game:throw(desc, item)
+	-- remove "fake" re-spawned element
+	local locationId =  posToLocation(item.pos)
+	-- TODO: fix, pass which element to del, otherwise it might be "cleaning" existing elements ^^
+	elements.del(locationId)
+
 	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
 	local main = desc.destPos + camera:lu()
 
@@ -825,7 +842,7 @@ local function executeActions(attribute, expectedAction, cb)
 	return ret
 end
 
-local Animation_Speed = 0.04
+local Animation_Speed = 0.1
 
 local AnimateToFinished = {
 	[GameLogicState.Animate_Action] = GameLogicState.Action_Animation_Finished
@@ -843,6 +860,12 @@ function Game:updateAnimation(dt)
 			local ent = self.animateEntity
 			local direction = ent.actionData - ent.pos
 			ent.anim = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
+
+		elseif action.Action.Throw == self.animateAction then
+			local item = self.animateItem
+			local direction = item.actionData - item.pos
+			item.anim = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
+			print('updateAnimation()' .. tostring(item.anim))
 		end
 	else
 		local prevCamera = self.animateEntity
@@ -913,8 +936,37 @@ function Game:updateGameLogic_actionQueue()
 		return true
 	end)
 	executeActions(entities.Attr.Has_Attack, action.Action.Throw, function(e)
-		local desc = e:throw()
-		self:throw(desc)
+		if e == self.animateEntity then
+			self.animateEntity.anim = Vec.zero
+			self.animateEntity = nil
+		else
+			if not S.disable_animation and (player == e or player.seemap[e]) then
+
+				--e:sound(action.Action.Move)
+
+				local desc = e.actionData
+				local item = e.inventory:get(desc.itemIndex)
+				-- re-spawn thrown element at entity location
+				local locationId =  posToLocation(e.pos)
+				elements._add(locationId, item)
+				-- set actionData to absolute destination position
+				item.actionData = desc.destPos + camera:lu()
+				-- items don't have position, but set it for animation purposes
+				item.pos = e.pos
+
+				self.gameLogicState = GameLogicState.Animate_Action
+				self.animateAction = action.Action.Throw
+				self.animateEntity = e
+				self.animateItem = item
+				self.animateDt = 0
+				self.processActionQueue = true
+
+				return false
+			end
+		end
+
+		local desc, item = e:throw()
+		self:throw(desc, item)
 		return true
 	end)
 
@@ -955,8 +1007,10 @@ function Game:updateGameLogic(dt)
 		end
 	end
 
+	-- some action triggered (currently via keyboard)
 	if self.processActionQueue then
-		--console.log('state: ' .. self.gameLogicState)
+
+		-- short-circuit if doing animation
 		if GameLogicState.Animate_Action == self.gameLogicState or GameLogicState.Animate_Camera == self.gameLogicState then
 			self:updateAnimation(dt)
 			return
@@ -964,6 +1018,9 @@ function Game:updateGameLogic(dt)
 
 		if GameLogicState.Normal == self.gameLogicState then
 
+			-- process possibly many actions during single update() until either:
+			--  * one of the actions ends up with animation
+			--  * player action is done and we can finish
 			local loopCount = 0
 			while true do
 				self.processActionQueue = entities.processActions(player)
@@ -1050,10 +1107,21 @@ local function drawItems(ent, camLu)
 				love.graphics.setColor(c[1], c[2], c[3], c[4])
 
 				local itemImg = Letters[items[firstItemIndex].desc.blueprint.symbol]
-				love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+
+				local item = items[firstItemIndex]
+				if item.anim then
+					--print(utils.repr(item))
+					love.graphics.draw(itemImg, x * Tile_Size_Adj + item.anim.x, y * Tile_Size_Adj + item.anim.y, 0, scaleFactor, scaleFactor)
+				else
+					love.graphics.draw(itemImg, x * Tile_Size_Adj, y * Tile_Size_Adj, 0, scaleFactor, scaleFactor)
+				end
 			end
 		end
 	end)
+	if true then
+		return
+	end
+
 
 	-- description
 	if not cursorCell then
