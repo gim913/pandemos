@@ -1,8 +1,6 @@
 asap issues:
  - when doing game:throw() pass which element to del, otherwise it might be "cleaning" existing elements ^^
    this will require returning index from elements._add()
- - pass absolute position when throwing...
- - make throwing work again when disable_animation = true
  - limit mouse movement when in 'throw' action
 
 tech issues:

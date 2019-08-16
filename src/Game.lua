@@ -911,16 +911,17 @@ function Game:updateGameLogic_actionQueue()
 			self.animateEntity.anim = Vec.zero
 			self.animateEntity = nil
 		else
-			if not S.disable_animation and (player == e or player.seemap[e]) then
-
+			if player == e or player.seemap[e] then
 				e:sound(action.Action.Move)
 
-				self.gameLogicState = GameLogicState.Animate_Action
-				self.animateAction = action.Action.Move
-				self.animateEntity = e
-				self.animateDt = 0
-				self.processActionQueue = true
-				return false
+				if not S.disable_animation then
+					self.gameLogicState = GameLogicState.Animate_Action
+					self.animateAction = action.Action.Move
+					self.animateEntity = e
+					self.animateDt = 0
+					self.processActionQueue = true
+					return false
+				end
 			end
 		end
 
@@ -940,12 +941,11 @@ function Game:updateGameLogic_actionQueue()
 			self.animateEntity.anim = Vec.zero
 			self.animateEntity = nil
 		else
-			if not S.disable_animation and (player == e or player.seemap[e]) then
-
+			if player == e or player.seemap[e] then
 				--e:sound(action.Action.Move)
-
 				local desc = e.actionData
 				local item = e.inventory:get(desc.itemIndex)
+
 				-- re-spawn thrown element at entity location
 				local locationId =  posToLocation(e.pos)
 				elements._add(locationId, item)
@@ -954,14 +954,16 @@ function Game:updateGameLogic_actionQueue()
 				-- items don't have position, but set it for animation purposes
 				item.pos = e.pos
 
-				self.gameLogicState = GameLogicState.Animate_Action
-				self.animateAction = action.Action.Throw
-				self.animateEntity = e
-				self.animateItem = item
-				self.animateDt = 0
-				self.processActionQueue = true
+				if not S.disable_animation then
+					self.gameLogicState = GameLogicState.Animate_Action
+					self.animateAction = action.Action.Throw
+					self.animateEntity = e
+					self.animateItem = item
+					self.animateDt = 0
+					self.processActionQueue = true
 
-				return false
+					return false
+				end
 			end
 		end
 
