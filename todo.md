@@ -1,4 +1,5 @@
 asap issues:
+ - there should be no need to add item to elements when throwing and animation mode disabled
  - limit mouse movement when in 'throw' action
 
 tech issues:
