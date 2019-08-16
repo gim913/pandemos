@@ -804,7 +804,7 @@ function Game:throw(desc, item)
 	elements.del(locationId)
 
 	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
-	local main = desc.destPos + camera:lu()
+	local main = desc.destPos
 
 	makeGas(main)
 	makeGas(main - Vec(-1, 0))
@@ -950,7 +950,7 @@ function Game:updateGameLogic_actionQueue()
 				local locationId =  posToLocation(e.pos)
 				elements._add(locationId, item)
 				-- set actionData to absolute destination position
-				item.actionData = desc.destPos + camera:lu()
+				item.actionData = desc.destPos
 				-- items don't have position, but set it for animation purposes
 				item.pos = e.pos
 
@@ -1341,8 +1341,8 @@ function Game:itemActionSwapEquipment(item, itemIndex)
 	self:itemActionClose()
 end
 
-local function playerThrowOnEnter(gameSelf, destPos, itemIndex)
-	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, { destPos = destPos, itemIndex = itemIndex })
+local function playerThrowOnEnter(gameSelf, cursorPos, itemIndex)
+	action.queue(player.actions, Player.Throw_Speed, action.Action.Throw, { destPos = cursorPos + camera:lu(), itemIndex = itemIndex })
 
 	gameSelf.processActionQueue = true
 	gameSelf:examineOff()
