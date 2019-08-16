@@ -800,8 +800,7 @@ end
 function Game:throw(desc, item)
 	-- remove "fake" re-spawned element
 	local locationId =  posToLocation(item.pos)
-	-- TODO: fix, pass which element to del, otherwise it might be "cleaning" existing elements ^^
-	elements.del(locationId)
+	elements.del(locationId, item.subId)
 
 	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
 	local main = desc.destPos
@@ -948,11 +947,12 @@ function Game:updateGameLogic_actionQueue()
 
 				-- re-spawn thrown element at entity location
 				local locationId =  posToLocation(e.pos)
-				elements._add(locationId, item)
+				local itemSubId = elements._add(locationId, item)
 				-- set actionData to absolute destination position
 				item.actionData = desc.destPos
 				-- items don't have position, but set it for animation purposes
 				item.pos = e.pos
+				item.subId = itemSubId
 
 				if not S.disable_animation then
 					self.gameLogicState = GameLogicState.Animate_Action
@@ -961,7 +961,6 @@ function Game:updateGameLogic_actionQueue()
 					self.animateItem = item
 					self.animateDt = 0
 					self.processActionQueue = true
-
 					return false
 				end
 			end

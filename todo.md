@@ -1,6 +1,4 @@
 asap issues:
- - when doing game:throw() pass which element to del, otherwise it might be "cleaning" existing elements ^^
-   this will require returning index from elements._add()
  - limit mouse movement when in 'throw' action
 
 tech issues:

@@ -55,6 +55,7 @@ local function elements_add(location, element)
 		elements_location[location] = {}
 	end
 	table.insert(elements_location[location], element)
+	return #elements_location[location]
 end
 
 local function elements_del(location, index)
