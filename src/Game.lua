@@ -8,6 +8,7 @@ local hud = require 'hud'
 local Infected = require 'EInfected'
 local Level = require 'Level'
 local messages = require 'messages'
+local minimap = require 'minimap'
 local Player = require 'Player'
 local S = require 'settings'
 local Tiles = require 'Tiles'
@@ -50,13 +51,6 @@ local player
 local Max_Dummies = 5
 local dummies = {}
 
-local minimapData = nil
-local minimapImg = nil
-local function updateMinimap()
-	minimapImg = love.graphics.newImage(minimapData)
-	minimapImg:setFilter("nearest", "nearest")
-end
-
 local function addLevel(levels, rng, depth)
 	local l = Level:new(rng, depth)
 	table.insert(levels, l)
@@ -70,31 +64,11 @@ local function processEntitiesFov()
 	for k,v in pairs(player.vismap) do
 		if v > 0 then
 			map.known(k)
-			local tileId = map.getTileId(k)
-			local r,g,b = 25,25,25
-			if tileId >= Tiles.Water and tileId < Tiles.Earth then
-				r,g,b = 0x4c, 0x9a, 0xec
-			elseif tileId >= Tiles.Earth and tileId < Tiles.Grass then
-				r,g,b = 0x3c, 0x18, 0x00
-			elseif tileId >= Tiles.Grass and tileId < Tiles.Bridge then
-				r,g,b = 0x08, 0x7c, 0x00
-			elseif tileId == Tiles.Bridge then
-				r,g,b = 0x78, 0x3c, 0x00
-			else
-				r,g,b = 64, 64, 64
-			end
-
-			local t = elements.getTileId(k)
-			if t and t >= Tiles.Trees and t <= Tiles.Tree_Maple then
-				r,g,b = 0x8, 0x2c, 0x8
-			end
-
-			local x = f(k % map.width())
-			local y = f(k / map.width())
-			minimapData:setPixel(x, y, r / 255.0, g / 255.0, b / 255.0, 1.0)
+			minimap.known(k)
 		end
 	end
-	updateMinimap()
+
+	minimap.update()
 end
 
 local cameraAnimationOffset = Vec.zero
@@ -230,11 +204,8 @@ function Game:ctor(rng)
 	local level = self.levels[self.depthLevel]
 	map.initialize(level.w, level.h)
 
-	minimapData = love.image.newImageData(level.w, level.h)
-	minimapData:mapPixel(function(x, y, r, g, b, a)
-		return 0.1, 0.1, 0.1, 1.0
-	end)
-	updateMinimap()
+	minimap.initialize(level.w, level.h)
+	minimap.update()
 
 	Letters = prepareLetters('@iBCSTM[!')
 	local f = math.floor
@@ -1257,9 +1228,9 @@ local function drawEntities(camLu)
 end
 
 local function drawMinimap()
-	local scale = (31 * 25) / minimapImg:getHeight()
+	local scale = (31 * 25) / minimap.getImage():getHeight()
 	love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
-	love.graphics.draw(minimapImg, (31 * 25) + 10, 0, 0, 1, scale)
+	love.graphics.draw(minimap.getImage(), (31 * 25) + 10, 0, 0, 1, scale)
 end
 
 local function isMouseOverEntity(ent, camLu)
@@ -1432,7 +1403,7 @@ end
 -- this is some serious mess, don't look
 function Game:drawInterface()
 	local Board_Size = (2 * S.game.VIS_RADIUS + 1) * Tile_Size_Adj
-	local startX = (31 * 25) + 10 + minimapImg:getWidth() + 10
+	local startX = (31 * 25) + 10 + minimap.getImage():getWidth() + 10
 	local camLu = camera:lu()
 
 	-- dim map
