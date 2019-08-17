@@ -655,12 +655,6 @@ local function makeGas(pos)
 end
 
 function Game:throw(desc, item)
-	-- remove "fake" re-spawned element
-	if not S.disable_action_animation then
-		local locationId =  posToLocation(item.pos)
-		elements.del(locationId, item.subId)
-	end
-
 	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
 	local main = desc.destPos
 
@@ -722,7 +716,7 @@ function Game:updateAnimation(dt)
 		elseif action.Action.Throw == self.animateAction then
 			-- get throw descriptor
 			local ent = self.animateEntity
-			local desc = e.actionData
+			local desc = ent.actionData
 
 			-- set item 'progress'
 			local item = self.animateItem
@@ -828,6 +822,13 @@ function Game:updateGameLogic_actionQueue()
 		end
 
 		local desc, item = e:throw()
+
+		-- remove "fake" re-spawned element
+		if not S.disable_action_animation then
+			local locationId =  posToLocation(e.pos)
+			elements.del(locationId, item.subId)
+		end
+
 		self:throw(desc, item)
 		return true
 	end)

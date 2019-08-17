@@ -43,7 +43,6 @@ function renderer.renderMap(Tile_Size_Adj, itemDescriptors)
 
 		love.graphics.setColor(color.white)
 		batch.draw()
-
 		drawItems(itemDescriptors)
 		--drawEntities(camLu)
 
