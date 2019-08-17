@@ -4,6 +4,8 @@ local console = require 'engine.console'
 local color = require 'engine.color'
 local utils = require 'engine.utils'
 
+local Vec = require 'hump.vector'
+
 -- module
 
 --  n -> entity
@@ -164,6 +166,25 @@ function entities.processFov()
 	end
 	local time2 = love.timer.getTime()
 	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
+end
+
+function entities.prepareDraw(descriptors, followedEnt, camLu, Tile_Size_Adj, scaleFactor)
+	local followedEntPos = followedEnt.pos
+	for _,ent in pairs(entities.all()) do
+		local dist = (ent.pos - followedEntPos):len()
+
+		-- this won't work nicely with animation, but since entity will show up after seemap update, I will ignore it
+		if followedEnt == ent or followedEnt.seemap[ent] then
+			local relPos = ent.pos - camLu
+
+			table.insert(descriptors, {
+				color = ent.color
+				, img = ent.img
+				, position = relPos * Tile_Size_Adj + ent.anim
+				, scale = Vec(scaleFactor, scaleFactor)
+			})
+		end
+	end
 end
 
 return entities

@@ -29,6 +29,7 @@ function Player:ctor(initPos)
 	self.equipment = Equipment:new({ 'melee', 'light', 'heavy' })
 	self.equipmentActive = 0
 
+	self.color = { 0.9, 0.9, 0.9, 1.0 }
 	self.sounds = {
 		walk = {
 			soundManager.get('sounds/stepdirt_1.wav', 'static')

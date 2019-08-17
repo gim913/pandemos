@@ -14,6 +14,8 @@ Infected.Bash_Speed = 720
 
 function Infected:ctor(initPos)
 	self.base.ctor(self, initPos)
+
+	self.color = { 0.7, 0.1, 0.1, 1.0 }
 end
 
 function Infected:onAdd()

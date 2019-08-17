@@ -102,10 +102,6 @@ local Tile_Size = 30
 local Tile_Border = 1
 local Tile_Size_Adj = Tile_Size + Tile_Border
 
-function Game:createMapCanvas()
-
-end
-
 local fog
 local blur
 
@@ -943,21 +939,23 @@ function Game:update(dt)
 	end
 end
 
-local function loopMap(xa, ya, cb)
+local function loopMap(vismap, camLu, cb)
 	local descriptors = {}
 
 	local tc = 2 * S.game.VIS_RADIUS + 1
 	for y = -1, tc do
-		if ya + y >= 0 and ya + y < map.height() then
-			local idx = (ya + y) * map.width() + xa - 1
+		if camLu.y + y >= 0 and camLu.y + y < map.height() then
+			local locationId = (camLu.y + y) * map.width() + camLu.x - 1
 			for x = -1, tc do
-				if xa + x >= 0 and xa + x < map.width() then
-					local ret = cb(idx, x, y)
-					if ret ~= nil then
-						table.insert(descriptors, ret)
+				if camLu.x + x >= 0 and camLu.x + x < map.width() then
+					if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
+						local ret = cb(locationId, x, y)
+						if ret ~= nil then
+							table.insert(descriptors, ret)
+						end
 					end
 				end
-				idx = idx + 1
+				locationId = locationId + 1
 			end
 		end
 	end
@@ -965,17 +963,14 @@ local function loopMap(xa, ya, cb)
 	return descriptors
 end
 
-function drawItems(ent, camLu)
-	local scaleFactor = Tile_Size / Entity_Tile_Size
-	local ya = camLu.y
-	local xa = camLu.x
-
-	return loopMap(xa, ya, function(locationId, x, y)
-		local vismap = ent.vismap
-		if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-			return items.prepareDraw(locationId, x, y, Tile_Size_Adj, scaleFactor)
-		end
+function prepareItemsDraw(descriptors, ent, camLu, scaleFactor)
+	local itemDescriptors = loopMap(ent.vismap, camLu, function(locationId, x, y)
+		return items.prepareDraw(locationId, x, y, Tile_Size_Adj, scaleFactor)
 	end)
+
+	for _, descriptor in pairs(itemDescriptors) do
+		table.insert(descriptors, descriptor)
+	end
 
 	-- TODO: disable label, wrong location, should be done somehow around cellCursor not here
 	-- -- description
@@ -1027,15 +1022,13 @@ local function drawWeaponDistanceOverlay(maxDistance)
 	end
 end
 
-local function drawGas(camLu)
+local function drawGas(ent, camLu)
 	local half = Tile_Size_Adj / 2
 
 	local scaleFactor = Tile_Size / Entity_Tile_Size
-	local ya = camLu.y
-	local xa = camLu.x
-
 	local tc = 2 * S.game.VIS_RADIUS + 1
-	loopMap(xa, ya, function(locationId, x, y)
+
+	loopMap(ent.vismap, camLu, function(locationId, x, y)
 		local gases, count = elements.getGases(locationId)
 		if count > 0 then
 			love.graphics.setColor(color.lime)
@@ -1069,51 +1062,51 @@ local function drawEntityPath(ent, camLu)
 	end
 end
 
-local function drawEntities(camLu)
-	local scaleFactor = Tile_Size / Entity_Tile_Size
+-- local function drawEntities(camLu)
+-- 	local scaleFactor = Tile_Size / Entity_Tile_Size
 
-	local hoveredUiEntId = hud.hoveredEntId()
-	for _,ent in pairs(entities.all()) do
-		local relPos = ent.pos - camLu
+-- 	local hoveredUiEntId = hud.hoveredEntId()
+-- 	for _,ent in pairs(entities.all()) do
+-- 		local relPos = ent.pos - camLu
 
-		if hoveredUiEntId == ent.id then
-			love.graphics.setColor(0.5, 0.9, 0.5, 0.5)
-			love.graphics.rectangle('fill', relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, Tile_Size_Adj, Tile_Size_Adj)
-		end
+-- 		if hoveredUiEntId == ent.id then
+-- 			love.graphics.setColor(0.5, 0.9, 0.5, 0.5)
+-- 			love.graphics.rectangle('fill', relPos.x * Tile_Size_Adj, relPos.y * Tile_Size_Adj, Tile_Size_Adj, Tile_Size_Adj)
+-- 		end
 
-		if ent == player then
-			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
-		else
-			love.graphics.setColor(0.7, 0.1, 0.1, 1.0)
-		end
+-- 		if ent == player then
+-- 			love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+-- 		else
+-- 			love.graphics.setColor(0.7, 0.1, 0.1, 1.0)
+-- 		end
 
-		-- drawEntity
-		-- this won't work nicely with animation, but since entity will show up after seemap update, I will ignore it
-		if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
-			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj + ent.anim.x, relPos.y * Tile_Size_Adj + ent.anim.y, 0, scaleFactor, scaleFactor)
+-- 		-- drawEntity
+-- 		-- this won't work nicely with animation, but since entity will show up after seemap update, I will ignore it
+-- 		if camera.followedEnt == ent or camera.followedEnt.seemap[ent] then
+-- 			love.graphics.draw(ent.img, relPos.x * Tile_Size_Adj + ent.anim.x, relPos.y * Tile_Size_Adj + ent.anim.y, 0, scaleFactor, scaleFactor)
 
-			-- show entity name on hover -- TODO: remove
-			if cursorCell and relPos == cursorCell then
-				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
-				love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 16)
-				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
-				love.graphics.print(ent.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
-			end
+-- 			-- show entity name on hover -- TODO: remove
+-- 			if cursorCell and relPos == cursorCell then
+-- 				love.graphics.setColor(0.9, 0.9, 0.9, 0.8)
+-- 				love.graphics.rectangle('fill', (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, 2.5 * Tile_Size + 1, 16)
+-- 				love.graphics.setColor(0.0, 0.0, 0.0, 1.0)
+-- 				love.graphics.print(ent.name, (cursorCell.x + 1) * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
+-- 			end
 
-			-- if ent.astar_visited then
-			-- 	for k, v in pairs(ent.astar_visited) do
-			-- 		local sx = v.x - camLuX
-			-- 		local sy = v.y - camLuY
+-- 			-- if ent.astar_visited then
+-- 			-- 	for k, v in pairs(ent.astar_visited) do
+-- 			-- 		local sx = v.x - camLuX
+-- 			-- 		local sy = v.y - camLuY
 
-			-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
-			-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, Tile_Size + 1, Tile_Size + 1)
-			-- 	end
-			-- end
+-- 			-- 		love.graphics.setColor(0.9, 0.9, 0.9, 0.3)
+-- 			-- 		love.graphics.rectangle('fill', sx * ts, sy * ts, Tile_Size + 1, Tile_Size + 1)
+-- 			-- 	end
+-- 			-- end
 
-			drawEntityPath(ent, camLu)
-		end
-	end
-end
+-- 			drawEntityPath(ent, camLu)
+-- 		end
+-- 	end
+-- end
 
 local function drawMinimap()
 	local scale = (31 * 25) / minimap.getImage():getHeight()
@@ -1529,13 +1522,17 @@ function Game:show()
 	love.graphics.print("self.ui: " .. uiElements, S.resolution.x - 200 - 10, 130)
 
 	-- draw map
-	itemDescriptors = drawItems(camera.followedEnt, camLu)
-	renderer.renderMap(Tile_Size_Adj, itemDescriptors)
+	local scaleFactor = Tile_Size / Entity_Tile_Size
+	local drawDescriptors = {}
+	prepareItemsDraw(drawDescriptors, camera.followedEnt, camLu, scaleFactor)
+	entities.prepareDraw(drawDescriptors, camera.followedEnt, camLu, Tile_Size_Adj, scaleFactor)
+
+	renderer.renderMap(Tile_Size_Adj, drawDescriptors)
 
 	fog:render(function()
 		blur:render(function()
 			love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
-			drawGas(camLu)
+			drawGas(camera.followedEnt, camLu)
 			love.graphics.translate(-Tile_Size_Adj, -Tile_Size_Adj)
 		end)
 	end)
