@@ -799,8 +799,10 @@ end
 
 function Game:throw(desc, item)
 	-- remove "fake" re-spawned element
-	local locationId =  posToLocation(item.pos)
-	elements.del(locationId, item.subId)
+	if not S.disable_action_animation then
+		local locationId =  posToLocation(item.pos)
+		elements.del(locationId, item.subId)
+	end
 
 	console.log('throwing onto '.. tostring(desc.destPos) .. ' item ' .. desc.itemIndex)
 	local main = desc.destPos
@@ -861,10 +863,14 @@ function Game:updateAnimation(dt)
 			ent.anim = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
 
 		elseif action.Action.Throw == self.animateAction then
+			-- get throw descriptor
+			local ent = self.animateEntity
+			local desc = e.actionData
+
+			-- set item 'progress'
 			local item = self.animateItem
-			local direction = item.actionData - item.pos
+			local direction = desc.destPos - ent.pos
 			item.anim = direction * Tile_Size_Adj * (self.animateDt / Animation_Speed)
-			print('updateAnimation()' .. tostring(item.anim))
 		end
 	else
 		local prevCamera = self.animateEntity
@@ -946,19 +952,16 @@ function Game:updateGameLogic_actionQueue()
 		else
 			if player == e or player.seemap[e] then
 				--e:sound(action.Action.Move)
-				local desc = e.actionData
-				local item = e.inventory:get(desc.itemIndex)
-
-				-- re-spawn thrown element at entity location
-				local locationId =  posToLocation(e.pos)
-				local itemSubId = elements._add(locationId, item)
-				-- set actionData to absolute destination position
-				item.actionData = desc.destPos
-				-- items don't have position, but set it for animation purposes
-				item.pos = e.pos
-				item.subId = itemSubId
 
 				if not S.disable_action_animation then
+					local desc = e.actionData
+					local item = e.inventory:get(desc.itemIndex)
+
+					-- re-spawn thrown element at entity location
+					local locationId =  posToLocation(e.pos)
+					local itemSubId = elements._add(locationId, item)
+					item.subId = itemSubId
+
 					self.gameLogicState = GameLogicState.Animate_Action
 					self.animateAction = action.Action.Throw
 					self.animateEntity = e
