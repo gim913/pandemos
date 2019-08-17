@@ -2,7 +2,6 @@
 local fontManager = require 'engine.fontManager'
 
 -- module
-
 local letters = {}
 
 -- dumb outline for "char" sprites
@@ -54,8 +53,10 @@ local function createOutline(imgData)
 	return createOutlineB(imgData)
 end
 
--- preapre "char" sprites
-function letters.prepare(letters)
+local letters_images
+
+-- prepare "char" sprites
+function letters.initialize(letters)
 	local font = fontManager.get('fonts/FSEX300.ttf', 64, 'normal')
 	love.graphics.setFont(font)
 
@@ -71,7 +72,11 @@ function letters.prepare(letters)
 		images[c] = love.graphics.newImage(createOutline(canvas:newImageData())) --canvas
 	end
 
-	return images
+	letters_images = images
+end
+
+function letters.get(id)
+	return letters_images[id]
 end
 
 return letters
