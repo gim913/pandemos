@@ -1,7 +1,10 @@
 return {
 	resolution = { x = 1440, y=900 }
 	, vsync = false
-	, disable_animation = false
+	, disable_movement_animation = true
+	-- throw, etc
+	, disable_action_animation = false
+	, animation_time = 0.15
 
 	-- not meant to be modified
 	, game = {

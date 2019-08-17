@@ -841,7 +841,7 @@ local function executeActions(attribute, expectedAction, cb)
 	return ret
 end
 
-local Animation_Speed = 0.1
+local Animation_Speed = S.animation_time
 
 local AnimateToFinished = {
 	[GameLogicState.Animate_Action] = GameLogicState.Action_Animation_Finished
@@ -879,13 +879,17 @@ function Game:updateGameLogic_updateTiles()
 		local prevCamera = camera:clone()
 		if GameLogicState.Camera_Animation_Finished ~= self.gameLogicState then
 			prevCamera:update()
-			if prevCamera:lu() ~= camera:lu() then
-				self.gameLogicState = GameLogicState.Animate_Camera
-				self.animateAction = action.Action.Invalid
-				self.animateEntity = prevCamera
-				self.animateDt = 0
-				self.processActionQueue = true
-				return
+			if not S.disable_movement_animation then
+				if prevCamera:lu() ~= camera:lu() then
+					self.gameLogicState = GameLogicState.Animate_Camera
+					self.animateAction = action.Action.Invalid
+					self.animateEntity = prevCamera
+					self.animateDt = 0
+					self.processActionQueue = true
+					return
+				end
+			else
+				cameraAnimationOffset = Vec.zero
 			end
 		else
 			cameraAnimationOffset = Vec.zero
@@ -913,7 +917,7 @@ function Game:updateGameLogic_actionQueue()
 			if player == e or player.seemap[e] then
 				e:sound(action.Action.Move)
 
-				if not S.disable_animation then
+				if not S.disable_movement_animation then
 					self.gameLogicState = GameLogicState.Animate_Action
 					self.animateAction = action.Action.Move
 					self.animateEntity = e
@@ -954,7 +958,7 @@ function Game:updateGameLogic_actionQueue()
 				item.pos = e.pos
 				item.subId = itemSubId
 
-				if not S.disable_animation then
+				if not S.disable_action_animation then
 					self.gameLogicState = GameLogicState.Animate_Action
 					self.animateAction = action.Action.Throw
 					self.animateEntity = e
