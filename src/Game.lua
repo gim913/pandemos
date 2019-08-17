@@ -8,6 +8,7 @@ local hud = require 'hud'
 local Infected = require 'EInfected'
 local letters = require 'letters'
 local Level = require 'Level'
+local logger = require 'logger'
 local messages = require 'messages'
 local minimap = require 'minimap'
 local Player = require 'Player'
@@ -197,39 +198,13 @@ end
 local function logItems()
 	local pos = cursorCell + camera:lu()
 	local locationId = posToLocation(pos)
-	local items, itemCount = elements.getItems(locationId)
 	local vismap = player.vismap
-	if itemCount <= 0 then
-		return
-	end
 
 	if debug.disableVismap or (vismap[locationId] and vismap[locationId] > 0) then
-		if 1 == itemCount then
-			console.log({
-				{ 1, 1, 1, 1 }, 'There is ',
-				color.crimson, items[getFirstItemIndex(items)].desc.blueprint.name,
-				{ 1, 1, 1, 1 }, ' lying there'
-			})
-		else
-			local messages = {}
-			table.insert(messages, color.white)
-			table.insert(messages, 'There are multiple items lying here: ')
-			local skipFirst = true
-			for k, item in pairs(items) do
-				if not skipFirst then
-					table.insert(messages, color.white)
-					table.insert(messages, ', ')
-				end
-				table.insert(messages, color.crimson)
-				table.insert(messages, item.desc.blueprint.name)
-
-				skipFirst = false
-			end
-			console.log(messages)
+		local items, itemCount = elements.getItems(locationId)
+		if itemCount > 0 then
+			console.log(logger.logItems(items, itemCount))
 		end
-		-- for _, item in ipairs(items) do
-		-- 	items[1].desc.name
-		-- end
 	end
 end
 
