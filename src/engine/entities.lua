@@ -15,7 +15,22 @@ local entities_location = {}
 -- attribute -> entId -> ent
 local entities_with_attrs = {}
 
-local function entities_addAttr(ent, attr)
+local entities = {
+	Attr = {
+		Has_Fov = 1
+		, Has_Move = 2
+		, Has_Attack = 3
+		, Has_Ai = 4
+	}
+}
+
+function entities.add(ent)
+	table.insert(entities_data, ent)
+	ent:setId(#entities_data)
+	ent:onAdd()
+end
+
+function entities.addAttr(ent, attr)
 	if not entities_with_attrs[attr] then
 		entities_with_attrs[attr] = {}
 	end
@@ -29,13 +44,7 @@ local function entities_clearAttrs(ent)
 	end
 end
 
-local function entities_add(ent)
-	table.insert(entities_data, ent)
-	ent:setId(#entities_data)
-	ent:onAdd()
-end
-
-local function entities_del(ent)
+function entities.del(ent)
 	for k, entId in pairs(entities_location) do
 		if entId == ent.id then
 			entities_location[k] = nil
@@ -48,23 +57,24 @@ local function entities_del(ent)
 	--ent:onDel()
 end
 
-local function entities_occupy(idx, entId)
+
+function entities.occupy(idx, entId)
 	entities_location[idx] = entId
 end
 
-local function entities_unoccupy(idx, entId)
+function entities.unoccupy(idx, entId)
 	entities_location[idx] = nil
 end
 
-local function entities_all()
+function entities.all()
 	return entities_data
 end
 
-local function entities_with(attr)
+function entities.with(attr)
 	return entities_with_attrs[attr]
 end
 
-local function entities_check(idx, initiatior)
+function entities.check(idx, initiatior)
 	if entities_location[idx] then
 		local entId = entities_location[idx]
 		local ent = entities_data[entId]
@@ -77,7 +87,7 @@ local function entities_check(idx, initiatior)
 	end
 end
 
-local function entities_attack(who, whom)
+function entities.attack(who, whom)
 	local gray = { color.hsvToRgb(0.0, 0.0, 0.8, 1.0) }
 
 	console.log({
@@ -104,11 +114,11 @@ end
 
 local g_gameTime = 0
 local Action_Step = 60
-local function entities_processActions(player)
+function entities.processActions(player)
 	-- this is only justifiable place where .all() should be called
 	-- if entity has no 'actions', than probably it doesn't need to be
 	-- entity
-	for _,e in pairs(entities_all()) do
+	for _,e in pairs(entities.all()) do
 		if #e.actions ~= 0 then
 			local currentAction = e.actions[1]
 			if e.action.need == 0 then
@@ -144,25 +154,16 @@ local function entities_processActions(player)
 	return true
 end
 
-
-local entities = {
-	add = entities_add
-	, del = entities_del
-	, addAttr = entities_addAttr
-	, occupy = entities_occupy
-	, unoccupy = entities_unoccupy
-	, all = entities_all
-	, with = entities_with
-	, processActions = entities_processActions
-	, check = entities_check
-	, attack = entities_attack
-
-	, Attr = {
-		Has_Fov = 1
-		, Has_Move = 2
-		, Has_Attack = 3
-		, Has_Ai = 4
-	}
-}
+function entities.processFov()
+	local time1 = love.timer.getTime()
+	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+		e:recalcVisMap()
+	end
+	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+		e:recalcSeeMap()
+	end
+	local time2 = love.timer.getTime()
+	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
+end
 
 return entities

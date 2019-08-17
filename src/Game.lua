@@ -64,18 +64,9 @@ local function addLevel(levels, rng, depth)
 end
 
 local function processEntitiesFov()
-	local time1 = love.timer.getTime()
-	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-		e:recalcVisMap()
-	end
-	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-		e:recalcSeeMap()
-	end
-	local time2 = love.timer.getTime()
-	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
+	entities.processFov()
 
 	-- updated fog-of-war
-
 	for k,v in pairs(player.vismap) do
 		if v > 0 then
 			map.known(k)
@@ -905,7 +896,6 @@ function Game:updateGameLogic_updateTiles()
 		--console.log('[+] camera anim finished')
 		self.gameLogicState = GameLogicState.Normal
 
-		-- TODO: probably wrong location
 		processEntitiesFov()
 
 		updateTiles()
@@ -951,8 +941,6 @@ function Game:updateGameLogic_actionQueue()
 			self.animateEntity = nil
 		else
 			if player == e or player.seemap[e] then
-				--e:sound(action.Action.Move)
-
 				if not S.disable_action_animation then
 					local desc = e.actionData
 					local item = e.inventory:get(desc.itemIndex)

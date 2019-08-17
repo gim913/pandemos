@@ -79,13 +79,19 @@ function Player:move()
 	self.base.move(self)
 end
 
-function Player:sound(_actionId)
-	local rnd = self.rng:random(#self.sounds.walk)
-	if self.sounds.walk[rnd]:isPlaying() then
-		self.sounds.walk[rnd]:stop()
+local function play(src)
+	if src:isPlaying() then
+		src:stop()
 	end
 
-	self.sounds.walk[rnd]:play()
+	src:play()
+end
+
+function Player:sound(actionId)
+	if action.Action.Move == actionId then
+		local rnd = self.rng:random(#self.sounds.walk)
+		play(self.sounds.walk[rnd])
+	end
 end
 
 function Player:throw()
