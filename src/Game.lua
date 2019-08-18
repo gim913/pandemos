@@ -17,8 +17,6 @@ local renderer = require 'renderer'
 local S = require 'settings'
 local Tiles = require 'Tiles'
 
-local shaders = require 'shaders'
-
 local action = require 'engine.action'
 local class = require 'engine.oop'
 local color = require 'engine.color'
@@ -175,11 +173,6 @@ function Game:ctor(rng)
 
 	cameraIdx = 0
 	--updateTiles()
-
-	---
-
-	fog = shaders.fog()
-	blur = shaders.blur()
 end
 
 local cursorCell = nil
@@ -841,16 +834,8 @@ function Game:updateGameLogic_actionQueue()
 end
 
 local initializeAi = true
-local shaderDt = 0
-local shaderTotalDt = 0
-
 function Game:updateGameLogic(dt)
-	shaderDt = shaderDt + dt
-	shaderTotalDt = shaderTotalDt + dt
-	if shaderDt > 1 / 60.0 then
-		fog:set('time', shaderTotalDt)
-		shaderDt = shaderDt - 1 / 60.0
-	end
+	renderer.update(dt)
 
 	-- at this point map should be ready, fire up AI once,
 	-- afterwards it should be fired after finishing actions
@@ -969,6 +954,7 @@ function prepareItemsDraw(descriptors, ent, camLu, scaleFactor)
 		return items.prepareDraw(locationId, x, y, Tile_Size_Adj, scaleFactor)
 	end)
 
+	-- append
 	for _, descriptor in pairs(itemDescriptors) do
 		table.insert(descriptors, descriptor)
 	end
@@ -998,6 +984,23 @@ function prepareItemsDraw(descriptors, ent, camLu, scaleFactor)
 	-- end)
 end
 
+local function prepareGasesDraw(descriptors, ent, camLu)
+	local gasDescriptors = loopMap(ent.vismap, camLu, function(locationId, x, y)
+		local gases, count = elements.getGases(locationId)
+		if count > 0 then
+			return {
+				color = color.lime
+				, position = Vec(x * Tile_Size_Adj, y * Tile_Size_Adj)
+			}
+		end
+	end)
+
+	-- append
+	for _, descriptor in pairs(gasDescriptors) do
+		table.insert(descriptors, descriptor)
+	end
+end
+
 local function drawWeaponDistanceOverlay(maxDistance)
 	if not maxDistance then
 		return
@@ -1021,21 +1024,6 @@ local function drawWeaponDistanceOverlay(maxDistance)
 			circ.x = circ.x - 1
 		end
 	end
-end
-
-local function drawGas(ent, camLu)
-	local half = Tile_Size_Adj / 2
-
-	local scaleFactor = Tile_Size / Entity_Tile_Size
-	local tc = 2 * S.game.VIS_RADIUS + 1
-
-	loopMap(ent.vismap, camLu, function(locationId, x, y)
-		local gases, count = elements.getGases(locationId)
-		if count > 0 then
-			love.graphics.setColor(color.lime)
-			love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
-		end
-	end)
 end
 
 local function drawEntityPath(ent, camLu)
@@ -1528,15 +1516,12 @@ function Game:show()
 	prepareItemsDraw(drawDescriptors, camera.followedEnt, camLu, scaleFactor)
 	entities.prepareDraw(drawDescriptors, camera.followedEnt, camLu, Tile_Size_Adj, scaleFactor)
 
-	renderer.renderMap(Tile_Size_Adj, drawDescriptors)
+	local rectDescriptors = {}
+	prepareGasesDraw(rectDescriptors, camera.followedEnt, camLu)
 
-	fog:render(function()
-		blur:render(function()
-			love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
-			drawGas(camera.followedEnt, camLu)
-			love.graphics.translate(-Tile_Size_Adj, -Tile_Size_Adj)
-		end)
-	end)
+	renderer.initFrame(Tile_Size_Adj)
+	renderer.renderMap(drawDescriptors)
+	renderer.renderGases(rectDescriptors)
 
 	love.graphics.push()
 	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
