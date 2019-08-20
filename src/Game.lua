@@ -190,6 +190,10 @@ local function logItems()
 	end
 end
 
+local function round(x)
+	return x < 0 and math.ceil(x) or math.floor(x)
+end
+
 function Game:mousemoved(mouseX, mouseY)
 	if hud.mousemoved(mouseX, mouseY) then
 		return
@@ -204,6 +208,18 @@ function Game:mousemoved(mouseX, mouseY)
 	local vis = 2 * S.game.VIS_RADIUS + 1
 	if mouseX >= 0 and mouseX < (Tile_Size_Adj * vis) and mouseY >= 0 and mouseY < (Tile_Size_Adj * vis) then
 		local newMouseCell = Vec(math.floor(mouseX / Tile_Size_Adj), math.floor(mouseY / Tile_Size_Adj))
+
+		if self.ui.examineMaxDistance then
+			local center = player.pos - camera:lu()
+			local centerBasedVec = newMouseCell - center
+			local centerBasedLen = centerBasedVec:len()
+			if centerBasedLen > self.ui.examineMaxDistance then
+				local t = centerBasedVec * self.ui.examineMaxDistance / centerBasedLen
+				t.x, t.y = round(t.x), round(t.y)
+				newMouseCell = t + center
+			end
+		end
+
 		if not cursorCell or newMouseCell ~= cursorCell then
 			cursorCell = newMouseCell
 			logItems()
@@ -331,7 +347,7 @@ local function moveExamine(moveVec, maxDistance)
 	if newCursorCell.x >= 0 and newCursorCell.y >= 0 and newCursorCell.x < vis and newCursorCell.y < vis then
 		local pos = newCursorCell + camera:lu() - player.pos
 
-		if not maxDistance or pos:len() < maxDistance then
+		if not maxDistance or pos:len() <= maxDistance then
 			cursorCell = newCursorCell
 			logItems()
 		end
@@ -1018,7 +1034,7 @@ local function drawWeaponDistanceOverlay(maxDistance)
 		end
 		local circ = (player.pos - lu) - Vec(0, y)
 		for x = 0, tc - 1 do
-			if circ:len() < maxDistance then
+			if circ:len() <= maxDistance then
 				love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
 			end
 			circ.x = circ.x - 1
