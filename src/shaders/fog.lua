@@ -56,11 +56,8 @@ vec4 effect(vec4 color, Image texture, vec2 _tc, vec2 _)
 	r.y = fbm(tc + q + vec2(8.3,2.8)+ 0.126 * utime * 2.5);
 
 	float f = fbm(tc + r);
-
-	float l = f*f*4.0 * clamp(length(q),0.0,1.0) * clamp(length(r.x),0.0,1.0);
-	l = (f*f*f+0.6*f*f+0.5*f) * l;
-	float val = pow(l, 1);
-	return Texel(texture, _tc) * color * mix(0.0, val, opacity);
+	float v = mix(0.5, 1.0, (f*f*f+0.6*f*f+0.5*f));
+	return Texel(texture, _tc) * color * mix(0.0, v, opacity);
 }
 		]]
 

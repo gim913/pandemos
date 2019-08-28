@@ -668,6 +668,11 @@ function Game:throw(desc, item)
 	local main = desc.destPos
 
 	makeGas(main)
+	-- for y = -10, 10 do
+	-- 	for x = -10, 10 do
+	-- 		makeGas(main - Vec(x, y))
+	-- 	end
+	-- end
 	makeGas(main - Vec(-1, 0))
 	makeGas(main - Vec(1, 0))
 	makeGas(main - Vec(0, -1))
@@ -1540,6 +1545,8 @@ function Game:show()
 	-- begin render things to canvas
 	renderer.initFrame(Tile_Size_Adj)
 	love.graphics.setCanvas(renderer.canvasMap())
+	love.graphics.clear()
+
 	renderer.renderMap(drawDescriptors)
 	renderer.renderGases(gasDescriptors)
 	renderer.renderRectagles(rectDescriptors)

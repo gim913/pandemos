@@ -56,9 +56,6 @@ local function drawDescriptors(itemDescriptors)
 end
 
 function renderer.renderMap(descriptors)
-
-	love.graphics.clear()
-
 	love.graphics.push()
 	-- start drawing whole map at 1,1 not at 0,0, to have 0th column and 0th row for scrolling purposes
 	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
