@@ -87,4 +87,18 @@ function renderer.renderGases(descriptors)
 	end)
 end
 
+function renderer.renderRangeOverlay(descriptors)
+	love.graphics.push()
+		love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
+		drawRectangles(descriptors)
+
+		-- if cursorCell then
+		-- 	love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
+		-- 	love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
+		-- end
+	love.graphics.pop()
+
+	love.graphics.setColor(color.white)
+end
+
 return renderer

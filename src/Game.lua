@@ -1011,35 +1011,24 @@ local function prepareGasesDraw(descriptors, ent, camLu)
 		end
 	end)
 
-	-- append
-	for _, descriptor in pairs(gasDescriptors) do
-		table.insert(descriptors, descriptor)
-	end
+	table.append(descriptors, gasDescriptors)
 end
 
-local function drawWeaponDistanceOverlay(maxDistance)
-	if not maxDistance then
-		return
-	end
-
-	local lu = camera:lu()
-	local ya = lu.y
-	local xa = lu.x
+local function prepareRangeOverlayDraw(descriptors, ent, camLu, maxDistance)
 	local tc = 2 * S.game.VIS_RADIUS + 1
+	local viewPos = ent.pos - camLu
 
-	love.graphics.setColor(1.0, 0.0, 0.0, 0.5)
-	for y = 0, tc - 1 do
-		if ya + y > map.height() then
-			break
+	local overlayDescriptors = loopMap(ent.vismap, camLu, function(locationId, x, y)
+		local circ = viewPos - Vec(x, y)
+		if circ:len() <= maxDistance then
+			return {
+				color = { 1.0, 0.0, 0.0, 0.5 }
+				, position = Vec(x * Tile_Size_Adj, y * Tile_Size_Adj)
+			}
 		end
-		local circ = (player.pos - lu) - Vec(0, y)
-		for x = 0, tc - 1 do
-			if circ:len() <= maxDistance then
-				love.graphics.rectangle('fill', x * Tile_Size_Adj, y * Tile_Size_Adj, Tile_Size, Tile_Size)
-			end
-			circ.x = circ.x - 1
-		end
-	end
+	end)
+
+	table.append(descriptors, overlayDescriptors)
 end
 
 local function drawEntityPath(ent, camLu)
@@ -1535,20 +1524,17 @@ function Game:show()
 	local rectDescriptors = {}
 	prepareGasesDraw(rectDescriptors, camera.followedEnt, camLu)
 
+	local rectDescriptors2 = {}
+	if self.ui.examineMaxDistance then
+		prepareRangeOverlayDraw(rectDescriptors2, camera.followedEnt, camLu, self.ui.examineMaxDistance)
+	end
+
 	renderer.initFrame(Tile_Size_Adj)
 	renderer.renderMap(drawDescriptors)
 	renderer.renderGases(rectDescriptors)
-
-	love.graphics.push()
-	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
-		drawWeaponDistanceOverlay(self.ui.examineMaxDistance)
-
-		if cursorCell then
-			love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-			love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
-		end
-	love.graphics.pop()
-	love.graphics.setColor(color.white)
+	if self.ui.examineMaxDistance then
+		renderer.renderRangeOverlay(rectDescriptors2)
+	end
 
 	love.graphics.setCanvas()
 	local b = love.graphics.getBlendMode()

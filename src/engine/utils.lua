@@ -83,4 +83,10 @@ function table.reverse(tbl)
 	return tbl
 end
 
+function table.append(t1, t2)
+	for _, val in pairs(t2) do
+		table.insert(t1, val)
+	end
+end
+
 return utils
