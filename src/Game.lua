@@ -1521,22 +1521,33 @@ function Game:show()
 	prepareItemsDraw(drawDescriptors, camera.followedEnt, camLu, scaleFactor)
 	entities.prepareDraw(drawDescriptors, camera.followedEnt, camLu, Tile_Size_Adj, scaleFactor)
 
+	local gasDescriptors = {}
+	prepareGasesDraw(gasDescriptors, camera.followedEnt, camLu)
+
 	local rectDescriptors = {}
-	prepareGasesDraw(rectDescriptors, camera.followedEnt, camLu)
-
-	local rectDescriptors2 = {}
 	if self.ui.examineMaxDistance then
-		prepareRangeOverlayDraw(rectDescriptors2, camera.followedEnt, camLu, self.ui.examineMaxDistance)
+		prepareRangeOverlayDraw(rectDescriptors, camera.followedEnt, camLu, self.ui.examineMaxDistance)
 	end
 
+	if cursorCell then
+		table.insert(rectDescriptors, {
+			color = { 0.5, 0.9, 0.5, 0.9 }
+			, style = 'line'
+			, position = Vec(cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj)
+		})
+	end
+
+	-- begin render things to canvas
 	renderer.initFrame(Tile_Size_Adj)
+	love.graphics.setCanvas(renderer.canvasMap())
 	renderer.renderMap(drawDescriptors)
-	renderer.renderGases(rectDescriptors)
-	if self.ui.examineMaxDistance then
-		renderer.renderRangeOverlay(rectDescriptors2)
-	end
+	renderer.renderGases(gasDescriptors)
+	renderer.renderRectagles(rectDescriptors)
 
 	love.graphics.setCanvas()
+	-- end render things to canvas
+
+	-- render canvas
 	local b = love.graphics.getBlendMode()
 	love.graphics.setBlendMode('alpha', 'premultiplied')
 
@@ -1552,9 +1563,12 @@ function Game:show()
 	love.graphics.draw(renderer.canvasMap(), off, 0, 0)
 	love.graphics.setBlendMode(b)
 
+	-- render popups and minimap
 	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.draw(messages.popups.getCanvas())
 	drawMinimap()
+
+	-- render interface
 	self:drawInterface()
 	console.draw(0, 900 - console.height())
 end

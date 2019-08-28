@@ -56,7 +56,7 @@ local function drawDescriptors(itemDescriptors)
 end
 
 function renderer.renderMap(descriptors)
-	love.graphics.setCanvas(renderer_canvasMap)
+
 	love.graphics.clear()
 
 	love.graphics.push()
@@ -73,7 +73,7 @@ end
 local function drawRectangles(descriptors)
 	for _, desc in pairs(descriptors) do
 		love.graphics.setColor(desc.color)
-		love.graphics.rectangle('fill', desc.position.x, desc.position.y, Tile_Size_Adj, Tile_Size_Adj)
+		love.graphics.rectangle(desc.style or 'fill', desc.position.x, desc.position.y, Tile_Size_Adj, Tile_Size_Adj)
 	end
 end
 
@@ -87,15 +87,10 @@ function renderer.renderGases(descriptors)
 	end)
 end
 
-function renderer.renderRangeOverlay(descriptors)
+function renderer.renderRectagles(descriptors)
 	love.graphics.push()
-		love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
+	love.graphics.translate(Tile_Size_Adj, Tile_Size_Adj)
 		drawRectangles(descriptors)
-
-		-- if cursorCell then
-		-- 	love.graphics.setColor(0.5, 0.9, 0.5, 0.9)
-		-- 	love.graphics.rectangle('line', cursorCell.x * Tile_Size_Adj, cursorCell.y * Tile_Size_Adj, Tile_Size + 1, Tile_Size + 1)
-		-- end
 	love.graphics.pop()
 
 	love.graphics.setColor(color.white)
