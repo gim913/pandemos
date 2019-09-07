@@ -19,16 +19,14 @@ local Entity = class('Entity')
 Entity.Base_Speed = 1200
 Entity.Bash_Speed = 720
 
--- max LoS radius, modify if required
--- every entity must have los below this value
-local Max_Los_Radius = 24
-local Max_Los_Radius_2 = Max_Los_Radius * Max_Los_Radius
 local sqrt = math.sqrt
 
 function Entity:ctor(initPos)
 	self.pos = initPos
 	self.anim = Vec.zero
 	self.attrs = {}
+
+	self.components = {}
 
 	self.doRecalc = true
 	self.vismap = {}
@@ -56,6 +54,15 @@ function Entity:ctor(initPos)
 			, soundManager.get('sounds/zombie-21.wav', 'static')
 		}
 	}
+end
+
+function Entity:addComponent(component)
+	self.components[component.uid] = component
+	component.init(self)
+end
+
+function Entity:c(uid)
+	return self.components[uid]
 end
 
 function Entity:resetActions()
@@ -236,68 +243,8 @@ end
 function Entity:analyze()
 end
 
-function Entity:recalcVisMap()
-	if not self.doRecalc then
-		return
-	end
-
-	--print('calc' .. self.name)
-
-	local r = self.losRadius
-	local r2 = r*r
-
-	local idx = self.pos.y * map.width() + self.pos.x
-
-	self.vismap = {}
-	self.vismap[idx] = 1
-
-	los.calcVismapSquare(self.pos, self.vismap, -1,  1, r2)
-	los.calcVismapSquare(self.pos, self.vismap, -1, -1, r2)
-	los.calcVismapSquare(self.pos, self.vismap, 1,  1, r2)
-	los.calcVismapSquare(self.pos, self.vismap, 1, -1, r2)
-end
-
 function Entity:__tostring()
 	return self.name .. '[' .. self.id .. ']' .. tostring(self.pos)
-end
-
--- NOTE: seemap only contains ents in seeDist range, not all ents
-function Entity:checkEntVis(oth, dist)
-	if dist <= self.seeDist then
-		local idx = oth.pos.y * map.width() + oth.pos.x
-		--console.log(' vis ' .. tostring(self) .. ' -- ' .. tostring(oth) .. " " .. idx .. " : " .. tostring(self.vismap[idx]))
-		if self.vismap[idx] and self.vismap[idx] > 0 then
-			self.seemap[oth] = 1
-		else
-			self.seemap[oth] = nil
-		end
-	else
-		if self.seemap[oth] then
-			self.seemap[oth] = nil
-		end
-	end
-end
-
-function Entity:recalcSeeMap()
-	if not self.doRecalc then
-		return
-	end
-
-	-- TODO: should there be some Attr?
-	--console.log('recalc for: ' .. self.name)
-	for _,e in pairs(entities.all()) do
-		if e ~= self then
-			local d2 = (e.pos - self.pos):len2()
-			-- entity can go out of distance, so need to make it larger...
-			if d2 < Max_Los_Radius_2 then
-				local d = sqrt(d2)
-				self:checkEntVis(e, d)
-				e:checkEntVis(self, d)
-			end
-		end
-	end
-
-	self.doRecalc = false
 end
 
 function Entity:checkDirLight(position, dir)

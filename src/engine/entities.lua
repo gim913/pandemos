@@ -156,18 +156,6 @@ function entities.processActions(player)
 	return true
 end
 
-function entities.processFov()
-	local time1 = love.timer.getTime()
-	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-		e:recalcVisMap()
-	end
-	for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-		e:recalcSeeMap()
-	end
-	local time2 = love.timer.getTime()
-	print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
-end
-
 function entities.prepareDraw(descriptors, followedEnt, camLu, Tile_Size_Adj, scaleFactor)
 	local followedEntPos = followedEnt.pos
 	for _,ent in pairs(entities.all()) do

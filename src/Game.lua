@@ -17,6 +17,9 @@ local renderer = require 'renderer'
 local S = require 'settings'
 local Tiles = require 'Tiles'
 
+local components = require 'components.components'
+local fovComponent = require 'components.fov'
+
 local action = require 'engine.action'
 local class = require 'engine.oop'
 local color = require 'engine.color'
@@ -60,7 +63,17 @@ local function addLevel(levels, rng, depth)
 end
 
 local function processEntitiesFov()
-	entities.processFov()
+	if true then
+		local time1 = love.timer.getTime()
+		for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+			e:c(fovComponent.uid).recalcVisMap(e)
+		end
+		for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
+			e:c(fovComponent.uid).recalcSeeMap(e)
+		end
+		local time2 = love.timer.getTime()
+		print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))
+	end
 
 	-- updated fog-of-war
 	for k,v in pairs(player.vismap) do
@@ -133,14 +146,19 @@ function Game:ctor(rng)
 	minimap.initialize(level.w, level.h)
 	minimap.update()
 
+	components.register(fovComponent)
+
 	letters.initialize('@iBCSTM[!')
 	local f = math.floor
-	player = Player:new(Vec(f(map.width() / 2) - 5, map.height() - 45)) --- 39))
+	player = Player:new(Vec(f(map.width() / 2) - 5, map.height() - 45))
+	entities.add(player)
+
 	player.img = letters.get('@')
 	player.class = classes.Player
 
-	entities.add(player)
+	player:addComponent(fovComponent)
 	entities.addAttr(player, entities.Attr.Has_Fov)
+
 	entities.addAttr(player, entities.Attr.Has_Move)
 	entities.addAttr(player, entities.Attr.Has_Attack)
 
@@ -153,7 +171,10 @@ function Game:ctor(rng)
 		dummy.class = classes.Infected
 
 		entities.add(dummy)
+
+		dummy:addComponent(fovComponent)
 		entities.addAttr(dummy, entities.Attr.Has_Fov)
+
 		entities.addAttr(dummy, entities.Attr.Has_Move)
 		entities.addAttr(dummy, entities.Attr.Has_Attack)
 		entities.addAttr(dummy, entities.Attr.Has_Ai)
