@@ -14,9 +14,8 @@ local Max_Los_Radius = 24
 local Max_Los_Radius_2 = Max_Los_Radius * Max_Los_Radius
 
 function fov.init(ent)
-	ent.foo = foo
-	ent.bar = bar
-	print('ok')
+	ent.vismap = {}
+	ent.seemap = {}
 end
 
 function fov.recalcVisMap(ent)

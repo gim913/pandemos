@@ -66,10 +66,10 @@ local function processEntitiesFov()
 	if true then
 		local time1 = love.timer.getTime()
 		for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-			e:c(fovComponent.uid).recalcVisMap(e)
+			e(fovComponent.uid).recalcVisMap(e)
 		end
 		for _,e in pairs(entities.with(entities.Attr.Has_Fov)) do
-			e:c(fovComponent.uid).recalcSeeMap(e)
+			e(fovComponent.uid).recalcSeeMap(e)
 		end
 		local time2 = love.timer.getTime()
 		print(string.format('fov+los took %.5f ms', (time2 - time1) * 1000))

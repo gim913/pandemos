@@ -29,8 +29,6 @@ function Entity:ctor(initPos)
 	self.components = {}
 
 	self.doRecalc = true
-	self.vismap = {}
-	self.seemap = {}
 
 	-- those two probably should not differ, so it might make sense
 	-- to turn them into single var later
@@ -61,7 +59,7 @@ function Entity:addComponent(component)
 	component.init(self)
 end
 
-function Entity:c(uid)
+function Entity:__call(uid)
 	return self.components[uid]
 end
 
